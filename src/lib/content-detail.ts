@@ -128,7 +128,7 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
     raw = await getTmdbCommon(
       tmdbId,
       'movie',
-      'videos,keywords,external_ids,release_dates,watch/providers',
+      'credits,videos,keywords,external_ids,release_dates,watch/providers',
     );
   } catch (e) {
     console.error(`[AMDB] TMDB fetch error for movie ${id}:`, e);
@@ -303,7 +303,7 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
     raw = await getTmdbCommon(
       tmdbId,
       'tv',
-      'videos,keywords,external_ids,content_ratings,watch/providers',
+      'credits,videos,keywords,external_ids,content_ratings,watch/providers',
     );
   } catch (e) {
     console.error(`[AMDB] TMDB fetch error for TV ${id}:`, e);
@@ -461,7 +461,7 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
     raw = await getTmdbCommon(
       tmdbId,
       'tv',
-      'videos,keywords,external_ids,content_ratings,watch/providers',
+      'credits,videos,keywords,external_ids,content_ratings,watch/providers',
     );
   } catch (e) {
     console.error(`[AMDB] TMDB fetch error for Anime ${id}:`, e);

@@ -40,10 +40,10 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 - Add content with 1–10 rating, notes, and type-specific fields (Watched date vs Watch Status/Episodes)
 - **OMDB Enrichment:** Auto-fetched for Movies and TV Shows on add (cached in `ContentEnrichment`).
 
-### 4. Dashboard & Performance (Phase 7)
+### 4. Dashboard & Performance (Phase 7 & 8)
 - **Sub-1s Load Times:** Achieved through aggressive database indexing and Prisma `relationJoins`.
-- **Server-side Pagination:** 24 items per page with optimized count/fetch parallelization.
-- **Smart Asset Delivery:** Custom TMDB image loader mapping requests to the closest size bucket (`w185`, `w342`, `w500`).
+- **Atomic Queries:** Omit default filters (1–10 rating, "All" types) from database queries on initial load to maximize performance.
+- **100% Next.js Image Coverage:** Successfully replaced every `<img>` tag in the system with optimized `<Image />` components and a custom TMDB loader.
 - **Mobile UX Stability:** Explicit viewport locking (`maximumScale: 1`) and 16px minimum font sizes on mobile to prevent browser auto-zoom.
 
 ### 5. AI Recommendations
