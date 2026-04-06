@@ -97,6 +97,7 @@ export interface ContentDetail {
     certification: string;
     type: string;
   }[];
+  omdbRatings?: { Source: string; Value: string }[];
 }
 
 export async function fetchMovieDetail(tmdbId: number): Promise<ContentDetail> {
@@ -128,6 +129,22 @@ export async function fetchMovieDetail(tmdbId: number): Promise<ContentDetail> {
   }
 
   const watchProviderRaw = raw['watch/providers']?.results?.IN ?? raw['watch/providers']?.results?.US ?? null;
+
+  let omdbRatings = [];
+  if (raw.imdb_id && process.env.OMDB_API_KEY) {
+    try {
+      const omdbRes = await fetch(
+        `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${raw.imdb_id}`,
+        { next: { revalidate: 3600 } }
+      );
+      if (omdbRes.ok) {
+        const omdbData = await omdbRes.json();
+        if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
+      }
+    } catch (e) {
+      console.error('OMDB fetch error in Movie library:', e);
+    }
+  }
 
   return {
     id: raw.id,
@@ -196,6 +213,7 @@ export async function fetchMovieDetail(tmdbId: number): Promise<ContentDetail> {
       buy: watchProviderRaw.buy?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
     } : null,
     releaseDates,
+    omdbRatings,
   };
 }
 
@@ -212,6 +230,23 @@ export async function fetchTvDetail(tmdbId: number): Promise<ContentDetail> {
   const ageCertification = usRating?.rating ?? null;
 
   const watchProviderRaw = raw['watch/providers']?.results?.IN ?? raw['watch/providers']?.results?.US ?? null;
+
+  let omdbRatings = [];
+  const imdbId = raw.external_ids?.imdb_id || null;
+  if (imdbId && process.env.OMDB_API_KEY) {
+    try {
+      const omdbRes = await fetch(
+        `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${imdbId}`,
+        { next: { revalidate: 3600 } }
+      );
+      if (omdbRes.ok) {
+        const omdbData = await omdbRes.json();
+        if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
+      }
+    } catch (e) {
+      console.error('OMDB fetch error in TV library:', e);
+    }
+  }
 
   // Determine ongoing status
   const lastAirDate = raw.last_air_date ?? null;
@@ -274,6 +309,7 @@ export async function fetchTvDetail(tmdbId: number): Promise<ContentDetail> {
       buy: watchProviderRaw.buy?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
     } : null,
     releaseDates: [],
+    omdbRatings,
   };
 }
 

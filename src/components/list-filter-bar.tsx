@@ -34,7 +34,6 @@ const CONTENT_TYPE_PILLS: { value: ContentType | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'All' },
   { value: 'MOVIE', label: 'Movies' },
   { value: 'TV_SHOW', label: 'TV Shows' },
-  { value: 'ANIME', label: 'Anime' },
 ];
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [

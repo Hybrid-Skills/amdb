@@ -97,7 +97,24 @@ export async function GET(
       similar: raw.similar,
     };
 
-    return NextResponse.json(content);
+    let omdbRatings = [];
+    if (content.imdbId && process.env.OMDB_API_KEY) {
+      try {
+        const omdbRes = await fetch(
+          `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${content.imdbId}`,
+        );
+        if (omdbRes.ok) {
+          const omdbData = await omdbRes.json();
+          if (omdbData.Ratings) {
+            omdbRatings = omdbData.Ratings;
+          }
+        }
+      } catch (e) {
+        console.error('OMDB fetch error in detail API:', e);
+      }
+    }
+
+    return NextResponse.json({ ...content, omdbRatings });
   } catch (err) {
     console.error('Content detail error:', err);
     return NextResponse.json({ error: 'Failed to fetch content details' }, { status: 500 });

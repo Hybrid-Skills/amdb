@@ -58,6 +58,7 @@ interface AddToListModalProps {
   initialWatchStatus?: string | null;
   initialNotes?: string | null;
   initialRating?: number | null;
+  startInEditMode?: boolean;
 }
 
 const WATCH_STATUS_OPTIONS = [
@@ -90,6 +91,7 @@ export function AddToListModal({
   initialRating,
   initialNotes,
   initialWatchStatus,
+  startInEditMode,
 }: AddToListModalProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const isEditing = !!initialRating; // true = existing list entry being re-opened
@@ -105,7 +107,7 @@ export function AddToListModal({
   const [detailedItem, setDetailedItem] = React.useState<any | null>(null);
   const [loadingDetails, setLoadingDetails] = React.useState(false);
   // For edit mode — whether the compact rating summary is in edit state
-  const [editingRating, setEditingRating] = React.useState(!isEditing);
+  const [editingRating, setEditingRating] = React.useState(startInEditMode || !isEditing);
 
   const isSerial = item?.contentType === 'TV_SHOW' || item?.contentType === 'ANIME';
   const today = new Date();
@@ -308,7 +310,9 @@ export function AddToListModal({
                   <Badge variant="outline" className="bg-white/10 border-white/10 backdrop-blur-md h-5">{displayItem.networks[0].name}</Badge>
                 )}
               </div>
-              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight drop-shadow-xl">{displayItem.title}</h2>
+              <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight drop-shadow-xl">
+                {displayItem.title} {displayItem.year ? <span className="text-white/40 font-light">({displayItem.year})</span> : ''}
+              </h2>
               {displayItem.tagline && <p className="text-sm text-white/70 italic mt-1 font-light">"{displayItem.tagline}"</p>}
               {/* View full page link */}
               {(() => {
@@ -323,6 +327,20 @@ export function AddToListModal({
                   </Link>
                 );
               })()}
+
+              {/* OMDB Ratings Row */}
+              {displayItem.omdbRatings && displayItem.omdbRatings.length > 0 && (
+                <div className="flex items-center gap-4 mt-3 flex-wrap">
+                  {displayItem.omdbRatings.map((r: any) => (
+                    <div key={r.Source} className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10">
+                      {r.Source === 'Rotten Tomatoes' && <span className="text-[10px] font-black text-red-500 leading-none">RT</span>}
+                      {r.Source === 'Internet Movie Database' && <span className="text-[10px] font-black text-yellow-400 leading-none">IMDb</span>}
+                      {r.Source === 'Metacritic' && <span className="text-[10px] font-black text-green-400 leading-none">MC</span>}
+                      <span className="text-xs font-bold text-white/90">{r.Value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -463,21 +481,23 @@ export function AddToListModal({
       </div>
 
       {/* ── Sticky CTA bar ─────────────────────────────── */}
-      <div className="shrink-0 border-t border-white/10 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center gap-3 justify-end">
-        <Button variant="ghost" onClick={onClose} disabled={submitting} className="hover:bg-white/10 hover:text-white">
-          Cancel
-        </Button>
-        <Button
-          onClick={handleSubmit}
-          disabled={!rating || submitting}
-          className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold min-w-[120px]"
-        >
-          {submitting
-            ? <Loader2 className="w-4 h-4 animate-spin" />
-            : isEditing ? 'Update List' : 'Add to List'
-          }
-        </Button>
-      </div>
+      {editingRating && (
+        <div className="shrink-0 border-t border-white/10 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center gap-3 justify-end">
+          <Button variant="ghost" onClick={onClose} disabled={submitting} className="hover:bg-white/10 hover:text-white">
+            Cancel
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            disabled={!rating || submitting}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold min-w-[120px]"
+          >
+            {submitting
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : isEditing ? 'Update List' : 'Add to List'
+            }
+          </Button>
+        </div>
+      )}
     </div>
   );
 

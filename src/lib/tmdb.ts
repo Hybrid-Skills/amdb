@@ -96,12 +96,12 @@ export const tmdb = {
 
   movieDetails: (id: number) =>
     tmdbFetch<TmdbMovieDetails>(`/movie/${id}`, {
-      append_to_response: 'credits,videos,similar,release_dates',
+      append_to_response: 'credits,videos,similar,release_dates,watch/providers',
     }),
 
   tvDetails: (id: number) =>
     tmdbFetch<TmdbMovieDetails>(`/tv/${id}`, {
-      append_to_response: 'credits,videos,similar,content_ratings',
+      append_to_response: 'credits,videos,similar,content_ratings,watch/providers',
     }),
 
   genres: () => tmdbFetch<{ genres: { id: number; name: string }[] }>('/genre/movie/list'),

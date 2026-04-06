@@ -1,7 +1,11 @@
+'use client';
 import * as React from 'react';
 import Link from 'next/link';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import type { ContentDetail } from '@/lib/content-detail';
 import { buildContentUrl } from '@/lib/slug';
+import { Button } from './ui/button';
+import { getProviderSearchUrl, uniqueProviders } from '@/lib/utils/watch';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -63,6 +67,11 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
   }, {});
   const deptOrder = ['Directing', 'Writing', 'Production', 'Camera', 'Sound', 'Art', 'Costume & Make-Up', 'Editing', 'Visual Effects', 'Other'];
 
+  const [isCastExpanded, setIsCastExpanded] = React.useState(false);
+  const CAST_LIMIT = 16; // Approx 2 rows on lg screens
+  const displayCast = isCastExpanded ? data.cast : data.cast.slice(0, CAST_LIMIT);
+  const hasMoreCast = data.cast.length > CAST_LIMIT;
+
   return (
     <div className="min-h-screen bg-black text-white">
 
@@ -118,6 +127,59 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
                 <span key={g.id} className="px-2 py-0.5 rounded-full bg-white/10 text-white/70 text-xs">{g.name}</span>
               ))}
             </div>
+
+            {/* Where to Watch (First Fold) */}
+            {data.watchProviders && (
+              <div className="flex flex-wrap items-center gap-6 mt-6 md:mt-8 pt-6 border-t border-white/10">
+                {data.watchProviders.flatrate && data.watchProviders.flatrate.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/30 hidden sm:block">Stream</span>
+                    <div className="flex flex-wrap gap-2.5">
+                      {uniqueProviders(data.watchProviders.flatrate).slice(0, 8).map((p) => {
+                        const searchUrl = getProviderSearchUrl(p.provider_name, data.title, data.watchProviders!.link);
+                        return (
+                          <a
+                            key={p.provider_id}
+                            href={searchUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 hover:border-primary/50 transition-all hover:scale-110 active:scale-95 shadow-lg"
+                            title={`Watch on ${p.provider_name}`}
+                          >
+                            <img src={p.logo_path} alt={p.provider_name} className="w-full h-full object-cover" />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {data.watchProviders.rent && data.watchProviders.rent.length > 0 && (
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/30 hidden sm:block">Rent/Buy</span>
+                    <div className="flex flex-wrap gap-2.5">
+                      {uniqueProviders(data.watchProviders.rent).slice(0, 8).map((p) => {
+                        const searchUrl = getProviderSearchUrl(p.provider_name, data.title, data.watchProviders!.link);
+                        return (
+                          <a
+                            key={p.provider_id}
+                            href={searchUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 hover:border-primary/50 transition-all hover:scale-110 active:scale-95 shadow-lg"
+                            title={`Rent on ${p.provider_name}`}
+                          >
+                            <img src={p.logo_path} alt={p.provider_name} className="w-full h-full object-cover" />
+                          </a>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                <a href={data.watchProviders.link} target="_blank" rel="noopener noreferrer" className="text-[10px] text-white/30 hover:text-white/60 transition-colors border-l border-white/10 pl-6 h-4 flex items-center">
+                  via JustWatch ↗
+                </a>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -142,6 +204,13 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
               <span className="text-lg font-black leading-tight">{data.popularity.toFixed(0)}</span>
             </div>
           )}
+
+          {/* OMDB Ratings */}
+          {data.omdbRatings?.map((r) => {
+            const label = r.Source === 'Internet Movie Database' ? 'IMDb' : r.Source === 'Rotten Tomatoes' ? 'RT' : r.Source === 'Metacritic' ? 'MC' : r.Source;
+            const color = r.Source === 'Internet Movie Database' ? 'border-yellow-500/30 text-yellow-400' : r.Source === 'Rotten Tomatoes' ? 'border-red-500/30 text-red-500' : 'border-green-500/30 text-green-400';
+            return <RatingBadge key={r.Source} label={label} value={r.Value} color={color} />;
+          })}
         </div>
 
         {/* Overview */}
@@ -210,17 +279,41 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
         {/* Full Cast */}
         {data.cast.length > 0 && (
           <section>
-            <SectionTitle>Full Cast</SectionTitle>
-            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
-              {data.cast.map((actor) => (
-                <div key={actor.id} className="flex flex-col">
-                  {actor.profile_path ? (
-                    <img src={actor.profile_path} alt={actor.name} className="w-full aspect-[2/3] object-cover rounded-xl border border-white/10 mb-1.5" />
+            <div className="flex items-center justify-between mb-6">
+              <SectionTitle>Full Cast</SectionTitle>
+              {hasMoreCast && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsCastExpanded(!isCastExpanded)}
+                  className="text-primary hover:bg-primary/10 transition-colors gap-1 font-bold"
+                >
+                  {isCastExpanded ? (
+                    <>Show less <ChevronUp className="w-4 h-4" /></>
                   ) : (
-                    <div className="w-full aspect-[2/3] rounded-xl bg-white/5 border border-white/10 mb-1.5 flex items-center justify-center text-white/20 text-xs text-center px-1">{actor.name}</div>
+                    <>Show full cast <ChevronDown className="w-4 h-4" /></>
+                  )}
+                </Button>
+              )}
+            </div>
+            <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3">
+              {displayCast.map((actor) => (
+                <div key={actor.id} className="flex flex-col group">
+                  {actor.profile_path ? (
+                    <img
+                      src={actor.profile_path}
+                      alt={actor.name}
+                      className="w-full aspect-[2/3] object-cover rounded-xl border border-white/10 mb-1.5 group-hover:border-primary/50 transition-colors"
+                    />
+                  ) : (
+                    <div className="w-full aspect-[2/3] rounded-xl bg-white/5 border border-white/10 mb-1.5 flex items-center justify-center text-white/20 text-xs text-center px-1">
+                      {actor.name}
+                    </div>
                   )}
                   <p className="text-xs font-semibold leading-tight line-clamp-1">{actor.name}</p>
-                  <p className="text-[10px] text-white/40 line-clamp-1 leading-tight mt-0.5">{actor.character}</p>
+                  <p className="text-[10px] text-white/40 line-clamp-1 leading-tight mt-0.5">
+                    {actor.character}
+                  </p>
                 </div>
               ))}
             </div>
@@ -256,40 +349,13 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
           </section>
         )}
 
-        {/* Where to Watch */}
-        {data.watchProviders && (
-          <section>
-            <SectionTitle>Where To Watch</SectionTitle>
-            <div className="flex flex-col gap-4">
-              {data.watchProviders.flatrate && data.watchProviders.flatrate.length > 0 && (
-                <div>
-                  <p className="text-xs text-white/40 uppercase font-bold tracking-wider mb-2">Streaming</p>
-                  <div className="flex flex-wrap gap-3">
-                    {data.watchProviders.flatrate.map((p) => (
-                      <div key={p.provider_id} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5">
-                        <img src={p.logo_path} alt={p.provider_name} className="w-8 h-8 rounded-lg" />
-                        <span className="text-sm font-medium">{p.provider_name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {data.watchProviders.rent && data.watchProviders.rent.length > 0 && (
-                <div>
-                  <p className="text-xs text-white/40 uppercase font-bold tracking-wider mb-2">Rent</p>
-                  <div className="flex flex-wrap gap-3">
-                    {data.watchProviders.rent.map((p) => (
-                      <div key={p.provider_id} className="flex items-center gap-2 px-3 py-2 rounded-xl border border-white/10 bg-white/5">
-                        <img src={p.logo_path} alt={p.provider_name} className="w-8 h-8 rounded-lg" />
-                        <span className="text-sm font-medium">{p.provider_name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </section>
-        )}
+         {/* Overview */}
+        <section>
+          <SectionTitle>Overview</SectionTitle>
+          <p className="text-lg md:text-xl text-white/80 leading-relaxed max-w-4xl font-light">
+            {data.overview}
+          </p>
+        </section>
 
         {/* Production */}
         {(data.productionCompanies.length > 0 || data.spokenLanguages.length > 0 || data.networks.length > 0) && (
@@ -391,24 +457,20 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
           </section>
         )}
 
-        {/* Full Crew by Department */}
+        {/* Full Crew by Department - Accordion Style */}
         {data.fullCrew.length > 0 && (
           <section>
             <SectionTitle>Full Crew</SectionTitle>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {deptOrder.filter((d) => crewByDept[d]?.length).map((dept) => (
-                <div key={dept}>
-                  <p className="text-xs text-white/40 uppercase font-bold tracking-wider mb-3">{dept}</p>
-                  <div className="flex flex-col gap-1.5">
-                    {crewByDept[dept].map((c, i) => (
-                      <div key={`${c.id}-${i}`} className="flex items-center justify-between">
-                        <span className="text-sm">{c.name}</span>
-                        <span className="text-xs text-white/40">{c.job}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="flex flex-col gap-2">
+              {deptOrder
+                .filter((dept) => crewByDept[dept]?.length)
+                .map((dept) => (
+                  <CrewDepartmentAccordion
+                    key={dept}
+                    title={dept}
+                    members={crewByDept[dept]}
+                  />
+                ))}
             </div>
           </section>
         )}
@@ -439,6 +501,39 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
         )}
 
       </div>
+    </div>
+  );
+}
+
+function CrewDepartmentAccordion({ title, members }: { title: string; members: any[] }) {
+  const [isOpen, setIsOpen] = React.useState(false);
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-xl overflow-hidden transition-colors hover:border-white/20">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-5 py-4 flex items-center justify-between group transition-colors"
+      >
+        <span className="text-sm font-black uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">
+          {title} <span className="ml-2 text-xs text-white/30 font-bold">({members.length})</span>
+        </span>
+        {isOpen ? (
+          <ChevronUp className="w-5 h-5 text-white/40" />
+        ) : (
+          <ChevronDown className="w-5 h-5 text-white/40" />
+        )}
+      </button>
+
+      {isOpen && (
+        <div className="px-5 pb-5 pt-0 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2 border-t border-white/5 mt-0 animate-in fade-in slide-in-from-top-1 duration-200">
+          {members.map((member, i) => (
+            <div key={`${member.id}-${i}`} className="flex items-center justify-between py-1 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 -mx-2 rounded transition-colors">
+              <span className="text-sm font-medium">{member.name}</span>
+              <span className="text-xs text-white/40 italic">{member.job}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

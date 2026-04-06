@@ -62,7 +62,11 @@ export async function GET(req: Request) {
       watchStatus: { in: watchStatus.split(',') as WatchStatusValue[] },
     }),
     content: {
-      ...(contentType && { contentType: contentType as ContentType }),
+      ...(contentType && {
+        contentType: contentType === 'TV_SHOW'
+          ? { in: ['TV_SHOW' as const, 'ANIME' as const] }
+          : contentType as ContentType,
+      }),
       // Genre filter: use string_contains on the JSON field (works for name strings)
       ...(genres &&
         genres !== '' && {
@@ -204,17 +208,22 @@ export async function POST(req: Request) {
           },
         });
 
-        if (contentType === 'MOVIE' && raw.imdb_id && process.env.OMDB_API_KEY) {
-          const omdbRes = await fetch(
-            `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${raw.imdb_id}`,
-          );
-          if (omdbRes.ok) {
-            const omdbData = await omdbRes.json();
-            if (omdbData.Response === 'True') {
-              await prisma.contentEnrichment.create({
-                data: { contentId: content.id, source: 'omdb', data: omdbData },
-              });
+        const imdbId = (raw as any).imdb_id ?? (raw as any).external_ids?.imdb_id;
+        if (imdbId && process.env.OMDB_API_KEY) {
+          try {
+            const omdbRes = await fetch(
+              `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${imdbId}`,
+            );
+            if (omdbRes.ok) {
+              const omdbData = await omdbRes.json();
+              if (omdbData.Response === 'True') {
+                await prisma.contentEnrichment.create({
+                  data: { contentId: content.id, source: 'omdb', data: omdbData },
+                });
+              }
             }
+          } catch (e) {
+            console.error('OMDB fetch error in POST:', e);
           }
         }
       }

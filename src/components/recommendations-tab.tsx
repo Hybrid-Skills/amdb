@@ -17,18 +17,12 @@ const CONTENT_TYPES: { value: ContentType | 'ANY'; label: string }[] = [
   { value: 'ANY', label: 'Any' },
   { value: 'MOVIE', label: 'Movie' },
   { value: 'TV_SHOW', label: 'TV Show' },
-  { value: 'ANIME', label: 'Anime' },
 ];
 
 const MOVIE_TV_GENRES = [
   'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary',
   'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi',
-  'Thriller', 'Western',
-];
-
-const ANIME_GENRES = [
-  'Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror',
-  'Isekai', 'Mecha', 'Mystery', 'Romance', 'Sci-Fi', 'Slice of Life',
+  'Thriller', 'Western', 'Isekai', 'Mecha', 'Slice of Life',
   'Sports', 'Supernatural',
 ];
 
@@ -37,11 +31,11 @@ type RecResult = SearchResult & { reason?: string };
 export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabProps) {
   const [loading, setLoading] = React.useState(false);
   const [recs, setRecs] = React.useState<RecResult[]>([]);
-  const [type, setType] = React.useState<ContentType | 'ANY'>('MOVIE');
+  const [type, setType] = React.useState<ContentType | 'ANY' | 'ANIME'>('MOVIE');
   const [selectedGenres, setSelectedGenres] = React.useState<string[]>([]);
   const [error, setError] = React.useState('');
 
-  const genres = type === 'ANIME' ? ANIME_GENRES : MOVIE_TV_GENRES;
+  const genres = MOVIE_TV_GENRES;
 
   // Clear selected genres when type changes to avoid stale genre filters
   React.useEffect(() => {

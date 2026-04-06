@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import Anthropic from '@anthropic-ai/sdk';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { searchJikan } from '@/lib/jikan';
+import type { ContentType } from '@prisma/client';
 
 export const maxDuration = 45;
 
@@ -28,7 +29,13 @@ export async function POST(req: Request) {
     const allItems = await prisma.userContent.findMany({
       where: {
         profileId,
-        content: { contentType: contentType === 'ANY' ? undefined : contentType },
+        content: {
+          contentType: contentType === 'ANY'
+            ? undefined
+            : contentType === 'TV_SHOW'
+              ? { in: ['TV_SHOW' as const, 'ANIME' as const] }
+              : contentType as ContentType
+        },
       },
       include: { content: { select: { title: true, year: true, contentType: true, genres: true } } },
       orderBy: { userRating: 'desc' },
@@ -48,7 +55,7 @@ export async function POST(req: Request) {
     const allWatchedTitles = allItems.map((i) => `"${i.content.title}"`).join(', ');
 
     const typeLabel =
-      contentType === 'ANIME' ? 'anime' : contentType === 'TV_SHOW' ? 'TV show' : contentType === 'MOVIE' ? 'movie' : 'movie or TV show';
+      contentType === 'TV_SHOW' ? 'TV show or anime' : contentType === 'MOVIE' ? 'movie' : 'movie, TV show or anime';
 
     const genreClause =
       genres && genres.length > 0 ? `The user prefers these genres: ${genres.join(', ')}.` : '';
