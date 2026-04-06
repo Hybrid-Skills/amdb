@@ -1,13 +1,14 @@
 'use client';
 
 import * as React from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Star, Tv, Film, Swords, Clock, X, Pencil, ExternalLink, Trash2 } from 'lucide-react';
+import Image from 'next/image';
+import { Star, Tv, Film, Clock, Pencil, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { buildContentUrl } from '@/lib/slug';
+import { tmdbImageLoader } from '@/lib/tmdb';
 import type { ContentType } from '@prisma/client';
 
 export interface MovieCardProps {
@@ -54,14 +55,6 @@ const CONTENT_ICONS: Record<ContentType, React.ReactNode> = {
   ),
 };
 
-function ratingBg(r: number): string {
-  if (r <= 3) return '#991b1b';
-  if (r <= 5) return '#9a3412';
-  if (r <= 7) return '#713f12';
-  if (r <= 9) return '#166534';
-  return '#14532d';
-}
-
 function parseJson<T>(val: unknown, fallback: T): T {
   if (Array.isArray(val)) return val as T;
   if (typeof val === 'string') {
@@ -80,25 +73,19 @@ export function MovieCard({
   year,
   posterUrl,
   userRating,
-  tmdbRating,
   contentType,
-  watchStatus,
   notes,
   adult,
   ageCertification,
   languages,
   episodeRuntime,
   runtimeMins,
-  tmdbId,
-  malId,
   onEdit,
   onDelete,
-  onViewDetails,
 }: MovieCardProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
 
-  const langs = parseJson<string[]>(languages, []);
   const runtime = episodeRuntime ?? runtimeMins;
   const runtimeLabel = runtime ? `${runtime}m${contentType !== 'MOVIE' ? '/ep' : ''}` : null;
   const certLabel = ageCertification ?? (adult ? '18+' : null);
@@ -122,10 +109,13 @@ export function MovieCard({
         {/* ── Poster Area ── */}
         <div className="relative aspect-[2/3] w-full overflow-hidden">
           {posterUrl ? (
-            <img
+            <Image
+              loader={tmdbImageLoader}
               src={posterUrl}
               alt={title}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
               loading="lazy"
             />
           ) : (

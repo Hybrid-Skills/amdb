@@ -94,17 +94,27 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.userContent.findMany({
       where,
-      include: { content: { include: { enrichments: { where: { source: 'omdb' }, take: 1 } } } },
+      include: {
+        content: {
+          include: {
+            enrichments: {
+              where: { source: 'omdb' },
+              take: 1,
+            },
+          },
+        },
+      },
+      relationLoadStrategy: 'join',
       orderBy,
       skip: (page - 1) * limit,
       take: limit,
-    }),
+    } as any),
     prisma.userContent.count({ where }),
   ]);
 
   // Flatten omdb ratings into content for convenience
-  const formatted = items.map((item) => {
-    const omdb = (item.content as any).enrichments?.[0]?.data as Record<string, any> | undefined;
+  const formatted = (items as any[]).map((item) => {
+    const omdb = item.content?.enrichments?.[0]?.data as Record<string, any> | undefined;
     const { enrichments: _, ...contentRest } = item.content as any;
     return {
       ...item,
@@ -116,7 +126,14 @@ export async function GET(req: Request) {
     };
   });
 
-  return NextResponse.json({ items: formatted, total, page, totalPages: Math.ceil(total / limit) });
+  return NextResponse.json(
+    { items: formatted, total, page, totalPages: Math.ceil(total / limit) },
+    {
+      headers: {
+        'Cache-Control': 's-maxage=1, stale-while-revalidate=59',
+      },
+    },
+  );
 }
 
 export async function POST(req: Request) {

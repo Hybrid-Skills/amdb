@@ -7,38 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ─── Enums ───────────────────────────────────────────────────────────────────
-
-enum ContentType {
-  MOVIE
-  TV_SHOW
-  ANIME
-}
-
-enum WatchStatus {
-  WATCHING
-  PLAN_TO_WATCH
-  COMPLETED
-  DROPPED
-}
-
-// ─── Auth / Users ─────────────────────────────────────────────────────────────
-
 model Account {
   id                String  @id @default(cuid())
   userId            String
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -58,12 +40,10 @@ model User {
   image         String?
   emailVerified DateTime?
   googleId      String?   @unique
-
-  accounts Account[]
-  sessions Session[]
-  profiles Profile[]
-
-  createdAt DateTime @default(now())
+  createdAt     DateTime  @default(now())
+  accounts      Account[]
+  profiles      Profile[]
+  sessions      Session[]
 }
 
 model VerificationToken {
@@ -74,110 +54,105 @@ model VerificationToken {
   @@unique([identifier, token])
 }
 
-// ─── Profiles ─────────────────────────────────────────────────────────────────
-
 model Profile {
-  id          String  @id @default(cuid())
+  id          String        @id @default(cuid())
   userId      String
   name        String
-  avatarColor String  @default("#6366f1")
-  isDefault   Boolean @default(false)
-
+  avatarColor String        @default("#6366f1")
+  isDefault   Boolean       @default(false)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
   user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   userContent UserContent[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@index([userId])
 }
 
-// ─── Content ──────────────────────────────────────────────────────────────────
-
 model Content {
-  id            String      @id @default(cuid())
-  contentType   ContentType
-  title         String
-  originalTitle String?
-  year          Int?
-  posterUrl     String?
-  backdropUrl   String?
-  overview      String?     @db.Text
-  tagline       String?
-  genres        Json        @default("[]")
-  runtimeMins   Int?
-  status        String?
-
-  // Extended Details for Cards
-  adult          Boolean? @default(false)
-  revenue        Float?
-  languages      Json     @default("[]")
-  seasons        Int?
-  episodes       Int?
-  networks       Json     @default("[]")
-  episodeRuntime Int?
+  id               String              @id @default(cuid())
+  contentType      ContentType
+  title            String
+  originalTitle    String?
+  year             Int?
+  posterUrl        String?
+  backdropUrl      String?
+  overview         String?
+  tagline          String?
+  genres           Json                @default("[]")
+  runtimeMins      Int?
+  status           String?
+  tmdbId           Int?                @unique
+  imdbId           String?
+  malId            Int?                @unique
+  tmdbRating       Decimal?            @db.Decimal(3, 1)
+  tmdbVoteCount    Int?
+  language         String?
+  createdAt        DateTime            @default(now())
+  updatedAt        DateTime            @updatedAt
+  adult            Boolean?            @default(false)
+  episodeRuntime   Int?
+  episodes         Int?
+  languages        Json                @default("[]")
+  networks         Json                @default("[]")
+  revenue          Float?
+  seasons          Int?
   ageCertification String?
-  omdbRatings    Json     @default("[]")
-
-  // External IDs
-  tmdbId  Int?    @unique
-  imdbId  String?
-  malId   Int?    @unique // MyAnimeList ID
-
-  // Denormalized for fast queries
-  tmdbRating     Decimal? @db.Decimal(3, 1)
-  tmdbVoteCount  Int?
-  language       String?
-
-  enrichments ContentEnrichment[]
-  userContent UserContent[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  omdbRatings      Json                @default("[]")
+  enrichments      ContentEnrichment[]
+  userContent      UserContent[]
 
   @@index([contentType])
   @@index([tmdbId])
   @@index([malId])
+  @@index([tmdbRating(sort: Desc)])
+  @@index([title])
+  @@index([year(sort: Desc)])
 }
 
 model ContentEnrichment {
   id        String   @id @default(cuid())
   contentId String
-  source    String   // 'omdb' | 'jikan' | 'justwatch' | etc.
+  source    String
   data      Json
   fetchedAt DateTime @default(now())
-
-  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  content   Content  @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
   @@unique([contentId, source])
   @@index([contentId])
 }
 
-// ─── User <> Content ──────────────────────────────────────────────────────────
-
 model UserContent {
-  id         String   @id @default(cuid())
-  profileId  String
-  contentId  String
-  userRating Int      // 1-10, mandatory
-  notes      String?  @db.Text
-
-  // Movies only
-  watchedDate DateTime? @db.Date
-
-  // TV shows & anime only
+  id           String       @id @default(cuid())
+  profileId    String
+  contentId    String
+  userRating   Int
+  notes        String?
+  watchedDate  DateTime?    @db.Date
   watchStatus  WatchStatus?
   startDate    DateTime?    @db.Date
   endDate      DateTime?    @db.Date
   episodeCount Int?
-
-  addedAt   DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  addedAt      DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  content      Content      @relation(fields: [contentId], references: [id], onDelete: Cascade)
+  profile      Profile      @relation(fields: [profileId], references: [id], onDelete: Cascade)
 
   @@unique([profileId, contentId])
-  @@index([profileId])
+  @@index([profileId, addedAt(sort: Desc)])
+  @@index([profileId, userRating(sort: Desc)])
+  @@index([profileId, watchStatus])
   @@index([contentId])
+}
+
+enum ContentType {
+  MOVIE
+  TV_SHOW
+  ANIME
+}
+
+enum WatchStatus {
+  WATCHING
+  PLAN_TO_WATCH
+  COMPLETED
+  DROPPED
 }

@@ -4,6 +4,36 @@ const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 export const tmdbImageUrl = (path: string | null, size = 'w500') =>
   path ? `${TMDB_IMAGE_BASE}/${size}${path}` : null;
 
+/**
+ * Next.js Custom Image Loader for TMDB
+ * Maps requested widths to the nearest TMDB size bucket.
+ */
+export function tmdbImageLoader({ src, width, quality }: { src: string; width: number; quality?: number }) {
+  // src is already a full TMDB URL or a path. If it's a full URL, we extract the path.
+  const path = src.includes('image.tmdb.org') ? src.split('/t/p/')[1].split('/').slice(1).join('/') : src;
+  
+  if (!path || path.startsWith('http')) return src;
+
+  // TMDB Poster Sizes: w92, w154, w185, w342, w500, w780, original
+  let size = 'w500';
+  if (width <= 92) size = 'w92';
+  else if (width <= 154) size = 'w154';
+  else if (width <= 185) size = 'w185';
+  else if (width <= 342) size = 'w342';
+  else if (width <= 500) size = 'w500';
+  else if (width <= 780) size = 'w780';
+  else size = 'original';
+
+  return `${TMDB_IMAGE_BASE}/${size}/${path}`;
+}
+
+/**
+ * Force-replaces w500 with w342 in a TMDB URL for immediate mobile optimization.
+ */
+export function optimizeTmdbUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return url.replace('/w500/', '/w342/');
+}
 async function tmdbFetch<T>(endpoint: string, params: Record<string, string> = {}): Promise<T> {
   const url = new URL(`${TMDB_BASE_URL}${endpoint}`);
   url.searchParams.set('api_key', process.env.TMDB_API_KEY!);

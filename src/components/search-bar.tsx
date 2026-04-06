@@ -4,9 +4,10 @@ import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { Search, Loader2, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Image from 'next/image';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { cn } from '@/lib/utils';
+import { tmdbImageLoader } from '@/lib/tmdb';
 import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
 
@@ -127,12 +128,15 @@ export function SearchBar({ onSelect, activeType = 'all' }: SearchBarProps) {
                   onClick={() => handleSelect(result)}
                   className="w-full flex items-center gap-3 p-3 hover:bg-accent transition-colors text-left"
                 >
-                  <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted">
+                  <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted relative">
                     {result.posterUrl ? (
-                      <img
+                      <Image
+                        loader={tmdbImageLoader}
                         src={result.posterUrl}
                         alt={result.title}
-                        className="w-full h-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="40px"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">

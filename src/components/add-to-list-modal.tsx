@@ -32,6 +32,8 @@ import { buildContentUrl } from '@/lib/slug';
 import { PlayCircle, Maximize2 } from 'lucide-react';
 import { WatchProviders } from './ui/watch-providers';
 import { RatingBadges } from './ui/rating-badges';
+import Image from 'next/image';
+import { tmdbImageLoader } from '@/lib/tmdb';
 
 export interface SearchResult {
   id?: string; // Internal AMDB ID (CUID)
@@ -432,7 +434,15 @@ export function AddToListModal({
         <div className="relative w-full min-h-[35vh] sm:min-h-[45vh] shrink-0">
           <div className="absolute inset-0 z-0">
             {displayItem.backdropUrl ? (
-              <img src={displayItem.backdropUrl} className="w-full h-full object-cover" alt="" />
+              <Image
+                loader={tmdbImageLoader}
+                src={displayItem.backdropUrl}
+                alt=""
+                fill
+                priority
+                className="object-cover"
+                sizes="100vw"
+              />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-indigo-950 to-black" />
             )}
@@ -466,11 +476,16 @@ export function AddToListModal({
 
           <div className="absolute bottom-0 left-0 w-full p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-end z-10">
             {displayItem.posterUrl && (
-              <img
-                src={displayItem.posterUrl}
-                className="w-24 sm:w-32 rounded-xl shadow-2xl border border-white/10 hidden sm:block"
-                alt="Poster"
-              />
+              <div className="relative w-24 sm:w-32 aspect-[2/3] rounded-xl shadow-2xl border border-white/10 hidden sm:block overflow-hidden">
+                <Image
+                  loader={tmdbImageLoader}
+                  src={displayItem.posterUrl}
+                  alt="Poster"
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 96px, 128px"
+                />
+              </div>
             )}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -698,11 +713,16 @@ export function AddToListModal({
                 {cast.map((actor: any) => (
                   <div key={actor.id} className="w-24 shrink-0 snap-start flex flex-col">
                     {actor.profile_path ? (
-                      <img
-                        src={actor.profile_path}
-                        className="w-full aspect-[2/3] object-cover rounded-xl border border-white/10 mb-2"
-                        alt={actor.name}
-                      />
+                      <div className="relative w-full aspect-[2/3] rounded-xl border border-white/10 mb-2 overflow-hidden">
+                        <Image
+                          loader={tmdbImageLoader}
+                          src={actor.profile_path}
+                          alt={actor.name}
+                          fill
+                          className="object-cover"
+                          sizes="96px"
+                        />
+                      </div>
                     ) : (
                       <div className="w-full aspect-[2/3] bg-white/5 rounded-xl border border-white/10 mb-2 flex items-center justify-center p-2 text-center text-xs text-white/30">
                         {actor.name}
@@ -760,14 +780,13 @@ export function AddToListModal({
                     >
                       <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 relative">
                         {s.poster_path || s.images?.jpg?.large_image_url ? (
-                          <img
-                            src={
-                              s.poster_path
-                                ? `https://image.tmdb.org/t/p/w500${s.poster_path}`
-                                : s.images.jpg.large_image_url
-                            }
+                          <Image
+                            loader={s.poster_path ? tmdbImageLoader : undefined}
+                            src={s.poster_path || s.images.jpg.large_image_url}
                             alt={simTitle}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            fill
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            sizes="(max-width: 640px) 33vw, 150px"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center text-center p-2 text-xs text-white/50">
