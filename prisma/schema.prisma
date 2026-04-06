@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum ContentType {
+  MOVIE
+  TV_SHOW
+  ANIME
+}
+
+enum WatchStatus {
+  WATCHING
+  PLAN_TO_WATCH
+  COMPLETED
+  DROPPED
+}
+
+// ─── Auth / Users ─────────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String?   @unique
+  name          String?
+  image         String?
+  emailVerified DateTime?
+  googleId      String?   @unique
+
+  accounts Account[]
+  sessions Session[]
+  profiles Profile[]
+
+  createdAt DateTime @default(now())
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Profiles ─────────────────────────────────────────────────────────────────
+
+model Profile {
+  id          String  @id @default(cuid())
+  userId      String
+  name        String
+  avatarColor String  @default("#6366f1")
+  isDefault   Boolean @default(false)
+
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userContent UserContent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// ─── Content ──────────────────────────────────────────────────────────────────
+
+model Content {
+  id            String      @id @default(cuid())
+  contentType   ContentType
+  title         String
+  originalTitle String?
+  year          Int?
+  posterUrl     String?
+  backdropUrl   String?
+  overview      String?     @db.Text
+  tagline       String?
+  genres        Json        @default("[]")
+  runtimeMins   Int?
+  status        String?
+
+  // Extended Details for Cards
+  adult          Boolean? @default(false)
+  revenue        Float?
+  languages      Json     @default("[]")
+  seasons        Int?
+  episodes       Int?
+  networks       Json     @default("[]")
+  episodeRuntime Int?
+  ageCertification String?
+  omdbRatings    Json     @default("[]")
+
+  // External IDs
+  tmdbId  Int?    @unique
+  imdbId  String?
+  malId   Int?    @unique // MyAnimeList ID
+
+  // Denormalized for fast queries
+  tmdbRating     Decimal? @db.Decimal(3, 1)
+  tmdbVoteCount  Int?
+  language       String?
+
+  enrichments ContentEnrichment[]
+  userContent UserContent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([contentType])
+  @@index([tmdbId])
+  @@index([malId])
+}
+
+model ContentEnrichment {
+  id        String   @id @default(cuid())
+  contentId String
+  source    String   // 'omdb' | 'jikan' | 'justwatch' | etc.
+  data      Json
+  fetchedAt DateTime @default(now())
+
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([contentId, source])
+  @@index([contentId])
+}
+
+// ─── User <> Content ──────────────────────────────────────────────────────────
+
+model UserContent {
+  id         String   @id @default(cuid())
+  profileId  String
+  contentId  String
+  userRating Int      // 1-10, mandatory
+  notes      String?  @db.Text
+
+  // Movies only
+  watchedDate DateTime? @db.Date
+
+  // TV shows & anime only
+  watchStatus  WatchStatus?
+  startDate    DateTime?    @db.Date
+  endDate      DateTime?    @db.Date
+  episodeCount Int?
+
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, contentId])
+  @@index([profileId])
+  @@index([contentId])
+}

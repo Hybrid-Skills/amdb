@@ -1,0 +1,152 @@
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import Anthropic from '@anthropic-ai/sdk';
+import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
+import { searchJikan } from '@/lib/jikan';
+
+export const maxDuration = 45;
+
+const anthropic = new Anthropic({
+  apiKey: process.env.ANTHROPIC_API_KEY || '',
+});
+
+export async function POST(req: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return NextResponse.json({ error: 'Anthropic API key is missing' }, { status: 500 });
+  }
+
+  const { profileId, contentType, genres } = await req.json();
+  if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
+
+  try {
+    // Fetch all watched content for this profile — high-rated for taste signal, all for exclusion
+    const allItems = await prisma.userContent.findMany({
+      where: {
+        profileId,
+        content: { contentType: contentType === 'ANY' ? undefined : contentType },
+      },
+      include: { content: { select: { title: true, year: true, contentType: true, genres: true } } },
+      orderBy: { userRating: 'desc' },
+    });
+
+    const highRated = allItems
+      .filter((i) => i.userRating >= 7)
+      .slice(0, 20)
+      .map((i) => `"${i.content.title}" (${i.content.year ?? '?'}) — ${i.userRating}/10`);
+
+    const lowerRated = allItems
+      .filter((i) => i.userRating < 7)
+      .slice(0, 10)
+      .map((i) => `"${i.content.title}" (${i.content.year ?? '?'}) — ${i.userRating}/10`);
+
+    // All titles the user has already seen — Claude must not suggest these
+    const allWatchedTitles = allItems.map((i) => `"${i.content.title}"`).join(', ');
+
+    const typeLabel =
+      contentType === 'ANIME' ? 'anime' : contentType === 'TV_SHOW' ? 'TV show' : contentType === 'MOVIE' ? 'movie' : 'movie or TV show';
+
+    const genreClause =
+      genres && genres.length > 0 ? `The user prefers these genres: ${genres.join(', ')}.` : '';
+
+    const historyClause =
+      highRated.length > 0
+        ? `The user highly rated these titles: ${highRated.join('; ')}.`
+        : 'The user has no rated titles yet — suggest broadly popular critically acclaimed titles.';
+
+    const avoidClause =
+      lowerRated.length > 0
+        ? `The user rated these lower (avoid similar): ${lowerRated.join('; ')}.`
+        : '';
+
+    const exclusionClause =
+      allWatchedTitles.length > 0
+        ? `IMPORTANT: Do NOT suggest any of these already-watched titles: ${allWatchedTitles}.`
+        : '';
+
+    const systemPrompt = `You are an expert ${typeLabel} recommendation engine.
+
+${historyClause}
+${avoidClause}
+${genreClause}
+${exclusionClause}
+
+Suggest exactly 6 ${typeLabel} titles the user has NOT seen. For each, provide:
+- "title": exact title as known internationally
+- "year": release year as a number
+- "reason": one sentence (max 20 words) explaining why this fits the user's taste
+
+Return ONLY a valid JSON array. No markdown, no explanation outside the JSON. Example:
+[{"title":"Parasite","year":2019,"reason":"Dark social thriller with the same tension and twist you loved in similar films."}]`;
+
+    const msg = await anthropic.messages.create({
+      model: 'claude-3-haiku-20240307',
+      max_tokens: 600,
+      temperature: 0.7,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: 'Give me the 6 recommendations as JSON.' }],
+    });
+
+    const contentText = msg.content[0].type === 'text' ? msg.content[0].text.trim() : '';
+    const startIdx = contentText.indexOf('[');
+    const endIdx = contentText.lastIndexOf(']');
+
+    if (startIdx === -1 || endIdx === -1) {
+      throw new Error('Failed to parse recommendations from Claude response');
+    }
+
+    const recs = JSON.parse(contentText.substring(startIdx, endIdx + 1)) as {
+      title: string;
+      year: number;
+      reason: string;
+    }[];
+
+    // Enrich with poster/rating data from TMDB or Jikan
+    const enriched = await Promise.all(
+      recs.map(async (rec) => {
+        try {
+          if (contentType === 'ANIME') {
+            const res = await searchJikan(rec.title);
+            const top = res.results[0];
+            return top ? { ...top, reason: rec.reason } : null;
+          } else {
+            const search =
+              contentType === 'TV_SHOW'
+                ? await tmdb.searchTv(rec.title)
+                : await tmdb.searchMovies(rec.title);
+            const data = search.results[0];
+            if (!data) return null;
+            return {
+              tmdbId: data.id,
+              title: data.title ?? data.name ?? rec.title,
+              year: data.release_date
+                ? new Date(data.release_date).getFullYear()
+                : data.first_air_date
+                  ? new Date(data.first_air_date).getFullYear()
+                  : rec.year,
+              posterUrl: tmdbImageUrl(data.poster_path),
+              tmdbRating: data.vote_average,
+              overview: data.overview,
+              contentType: contentType === 'ANY'
+                ? data.media_type === 'tv' ? 'TV_SHOW' : 'MOVIE'
+                : contentType,
+              reason: rec.reason,
+            };
+          }
+        } catch {
+          return null;
+        }
+      }),
+    );
+
+    return NextResponse.json({ recommendations: enriched.filter(Boolean) });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Failed to generate recommendations';
+    console.error('Recommendation error:', err);
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
