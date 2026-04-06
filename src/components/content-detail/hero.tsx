@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { tmdbImageLoader } from '@/lib/tmdb';
 import Image from 'next/image';
+import TmdbImage from '../ui/tmdb-image';
 import Link from 'next/link';
 import { Home, Clock } from 'lucide-react';
 import type { ContentDetail } from '@/lib/content-detail';
@@ -24,8 +25,7 @@ export function DetailHero({ data }: HeroProps) {
   return (
     <div className="relative w-full h-[45vh] md:h-[65vh]">
       {data.backdropUrl ? (
-        <Image
-          loader={tmdbImageLoader}
+        <TmdbImage
           src={data.backdropUrl}
           alt=""
           fill
@@ -54,8 +54,7 @@ export function DetailHero({ data }: HeroProps) {
       <div className="absolute bottom-0 left-0 right-0 px-5 pt-5 pb-0 md:px-10 md:pt-10 md:pb-2 flex gap-6 items-end z-10">
         {data.posterUrl && (
           <div className="relative w-32 md:w-56 aspect-[2/3] shrink-0 rounded-2xl md:rounded-3xl shadow-2xl border border-white/5 overflow-hidden">
-            <Image
-              loader={tmdbImageLoader}
+            <TmdbImage
               src={data.posterUrl}
               alt={data.title}
               fill

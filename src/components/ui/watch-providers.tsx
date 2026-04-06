@@ -2,8 +2,7 @@ import * as React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { getProviderSearchUrl, uniqueProviders } from '@/lib/utils/watch';
 import { cn } from '@/lib/utils';
-import Image from 'next/image';
-import { tmdbImageLoader } from '@/lib/tmdb';
+import TmdbImage from './tmdb-image';
 
 interface WatchProvidersProps {
   providers: {
@@ -59,8 +58,7 @@ export function WatchProviders({ providers, title, className }: WatchProvidersPr
                   className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 hover:border-primary/50 transition-all hover:scale-110 active:scale-95 shadow-lg group relative shrink-0"
                   title={`Watch on ${p.provider_name}`}
                 >
-                  <Image
-                    loader={tmdbImageLoader}
+                  <TmdbImage
                     src={p.logo_path}
                     alt={p.provider_name}
                     fill
@@ -88,8 +86,7 @@ export function WatchProviders({ providers, title, className }: WatchProvidersPr
                   className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 hover:border-primary/50 transition-all hover:scale-110 active:scale-95 shadow-lg grayscale hover:grayscale-0 opacity-60 hover:opacity-100 group relative shrink-0"
                   title={`Rent/Buy on ${p.provider_name}`}
                 >
-                  <Image
-                    loader={tmdbImageLoader}
+                  <TmdbImage
                     src={p.logo_path}
                     alt={p.provider_name}
                     fill

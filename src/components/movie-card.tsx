@@ -3,12 +3,12 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import Image from 'next/image';
-import { Star, Tv, Film, Clock, Pencil, Trash2 } from 'lucide-react';
+import { Star, Tv, Film, Clock, Pencil, Trash2, ExternalLink, RefreshCw, Plus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { buildContentUrl } from '@/lib/slug';
 import { tmdbImageLoader } from '@/lib/tmdb';
+import TmdbImage from './ui/tmdb-image';
 import type { ContentType } from '@prisma/client';
 
 export interface MovieCardProps {
@@ -109,14 +109,12 @@ export function MovieCard({
         {/* ── Poster Area ── */}
         <div className="relative aspect-[2/3] w-full overflow-hidden">
           {posterUrl ? (
-            <Image
-              loader={tmdbImageLoader}
+            <TmdbImage
               src={posterUrl}
               alt={title}
               fill
-              className="object-cover"
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
-              loading="lazy"
+              className="object-cover transition-transform duration-500 group-hover:scale-110"
+              sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 250px"
             />
           ) : (
             <div className="w-full h-full bg-muted flex items-center justify-center text-muted-foreground text-xs px-2 text-center">

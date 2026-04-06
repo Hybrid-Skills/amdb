@@ -1,6 +1,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import TmdbImage from '../ui/tmdb-image';
 import { PlayCircle } from 'lucide-react';
 import { tmdbImageLoader } from '@/lib/tmdb';
 import { buildContentUrl } from '@/lib/slug';
@@ -38,8 +39,7 @@ export async function SimilarSection({ tmdbId, contentType }: SimilarSectionProp
             <Link key={s.id} href={href} className="group flex flex-col">
               <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 relative mb-1.5">
                 {s.poster_path ? (
-                  <Image
-                    loader={tmdbImageLoader}
+                  <TmdbImage
                     src={s.poster_path}
                     alt={simTitle}
                     fill
