@@ -34,3 +34,15 @@ prisma/migrations/
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Diagnostic Scratch Scripts
+check_*.js
+fix_*.js
+repro_*.js
+search_*.js
+
+# Local Binaries
+*.webp
+*.png
+!public/*.png
+!public/*.webp

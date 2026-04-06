@@ -97,7 +97,7 @@ export function ProfileSelector({
   }
 
   return (
-    <div className="flex items-center gap-2 flex-wrap">
+    <div className="flex items-center gap-2 flex-nowrap overflow-x-auto no-scrollbar py-1">
       {profiles.map((profile) => (
         <div key={profile.id} className="relative group">
           {editingId === profile.id ? (
@@ -132,38 +132,27 @@ export function ProfileSelector({
               onDoubleClick={() => { setEditingId(profile.id); setEditName(profile.name); }}
               title="Click to select · Double-click to rename"
               className={cn(
-                'flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-colors text-sm',
+                'flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-sm shrink-0',
                 activeProfileId === profile.id
-                  ? 'border-primary bg-primary/10 text-foreground'
-                  : 'border-transparent hover:border-border text-muted-foreground hover:text-foreground',
+                  ? 'border-2 border-purple-500 bg-purple-500/10 text-foreground ring-1 ring-purple-500/20'
+                  : 'border-white/10 hover:border-white/20 text-muted-foreground hover:text-foreground',
               )}
             >
               <ProfileAvatar profile={profile} size="sm" />
               <span className="font-medium">{profile.name}</span>
-              {profile._count && (
-                <span className="text-xs text-muted-foreground">{profile._count.userContent}</span>
-              )}
             </motion.button>
           )}
 
-          {/* Edit / Delete controls */}
-          {editingId !== profile.id && (
+          {/* Delete controls */}
+          {editingId !== profile.id && !profile.isDefault && (
             <div className="absolute -top-2 -right-2 hidden group-hover:flex gap-0.5 bg-card border border-border rounded-md p-0.5 shadow z-10">
               <button
-                onClick={() => { setEditingId(profile.id); setEditName(profile.name); }}
-                className="p-1 hover:bg-accent rounded text-muted-foreground hover:text-foreground"
+                onClick={() => setDeletingId(profile.id)}
+                className="p-1 hover:bg-destructive/20 rounded text-muted-foreground hover:text-destructive"
+                title="Delete profile"
               >
-                <Pencil className="w-3 h-3" />
+                <X className="w-3 h-3" />
               </button>
-              {!profile.isDefault && (
-                <button
-                  onClick={() => setDeletingId(profile.id)}
-                  className="p-1 hover:bg-destructive/20 rounded text-muted-foreground hover:text-destructive"
-                  title="Delete profile"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              )}
             </div>
           )}
         </div>
@@ -211,10 +200,10 @@ export function ProfileSelector({
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => setAdding(true)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-dashed border-border text-muted-foreground hover:text-foreground hover:border-primary text-sm transition-colors"
+            className="flex items-center justify-center w-9 h-9 shrink-0 rounded-lg border border-dashed border-white/10 text-muted-foreground hover:text-foreground hover:border-purple-500/50 transition-colors"
+            title="Add Profile"
           >
-            <Plus className="w-4 h-4" />
-            Add profile
+            <Plus className="w-5 h-5" />
           </motion.button>
         )
       )}

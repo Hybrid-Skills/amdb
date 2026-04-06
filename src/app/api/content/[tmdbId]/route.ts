@@ -21,35 +21,8 @@ export async function GET(
 
 
   try {
-    if (type === 'ANIME') {
-      const raw = await getJikanDetails(id);
-      return NextResponse.json({
-        tmdbId: raw.mal_id,
-        title: raw.title_english ?? raw.title ?? '',
-        originalTitle: raw.title,
-        year: raw.year,
-        posterUrl: raw.images?.jpg?.large_image_url ?? null,
-        backdropUrl: null,
-        overview: raw.synopsis,
-        tagline: null,
-        genres: raw.genres?.map(g => ({ id: g.mal_id, name: g.name })) ?? [],
-        runtimeMins: raw.duration,
-        status: raw.status ?? null,
-        imdbId: null,
-        tmdbRating: raw.score ? Number(raw.score.toFixed(1)) : null,
-        tmdbVoteCount: null,
-        language: 'Japanese', // Standard for Jikan
-        contentType: type,
-        director: null,
-        networks: raw.broadcast?.string ? [{ id: 1, name: raw.broadcast.string, logo_path: null }] : [],
-        production_companies: raw.studios ?? [],
-        adult: raw.rating?.includes('Rx') || raw.rating?.includes('R+'),
-        number_of_episodes: raw.episodes,
-        videos: raw.trailer?.youtube_id ? { results: [{ type: 'Trailer', key: raw.trailer.youtube_id, site: 'YouTube' }] } : null,
-      });
-    }
-
-    const raw = type === 'TV_SHOW' ? await tmdb.tvDetails(id) : await tmdb.movieDetails(id);
+    // ANIME and TV_SHOW both use TMDB TV details (search only returns TMDB IDs, not MAL IDs)
+    const raw = (type === 'TV_SHOW' || type === 'ANIME') ? await tmdb.tvDetails(id) : await tmdb.movieDetails(id);
     const crewBase = raw.credits?.crew ?? [];
     const cast = raw.credits?.cast?.slice(0, 10).map(c => ({...c, profile_path: tmdbImageUrl(c.profile_path)})) ?? [];
 
@@ -97,24 +70,48 @@ export async function GET(
       similar: raw.similar,
     };
 
-    let omdbRatings = [];
-    if (content.imdbId && process.env.OMDB_API_KEY) {
+    // ── Enrichments: check DB first, fall back to live OMDB ───────────────
+    let omdbRatings: { Source: string; Value: string }[] = [];
+    let malScore: number | null = null;
+
+    const storedContent = await prisma.content.findFirst({
+      where: { tmdbId: id },
+      include: {
+        enrichments: {
+          where: { source: { in: ['omdb', 'jikan'] } },
+        },
+      },
+    });
+
+    // OMDB — prefer stored enrichment, fall back to live fetch
+    const omdbEnrichment = storedContent?.enrichments?.find(e => e.source === 'omdb');
+    if (omdbEnrichment) {
+      const omdbData = omdbEnrichment.data as Record<string, any>;
+      omdbRatings = omdbData.Ratings ?? [];
+    } else if (content.imdbId && process.env.OMDB_API_KEY) {
       try {
         const omdbRes = await fetch(
           `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${content.imdbId}`,
         );
         if (omdbRes.ok) {
           const omdbData = await omdbRes.json();
-          if (omdbData.Ratings) {
-            omdbRatings = omdbData.Ratings;
-          }
+          if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
         }
       } catch (e) {
         console.error('OMDB fetch error in detail API:', e);
       }
     }
 
-    return NextResponse.json({ ...content, omdbRatings });
+    // Jikan (MAL) — DB only, populated when user first adds an anime
+    if (type === 'ANIME') {
+      const jikanEnrichment = storedContent?.enrichments?.find(e => e.source === 'jikan');
+      if (jikanEnrichment) {
+        const jikanData = jikanEnrichment.data as Record<string, any>;
+        malScore = jikanData?.score ? Number(Number(jikanData.score).toFixed(1)) : null;
+      }
+    }
+
+    return NextResponse.json({ ...content, omdbRatings, malScore });
   } catch (err) {
     console.error('Content detail error:', err);
     return NextResponse.json({ error: 'Failed to fetch content details' }, { status: 500 });

@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
-import { getJikanDetails } from '@/lib/jikan';
+import { getJikanDetails, searchJikan } from '@/lib/jikan';
+import { generateShortId } from '@/lib/id';
 import { z } from 'zod';
 import type { ContentType, Prisma, WatchStatus } from '@prisma/client';
 
@@ -63,9 +64,7 @@ export async function GET(req: Request) {
     }),
     content: {
       ...(contentType && {
-        contentType: contentType === 'TV_SHOW'
-          ? { in: ['TV_SHOW' as const, 'ANIME' as const] }
-          : contentType as ContentType,
+        contentType: contentType as ContentType,
       }),
       // Genre filter: use string_contains on the JSON field (works for name strings)
       ...(genres &&
@@ -146,32 +145,14 @@ export async function POST(req: Request) {
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   let content = await prisma.content.findFirst({
-    where: contentType === 'ANIME' ? { malId: tmdbId } : { tmdbId },
+    where: { tmdbId },
   });
 
   if (!content) {
     try {
-      if (contentType === 'ANIME') {
-        const raw = await getJikanDetails(tmdbId);
-        content = await prisma.content.create({
-          data: {
-            contentType: 'ANIME',
-            title: raw.title_english ?? raw.title ?? '',
-            year: raw.year,
-            posterUrl: raw.images?.jpg?.large_image_url ?? null,
-            overview: raw.synopsis ?? null,
-            genres: raw.genres?.map((g) => ({ id: g.mal_id, name: g.name })) ?? [],
-            status: raw.status ?? null,
-            malId: raw.mal_id,
-            tmdbRating: raw.score ? Number(raw.score.toFixed(1)) : null,
-          },
-        });
-        await prisma.contentEnrichment.create({
-          data: { contentId: content.id, source: 'jikan', data: raw as unknown as Prisma.InputJsonValue },
-        });
-      } else {
+        // ANIME uses TMDB TV endpoint (search only returns TMDB IDs, not MAL IDs)
         const raw =
-          contentType === 'TV_SHOW' ? await tmdb.tvDetails(tmdbId) : await tmdb.movieDetails(tmdbId);
+          (contentType === 'TV_SHOW' || contentType === 'ANIME') ? await tmdb.tvDetails(tmdbId) : await tmdb.movieDetails(tmdbId);
 
         // Parse US age certification
         let ageCertification: string | null = null;
@@ -185,6 +166,7 @@ export async function POST(req: Request) {
 
         content = await prisma.content.create({
           data: {
+            id: generateShortId(),
             contentType: contentType as ContentType,
             title: raw.title ?? raw.name ?? '',
             originalTitle: raw.original_title ?? raw.original_name ?? null,
@@ -201,13 +183,42 @@ export async function POST(req: Request) {
             runtimeMins: raw.runtime ?? null,
             status: raw.status ?? null,
             tmdbId: raw.id,
-            imdbId: raw.imdb_id ?? null,
+            imdbId: (raw as any).imdb_id ?? (raw as any).external_ids?.imdb_id ?? null,
             tmdbRating: raw.vote_average ? Number(raw.vote_average.toFixed(1)) : null,
             tmdbVoteCount: raw.vote_count ?? null,
-            ageCertification,
           },
         });
 
+        // ── Jikan enrichment for ANIME ──────────────────────────────────────
+        if (contentType === 'ANIME') {
+          try {
+            const title = raw.title ?? raw.name ?? '';
+            const jikanSearch = await searchJikan(title);
+            // Pick best match: same title (case-insensitive) or first result
+            const match = jikanSearch.results.find(
+              (r: { title: string; malId: number }) => r.title.toLowerCase() === title.toLowerCase()
+            ) ?? jikanSearch.results[0];
+
+            if (match?.malId) {
+              // Store MAL ID on content record
+              await prisma.content.update({
+                where: { id: content.id },
+                data: { malId: match.malId },
+              });
+              // Fetch full Jikan details and store enrichment
+              const jikanData = await getJikanDetails(match.malId);
+              await prisma.contentEnrichment.upsert({
+                where: { contentId_source: { contentId: content.id, source: 'jikan' } },
+                create: { contentId: content.id, source: 'jikan', data: jikanData as unknown as Prisma.InputJsonValue },
+                update: { data: jikanData as unknown as Prisma.InputJsonValue, fetchedAt: new Date() },
+              });
+            }
+          } catch (e) {
+            console.error('Jikan enrichment error:', e);
+          }
+        }
+
+        // ── OMDB enrichment ─────────────────────────────────────────────────
         const imdbId = (raw as any).imdb_id ?? (raw as any).external_ids?.imdb_id;
         if (imdbId && process.env.OMDB_API_KEY) {
           try {
@@ -226,7 +237,6 @@ export async function POST(req: Request) {
             console.error('OMDB fetch error in POST:', e);
           }
         }
-      }
     } catch (err) {
       console.error('Failed to fetch/create content:', err);
       return NextResponse.json({ error: 'Failed to fetch content details' }, { status: 500 });

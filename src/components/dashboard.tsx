@@ -1,19 +1,19 @@
 'use client';
 
 import * as React from 'react';
-import { signOut } from 'next-auth/react';
-import { LogOut, RefreshCw } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Button } from './ui/button';
-import { ProfileSelector, type Profile } from './profile-selector';
+import { ProfileDropdown } from './profile-dropdown';
+import { type Profile } from './profile-selector';
+import { RefreshCw } from 'lucide-react';
 import { SearchBar } from './search-bar';
 import { AddToListModal, type SearchResult } from './add-to-list-modal';
 import { MovieCard } from './movie-card';
-import { WatchProvidersModal } from './watch-providers-modal';
 import { RecommendationsTab } from './recommendations-tab';
 import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-bar';
 import { AnimatePresence, motion } from 'framer-motion';
 import { List, Sparkles } from 'lucide-react';
+import { EmptyStateIllustration } from './ui/empty-state-illustration';
 
 interface DashboardProps {
   initialProfiles: Profile[];
@@ -57,9 +57,13 @@ interface ListItem {
 
 export function Dashboard({ initialProfiles }: DashboardProps) {
   const [profiles, setProfiles] = React.useState<Profile[]>(initialProfiles);
-  const [activeProfileId, setActiveProfileId] = React.useState<string>(
-    initialProfiles.find((p) => p.isDefault)?.id ?? initialProfiles[0]?.id ?? '',
-  );
+  const [activeProfileId, setActiveProfileId] = React.useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('amdb_last_profile_id');
+      if (saved && initialProfiles.some(p => p.id === saved)) return saved;
+    }
+    return initialProfiles.find((p) => p.isDefault)?.id ?? initialProfiles[0]?.id ?? '';
+  });
   const [selectedItem, setSelectedItem] = React.useState<SearchResult | null>(null);
   const [selectedItemMeta, setSelectedItemMeta] = React.useState<{
     rating?: number;
@@ -75,8 +79,6 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
   const [totalPages, setTotalPages] = React.useState(1);
   const [total, setTotal] = React.useState(0);
   const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
-  const [streamItem, setStreamItem] = React.useState<any | null>(null);
-  const [streamLoading, setStreamLoading] = React.useState(false);
 
   async function fetchProfiles() {
     const res = await fetch('/api/profiles');
@@ -111,35 +113,16 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
     setListLoading(false);
   }
 
-  async function handleStreamClick(item: any) {
-    // If it's already a full search result with providers, just show it
-    if (item.watchProviders) {
-      setStreamItem(item);
-      return;
-    }
 
-    // Otherwise, fetch them
-    setStreamLoading(true);
-    try {
-      const id = item.tmdbId ?? item.malId;
-      const res = await fetch(`/api/watch-providers?id=${id}&type=${item.contentType}`);
-      if (res.ok) {
-        const data = await res.json();
-        setStreamItem({
-          ...item,
-          watchProviders: data.watchProviders,
-        });
-      }
-    } catch (err) {
-      console.error('Watch providers fetch error:', err);
-    } finally {
-      setStreamLoading(false);
-    }
-  }
 
   // Fetch when profile or filters change — reset to page 1
   React.useEffect(() => {
-    if (activeProfileId) fetchList(activeProfileId, 1, filters);
+    if (activeProfileId) {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('amdb_last_profile_id', activeProfileId);
+      }
+      fetchList(activeProfileId, 1, filters);
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProfileId, filters]);
 
@@ -160,82 +143,81 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
     setRefreshing(false);
   }
 
+  async function handleSearchSelect(item: any) {
+    let amdbId = item.id;
+    
+    // If no ID, ensure it exists in our DB first (discovery flow)
+    if (!amdbId) {
+      try {
+        const res = await fetch('/api/content/ensure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tmdbId: item.tmdbId,
+            malId: item.malId,
+            contentType: item.contentType,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          amdbId = data.amdbId;
+        }
+      } catch (e) {
+        console.error('Failed to ensure content on select:', e);
+      }
+    }
+
+    setSelectedItemMeta({});
+    setModalForceEdit(true); 
+    setSelectedItem({
+      ...item,
+      id: amdbId,
+    });
+  }
+
   return (
-    <div className="min-h-screen bg-background pb-16 md:pb-8">
+    <Tabs defaultValue="list" className="min-h-screen bg-background pb-16 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-black/60 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             {/* Logo & Brand */}
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2.5 shrink-0">
               <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 p-0.5 shadow-lg shadow-cyan-500/20">
                 <img src="/logo.png" alt="AMDB" className="w-full h-full object-cover rounded-[6px]" />
               </div>
               <h1 className="text-xl font-black tracking-tighter text-white">AMDB</h1>
             </div>
-            
-            {/* Desktop: Profile + Logout | Mobile: Logout Icon only */}
-            <div className="flex items-center gap-6">
-              <div className="hidden md:block">
-                <ProfileSelector
-                  profiles={profiles}
-                  activeProfileId={activeProfileId}
-                  onSelect={setActiveProfileId}
-                  onProfilesChange={fetchProfiles}
-                />
-              </div>
 
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => signOut()}
-                className="hidden md:flex text-white/40 hover:text-white hover:bg-white/5 font-bold gap-2 shrink-0"
-              >
-                <LogOut className="w-4 h-4" />
-                Logout
-              </Button>
+            {/* Tab Selector — centered in header on desktop only */}
+            <div className="hidden md:flex flex-1 justify-center">
+              <TabsList>
+                <TabsTrigger value="list">My List</TabsTrigger>
+                <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
+              </TabsList>
+            </div>
 
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => signOut()}
-                className="md:hidden text-white/40 hover:text-white hover:bg-white/5 rounded-full"
-              >
-                <LogOut className="w-4 h-4" />
-              </Button>
+            {/* Profile Dropdown */}
+            <div className="flex items-center gap-2 shrink-0">
+              <ProfileDropdown 
+                onProfileSwitch={(p) => setActiveProfileId(p.id)}
+              />
             </div>
           </div>
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 md:pt-6 pb-24 md:pb-8">
-        <div className="flex flex-col gap-5">
-          {/* Profile Selector (Mobile Only, Non-Sticky) */}
-          <div className="md:hidden">
-            <ProfileSelector
-              profiles={profiles}
-              activeProfileId={activeProfileId}
-              onSelect={setActiveProfileId}
-              onProfilesChange={fetchProfiles}
-            />
-          </div>
+        <div className="flex flex-col">
+          {/* Redundant Profile Switcher Removed */}
 
-          <Tabs defaultValue="list" className="w-full">
-            <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-              <div className="hidden md:block">
-                <TabsList>
-                  <TabsTrigger value="list">My List</TabsTrigger>
-                  <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-                </TabsList>
-              </div>
+          {/* Search bar — full width, centered */}
+            <div className="mb-3">
+              <SearchBar onSelect={handleSearchSelect} />
             </div>
 
             <TabsContent value="list">
-              <div className="mb-5">
-                <SearchBar onSelect={setSelectedItem} />
-              </div>
-
-              <div className="mb-6">
+              <div className="mb-3">
                 <ListFilterBar filters={filters} onChange={handleFiltersChange} total={total} />
               </div>
 
@@ -253,16 +235,41 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
                 </div>
               ) : listItems.length === 0 ? (
                 <motion.div
-                  initial={{ opacity: 0, y: 10 }}
+                  initial={{ opacity: 0, y: 16 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="text-center py-24 text-muted-foreground"
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  className="flex flex-col items-center justify-center py-20 text-center select-none"
                 >
-                  <p className="text-lg font-medium mb-1">Nothing here yet</p>
-                  <p className="text-sm">
-                    {total === 0
-                      ? 'Search above to add movies, shows, or anime to your list'
-                      : 'No items match your current filters'}
-                  </p>
+                  <div className="relative mb-6">
+                    <EmptyStateIllustration className="w-36 h-36 md:w-28 md:h-28" />
+                  </div>
+                  {(() => {
+                    const hasActiveFilters =
+                      filters.contentType !== 'ALL' ||
+                      filters.watchStatus.length > 0 ||
+                      filters.genres.length > 0 ||
+                      filters.minRating > 1 ||
+                      filters.maxRating < 10;
+                    return hasActiveFilters ? (
+                      <>
+                        <h3 className="text-lg font-bold text-white mb-1">No matches found</h3>
+                        <p className="text-sm text-white/40 max-w-xs">
+                          Try adjusting or clearing your filters to see more results.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-bold text-white mb-1">Your list is empty</h3>
+                        <p className="text-sm text-white/40 max-w-xs">
+                          Search for a movie, show, or anime above and add it to start building your collection.
+                        </p>
+                        <div className="mt-4 flex items-center gap-2 text-xs text-purple-400/70 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2">
+                          <span>↑</span>
+                          <span>Use the search bar to add your first title</span>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </motion.div>
               ) : (
                 <>
@@ -270,7 +277,7 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
                       {listItems.map((item) => (
                         <MovieCard
                           key={item.id}
-                          id={item.id}
+                          id={item.content.id}
                           title={item.content.title}
                           year={item.content.year}
                           posterUrl={item.content.posterUrl}
@@ -303,6 +310,7 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
                             });
                             setModalForceEdit(true);
                             setSelectedItem({
+                              id: item.content.id,
                               tmdbId: (item.content as any).tmdbId,
                               malId: (item.content as any).malId,
                               title: item.content.title,
@@ -313,13 +321,6 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
                               contentType: item.content.contentType as any,
                             });
                           }}
-                          onStreamClick={() => handleStreamClick({
-                            tmdbId: item.content.tmdbId ?? undefined,
-                            malId: item.content.malId ?? undefined,
-                            title: item.content.title,
-                            year: item.content.year,
-                            contentType: item.content.contentType,
-                          })}
                           onViewDetails={() => {
                             setSelectedItemMeta({
                               rating: item.userRating,
@@ -328,6 +329,7 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
                             });
                             setModalForceEdit(false);
                             setSelectedItem({
+                              id: item.content.id,
                               tmdbId: (item.content as any).tmdbId,
                               malId: (item.content as any).malId,
                               title: item.content.title,
@@ -375,10 +377,7 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
             <TabsContent value="recommendations">
               <RecommendationsTab
                 profileId={activeProfileId}
-                onSelect={(item) => {
-                  setModalForceEdit(false);
-                  setSelectedItem(item);
-                }}
+                onSelect={handleSearchSelect}
               />
             </TabsContent>
 
@@ -402,7 +401,6 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
                 </TabsList>
               </div>
             </div>
-          </Tabs>
         </div>
       </div>
 
@@ -452,19 +450,6 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
           </motion.div>
         )}
       </AnimatePresence>
-      <WatchProvidersModal
-        item={streamItem}
-        onClose={() => setStreamItem(null)}
-      />
-
-      {streamLoading && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm">
-          <div className="bg-zinc-900 border border-zinc-800 p-4 rounded-full shadow-2xl flex items-center gap-3">
-             <RefreshCw className="w-5 h-5 text-primary animate-spin" />
-             <span className="text-xs font-bold text-white/50 uppercase tracking-widest">Finding Streams...</span>
-          </div>
-        </div>
-      )}
-    </div>
+    </Tabs>
   );
 }

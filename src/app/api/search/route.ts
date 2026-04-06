@@ -20,8 +20,39 @@ export async function GET(req: Request) {
 
   try {
     if (type === 'ANIME') {
-      const data = await searchJikan(query, page);
-      return NextResponse.json(data);
+      const [tmdbData, jikanData] = await Promise.all([
+        tmdb.searchTv(query, page),
+        searchJikan(query),
+      ]);
+
+      const tmdbResults = tmdbData.results.map((r) => ({
+        tmdbId: r.id,
+        title: r.name ?? r.title ?? '',
+        year: r.first_air_date ? new Date(r.first_air_date).getFullYear() : null,
+        posterUrl: tmdbImageUrl(r.poster_path),
+        tmdbRating: r.vote_average,
+        overview: r.overview,
+        contentType: 'ANIME' as ContentType,
+      }));
+
+      const tmdbTitles = new Set(tmdbResults.map(r => r.title.toLowerCase()));
+
+      const jikanResults = jikanData.results
+        .filter((r: any) => !tmdbTitles.has((r.title_english || r.title).toLowerCase()))
+        .map((r: any) => ({
+          malId: r.malId,
+          title: r.title_english || r.title,
+          year: r.year,
+          posterUrl: r.images?.jpg?.large_image_url ?? null,
+          tmdbRating: r.score,
+          overview: r.synopsis,
+          contentType: 'ANIME' as ContentType,
+        }));
+
+      return NextResponse.json({
+        results: [...tmdbResults, ...jikanResults],
+        totalPages: Math.min(tmdbData.total_pages, 20),
+      });
     }
 
     if (type === 'MOVIE') {

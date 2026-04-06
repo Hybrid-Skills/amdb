@@ -17,6 +17,7 @@ const CONTENT_TYPES: { value: ContentType | 'ANY'; label: string }[] = [
   { value: 'ANY', label: 'Any' },
   { value: 'MOVIE', label: 'Movie' },
   { value: 'TV_SHOW', label: 'TV Show' },
+  { value: 'ANIME', label: 'Anime' },
 ];
 
 const MOVIE_TV_GENRES = [

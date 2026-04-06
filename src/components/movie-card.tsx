@@ -39,13 +39,12 @@ export interface MovieCardProps {
   onEdit?: () => void;
   onDelete?: () => void;
   onViewDetails?: () => void;
-  onStreamClick?: () => void;
 }
 
 const CONTENT_ICONS: Record<ContentType, React.ReactNode> = {
-  MOVIE: <Film className="w-3 h-3" />,
-  TV_SHOW: <Tv className="w-3 h-3" />,
-  ANIME: <Swords className="w-3 h-3" />,
+  MOVIE: <Film className="w-3 h-3 text-cyan-400" />,
+  TV_SHOW: <Tv className="w-3 h-3 text-blue-400" />,
+  ANIME: <span className="text-[11px] font-black text-purple-400 leading-none select-none" style={{ fontFamily: 'serif' }}>ア</span>,
 };
 
 function ratingBg(r: number): string {
@@ -65,10 +64,9 @@ function parseJson<T>(val: unknown, fallback: T): T {
 }
 
 export function MovieCard({
-  title, year, posterUrl, userRating, tmdbRating,
+  id, title, year, posterUrl, userRating, tmdbRating,
   contentType, watchStatus, notes, adult, ageCertification, languages,
-  episodeRuntime, runtimeMins, tmdbId, malId, onEdit, onDelete, onViewDetails,
-  onStreamClick,
+  episodeRuntime, runtimeMins, tmdbId, malId, onEdit, onDelete, onViewDetails
 }: MovieCardProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
@@ -79,13 +77,8 @@ export function MovieCard({
   const certLabel = ageCertification ?? (adult ? '18+' : null);
 
   const handleCardClick = () => {
-    const pageId = tmdbId ?? malId;
-    if (pageId) {
-      const url = buildContentUrl(contentType, title, pageId);
-      router.push(url);
-    } else {
-      onViewDetails?.();
-    }
+    const url = buildContentUrl(contentType, title, id);
+    router.push(url);
   };
 
   return (
@@ -96,7 +89,7 @@ export function MovieCard({
       className="relative z-0 hover:z-20"
     >
       <div
-        className="relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group"
+        className="relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group flex flex-col"
         onClick={handleCardClick}
       >
         {/* ── Poster Area ── */}
@@ -118,15 +111,19 @@ export function MovieCard({
             </button>
           )}
 
-          {/* Top-Right: Clickable User Rating (Triggers Edit) */}
-          <div className="absolute top-2 right-2 flex items-center gap-2 z-30">
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
-              className={cn(
-                "w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center gap-0.5 shadow-xl transition-all hover:bg-white/10 hover:scale-105 active:scale-95",
-              )}
-              title="Click to edit rating & details"
-            >
+          {/* Top-Right: Clickable Actions */}
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 z-30">
+            {onEdit && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                className="w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg"
+                title="Edit entry"
+              >
+                <Pencil className="w-3.5 h-3.5 text-white/60" />
+              </button>
+            )}
+            
+            <div className="h-8 px-2 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center gap-1.5 shadow-xl transition-all select-none">
               <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
               <span 
                 className={cn(
@@ -138,11 +135,14 @@ export function MovieCard({
               >
                 {userRating}
               </span>
-            </button>
+            </div>
           </div>
 
           {/* Bottom badges */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 flex gap-1 flex-wrap items-end">
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 flex gap-1 flex-wrap items-end overflow-hidden">
+            <Badge variant="secondary" className="h-4 w-4 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-sm border border-white/20 transition-transform active:scale-95 translate-y-[0.5px]" title={contentType.replace('_', ' ')}>
+              {CONTENT_ICONS[contentType]}
+            </Badge>
             {certLabel && (
               <Badge variant="destructive" className="h-4 text-[9px] px-1 font-bold rounded-sm border-0">{certLabel}</Badge>
             )}
@@ -155,34 +155,18 @@ export function MovieCard({
         </div>
 
         {/* ── Info Area ── */}
-        <div className="p-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm leading-tight line-clamp-1">{title}</p>
-              <div className="flex items-center gap-1.5 mt-1 text-xs text-muted-foreground font-medium">
-                {year && <span>{year}</span>}
-                <span className="opacity-60">{CONTENT_ICONS[contentType]}</span>
-              </div>
-            </div>
-
-            {onStreamClick && (
-              <button
-                onClick={(e) => { e.stopPropagation(); onStreamClick(); }}
-                className="flex items-center gap-1.5 px-2.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors shrink-0"
-              >
-                <Tv className="w-3 h-3" />
-                Watch
-              </button>
-            )}
+        <div className="p-3 flex flex-col gap-1.5">
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-sm leading-snug line-clamp-2">
+              {title} {year && <span className="font-normal text-muted-foreground ml-1 shrink-0 whitespace-nowrap">({year})</span>}
+            </p>
           </div>
 
-          <div className="flex items-center justify-between mt-2.5 h-4">
-            {isHovered && notes ? (
-              <p className="text-[10px] text-muted-foreground italic line-clamp-1 opacity-60">
-                "{notes}"
-              </p>
-            ) : <div />}
-          </div>
+          {isHovered && notes && (
+            <p className="text-[10px] text-muted-foreground italic line-clamp-1 opacity-60">
+              "{notes}"
+            </p>
+          )}
         </div>
       </div>
     </motion.div>

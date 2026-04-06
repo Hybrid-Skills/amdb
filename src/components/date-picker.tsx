@@ -8,7 +8,10 @@ import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Calendar } from './ui/calendar';
 
 function formatDate(date: Date): string {
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const day = date.getDate().toString().padStart(2, '0');
+  const month = date.toLocaleDateString('en-GB', { month: 'short' });
+  const year = date.getFullYear().toString().slice(2);
+  return `${day} ${month}'${year}`;
 }
 
 interface DatePickerProps {

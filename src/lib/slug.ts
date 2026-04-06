@@ -21,10 +21,11 @@ export function buildContentUrl(contentType: string, title: string, id: string |
  * IDs are always alphanumeric Prisma CUIDs or numeric TMDB/MAL IDs.
  */
 export function parseSlug(slug: string): { id: string; titleSlug: string } {
-  const lastDash = slug.lastIndexOf('-');
-  if (lastDash === -1) return { id: slug, titleSlug: '' };
+  const cleanSlug = slug.trim().replace(/\/+$/, '');
+  const lastDash = cleanSlug.lastIndexOf('-');
+  if (lastDash === -1) return { id: cleanSlug, titleSlug: '' };
   return {
-    id: slug.slice(lastDash + 1),
-    titleSlug: slug.slice(0, lastDash),
+    id: cleanSlug.slice(lastDash + 1),
+    titleSlug: cleanSlug.slice(0, lastDash),
   };
 }

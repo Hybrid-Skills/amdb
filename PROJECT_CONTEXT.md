@@ -1,6 +1,6 @@
 # AMDB (Advanced Media Database) - Project Status
 
-**Last Updated:** Phase 5 Completion (UI/UX Refinement & Data Enrichment)
+**Last Updated:** Phase 6 Completion (Internal ID Migration & Detail Resiliency)
 
 ## 📌 Project Overview
 AMDB is a premium, high-performance web application to track, rate, and discover Movies, TV Shows, and Anime. It uses a unified multi-API architecture stitching together TMDB, OMDB, and Jikan (MyAnimeList), presenting content in a dense glassmorphic UI with Claude-3 AI-powered recommendations.
@@ -26,11 +26,15 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 - Profile deletion with confirmation
 
 ### 2. Information Architecture (Card & Detail)
-- **MovieCard (Tier 1):** Simplified vertical grid (aspect 2/3). Scale-up hover effect (1.05x).
-- **Overlays:** Hover reveals "Edit" (pencil) and "Delete" (X) icons.
-- **Rating Badge:** High-contrast numeric badge (e.g., "8", "9") on dark backgrounds.
-- **AddToListModal:** sticky CTA bar (conditionally visible in edit mode), "View full page" links, year in title, OMDB ratings integration.
-- **ContentDetailPage (Tier 4):** Comprehensive metadata, OMDB ratings (RT, IMDb, Metacritic), cast carousel, trailers, and financial ROI.
+- **MovieCard (Tier 1):** Dense vertical grid (aspect 2/3).
+  - **Poster Area:** Content Type badge, persistent glassmorphic color-coded Rating badge (click to edit), Delete action.
+  - **Info Area:** Inline Year with Title, Full-width solid Watch button CTA, fast notes preview on hover.
+- **AddToListModal:** sticky CTA bar (conditionally visible in edit mode), "View full page" links.
+- **ContentDetailPage (Tier 4):** 
+  - **Mobile-first Hierarchy:** Re-ordered sections to favor dense metadata first.
+  - **Unified Videos:** Unified horizontal carousel for Trailers and clips, launching an immersive in-page Modal Player.
+  - **Premium Ratings:** Custom CSS-styled brand pseudo-icons for IMDb (yellow), Rotten Tomatoes (🍅), and Metacritic (green).
+  - **Responsive Cast:** Pure CSS limits displaying 16 Cast members horizontally on desktop, collapsing to 9 on mobile without layout shifts.
 
 ### 3. Search & List Building
 - Unified search (TMDB + Jikan)
@@ -53,8 +57,9 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 ## 🏗 Architecture & Agent Context Notes
 
 ### Database & Enrichment
-- **Unified `Content` table** with scalar metadata for fast sorting/filtering.
+- **Unified `Content` table** with scalar metadata for fast sorting/filtering. Primary Key is a custom 8-character alphanumeric ID (`src/lib/id.ts`).
 - **`ContentEnrichment`** stores raw JSON payloads (OMDB, Jikan) to avoid schema bloat.
+- **Resilient Fetching:** `src/lib/content-detail.ts` implements a "Database-First" logic. It prioritizes stored metadata if external APIs (TMDB/MAL) are unavailable, preventing 404s.
 - **POST `/api/list`** now fetches OMDB data for both Movies and TV Shows (if `imdb_id` is available) on first insert.
 
 ### UI Interaction Logic
@@ -76,9 +81,10 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 ---
 
 ## 🔗 URL Structure
-- Format: `/[content-type]/[slug]-[id]` (e.g., `/movie/inception-550`)
-- Utilities in `src/lib/slug.ts`
-- Pages are ISR cached (1-hour revalidation)
+- Format: `/[content-type]/[slug]-[id]` (e.g., `/movie/inception-w474a27s`)
+- Primary ID: Custom 8-character alphanumeric lowercase string.
+- Utilities in `src/lib/slug.ts` and `src/lib/id.ts`.
+- Pages are ISR cached (1-hour revalidation).
 
 ---
 

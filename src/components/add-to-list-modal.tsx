@@ -8,7 +8,7 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from './ui/draw
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
-import { Loader2, X, Users, Clapperboard, Calendar, DollarSign, Activity, Pencil, Check, ExternalLink } from 'lucide-react';
+import { Loader2, X, Users, Clapperboard, Calendar, DollarSign, Activity, Pencil, Check, ExternalLink, Play, Clock } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { RatingPicker } from './rating-picker';
 import { DatePicker } from './date-picker';
@@ -16,9 +16,12 @@ import type { ContentType } from '@prisma/client';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import Link from 'next/link';
 import { buildContentUrl } from '@/lib/slug';
-import { PlayCircle } from 'lucide-react';
+import { PlayCircle, Maximize2 } from 'lucide-react';
+import { WatchProviders } from './ui/watch-providers';
+import { RatingBadges } from './ui/rating-badges';
 
 export interface SearchResult {
+  id?: string; // Internal AMDB ID (CUID)
   tmdbId?: number;
   malId?: number;
   title: string;
@@ -93,6 +96,7 @@ export function AddToListModal({
   initialWatchStatus,
   startInEditMode,
 }: AddToListModalProps) {
+  const router = useRouter();
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const isEditing = !!initialRating; // true = existing list entry being re-opened
 
@@ -104,8 +108,13 @@ export function AddToListModal({
   const [endDate, setEndDate] = React.useState<Date | null>(null);
   const [episodeCount, setEpisodeCount] = React.useState<string>('');
   const [submitting, setSubmitting] = React.useState(false);
+  const [activeRatingLabel, setActiveRatingLabel] = React.useState<string | null>(null);
+  const [activeRatingValue, setActiveRatingValue] = React.useState<number | null>(null);
   const [detailedItem, setDetailedItem] = React.useState<any | null>(null);
   const [loadingDetails, setLoadingDetails] = React.useState(false);
+  const [watchProviders, setWatchProviders] = React.useState<any>(null);
+  const [providersLoading, setProvidersLoading] = React.useState(false);
+  const [checkingExistence, setCheckingExistence] = React.useState(false);
   // For edit mode — whether the compact rating summary is in edit state
   const [editingRating, setEditingRating] = React.useState(startInEditMode || !isEditing);
 
@@ -113,16 +122,55 @@ export function AddToListModal({
   const today = new Date();
 
   React.useEffect(() => {
-    if (!item) { setDetailedItem(null); return; }
+    if (!item) { 
+      setDetailedItem(null); 
+      setWatchProviders(null); 
+      setCheckingExistence(false);
+      return; 
+    }
     const controller = new AbortController();
+    const id = item.tmdbId ?? item.malId;
+    
+    // 1. Fetch Details
     setLoadingDetails(true);
-    fetch(`/api/content/${item.tmdbId ?? item.malId}?type=${item.contentType}`, { signal: controller.signal })
+    fetch(`/api/content/${id}?type=${item.contentType}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => { if (!data.error) setDetailedItem(data); })
       .catch(() => {})
       .finally(() => setLoadingDetails(false));
+
+    // 2. Fetch Providers
+    if (item.tmdbId) {
+      setProvidersLoading(true);
+      fetch(`/api/watch-providers?id=${item.tmdbId}&type=${item.contentType}`, { signal: controller.signal })
+        .then(r => r.json())
+        .then(data => setWatchProviders(data.watchProviders))
+        .catch(() => setWatchProviders(null))
+        .finally(() => setProvidersLoading(false));
+    }
+
+    // 3. Check Existence (if not already known from parent)
+    if (!initialRating) {
+      setCheckingExistence(true);
+      const params = new URLSearchParams({ profileId });
+      if (item.tmdbId) params.set('tmdbId', String(item.tmdbId));
+      if (item.malId) params.set('malId', String(item.malId));
+
+      fetch(`/api/list/check?${params}`, { signal: controller.signal })
+        .then(r => r.json())
+        .then(data => {
+          if (data.exists) {
+            setRating(data.userRating);
+            setNotes(data.notes ?? '');
+            setWatchStatus(data.watchStatus ?? 'COMPLETED');
+            setEditingRating(false);
+          }
+        })
+        .finally(() => setCheckingExistence(false));
+    }
+
     return () => controller.abort();
-  }, [item]);
+  }, [item, profileId, initialRating]);
 
   async function handleSubmit() {
     if (!item || !rating) return;
@@ -172,7 +220,7 @@ export function AddToListModal({
       : (today.getTime() - lastD.getTime()) < 7 * 24 * 60 * 60 * 1000
         ? 'Ongoing'
         : lastD.getFullYear().toString();
-    airedDateRange = `Aired: ${first} – ${lastStr}`;
+    airedDateRange = `${first} – ${lastStr}`;
   }
 
   // ── Compact rating summary shown when editing=false ─────────────────────────
@@ -203,66 +251,107 @@ export function AddToListModal({
     </div>
   );
 
-  // ── Full editable rating form ────────────────────────────────────────────────
   const FullRatingForm = (
     <div className="space-y-5">
-      <div>
-        <p className="text-sm font-medium mb-3 text-white/90">
-          Your rating <span className="text-destructive">*</span>
-        </p>
-        <RatingPicker value={rating} onChange={setRating} />
-      </div>
-
-      {isSerial && (
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-sm font-medium mb-2 text-white/80">Watch status</p>
-            <Select value={watchStatus} onValueChange={setWatchStatus}>
-              <SelectTrigger className="bg-black/50 border-white/10"><SelectValue /></SelectTrigger>
-              <SelectContent className="bg-zinc-950 border-zinc-900 text-white">
-                {WATCH_STATUS_OPTIONS.map((opt) => (
-                  <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+      {/* For movies: rating + date side by side on desktop */}
+      {!isSerial ? (
+        <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-start">
+          <div className="flex-1">
+            <div className="flex items-baseline gap-2 mb-3">
+              <p className="text-sm font-medium text-white/90">Your rating <span className="text-destructive">*</span></p>
+              <motion.span
+                key={activeRatingLabel ?? 'none'}
+                initial={{ opacity: 0, x: -4 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="text-sm font-semibold"
+                style={{ color: activeRatingValue ? ratingColor(activeRatingValue) : 'rgba(255,255,255,0.25)' }}
+              >
+                {activeRatingLabel ?? 'Select a rating'}
+              </motion.span>
+            </div>
+            <div className="mt-3">
+              <RatingPicker value={rating} onChange={setRating} onActiveRating={(r) => {
+                setActiveRatingValue(r);
+                setActiveRatingLabel(r ? ({1:'Unwatchable',2:'Terrible',3:'Bad',4:'Below average',5:'Average',6:'Decent',7:'Good',8:'Great',9:'Excellent',10:'Masterpiece'} as Record<number,string>)[r] : null);
+              }} />
+            </div>
           </div>
-          <div>
-            <p className="text-sm font-medium mb-2 text-white/80">Episodes watched</p>
-            <input
-              type="number"
-              min={0}
-              value={episodeCount}
-              onChange={(e) => setEpisodeCount(e.target.value)}
-              placeholder="e.g. 12"
-              className="flex h-9 w-full rounded-md border border-white/10 bg-black/50 px-3 py-1 text-sm shadow-sm placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-            />
+          <div className="md:w-56 shrink-0">
+            <p className="text-sm font-medium mb-3 text-white/80">Date watched <span className="text-white/40 text-xs">(optional)</span></p>
+            <div className="flex gap-2 mt-3">
+              <DatePicker
+                value={watchedDate}
+                onChange={setWatchedDate}
+                placeholder="Pick"
+                maxDate={today}
+                className="flex-1 bg-black/50 border-white/10 text-white text-xs h-9 md:h-11"
+              />
+              <button
+                type="button"
+                onClick={() => setWatchedDate(new Date())}
+                className="shrink-0 text-xs font-semibold px-3 py-2 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 text-white/60 hover:text-white transition-all h-9 md:h-11"
+              >
+                Today
+              </button>
+            </div>
           </div>
         </div>
+      ) : (
+        /* For serials: rating full width, then watch status + episodes grid */
+        <>
+          <div>
+            <p className="text-sm font-medium mb-3 text-white/90">
+              Your rating <span className="text-destructive">*</span>
+            </p>
+            <RatingPicker value={rating} onChange={setRating} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm font-medium mb-2 text-white/80">Watch status</p>
+              <Select value={watchStatus} onValueChange={setWatchStatus}>
+                <SelectTrigger className="bg-black/50 border-white/10"><SelectValue /></SelectTrigger>
+                <SelectContent className="bg-zinc-950 border-zinc-900 text-white">
+                  {WATCH_STATUS_OPTIONS.map((opt) => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-2 text-white/80">Episodes watched</p>
+              <input
+                type="number"
+                min={0}
+                value={episodeCount}
+                onChange={(e) => setEpisodeCount(e.target.value)}
+                placeholder="e.g. 12"
+                className="flex h-9 w-full rounded-md border border-white/10 bg-black/50 px-3 py-1 text-sm shadow-sm placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+              />
+            </div>
+          </div>
+        </>
       )}
 
-      {!isSerial && (
-        <div>
-          <p className="text-sm font-medium mb-2 text-white/80">Date watched <span className="text-white/40 text-xs">(optional)</span></p>
-          <DatePicker
-            value={watchedDate}
-            onChange={setWatchedDate}
-            placeholder="When did you watch it?"
-            maxDate={today}
-            className="w-full bg-black/50 border-white/10 text-white"
+      <div className="md:flex items-start gap-3">
+        <div className="flex items-baseline gap-1 shrink-0 pt-2.5 md:flex-col md:items-start md:gap-0">
+          <p className="text-sm font-medium text-white/80 leading-tight">Notes</p>
+          <span className="text-white/40 text-xs leading-tight">(optional)</span>
+        </div>
+        <div className="flex-1 flex flex-col rounded-md border border-white/10 bg-black/50 focus-within:ring-1 focus-within:ring-ring overflow-hidden">
+          <textarea
+            value={notes}
+            onChange={(e) => setNotes(e.target.value.slice(0, 200))}
+            placeholder='e.g. "Ending was super confusing"'
+            maxLength={200}
+            rows={2}
+            className="w-full bg-transparent resize-none placeholder:text-white/30 text-white text-sm px-3 pt-2 outline-none"
           />
+          <div className="flex justify-end px-2.5 pb-1.5">
+            <span className={`text-[10px] tabular-nums ${notes.length >= 190 ? 'text-orange-400' : 'text-white/25'}`}>
+              {200 - notes.length}
+            </span>
+          </div>
         </div>
-      )}
-
-      <div>
-        <p className="text-sm font-medium mb-2 text-white/80">Notes <span className="text-white/40 text-xs">(optional)</span></p>
-        <Textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder='e.g. "Ending was super confusing"'
-          maxLength={500}
-          rows={3}
-          className="bg-black/50 border-white/10 resize-none placeholder:text-white/30 text-white"
-        />
       </div>
 
       {isEditing && (
@@ -285,7 +374,7 @@ export function AddToListModal({
       {/* ── Scrollable body ─────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {/* Backdrop hero */}
-        <div className="relative w-full h-[28vh] sm:h-[38vh] shrink-0">
+        <div className="relative w-full min-h-[35vh] sm:min-h-[45vh] shrink-0">
           <div className="absolute inset-0 z-0">
             {displayItem.backdropUrl ? (
               <img src={displayItem.backdropUrl} className="w-full h-full object-cover" alt="" />
@@ -295,16 +384,37 @@ export function AddToListModal({
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent" />
           </div>
 
-          <button onClick={onClose} className="absolute top-4 right-4 z-50 p-2 bg-black/40 hover:bg-black/80 rounded-full backdrop-blur-md transition-all">
-            <X className="w-5 h-5 text-white/80 hover:text-white" />
-          </button>
+          <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+            {(() => {
+              const pid = item.id;
+              if (!pid) return null;
+              const url = buildContentUrl(item.contentType, displayItem.title, pid);
+              return (
+                <Link 
+                  href={url} 
+                  onClick={onClose}
+                  className="p-2 bg-black/40 hover:bg-black/80 rounded-full backdrop-blur-md transition-all text-white/60 hover:text-white shadow-xl border border-white/5"
+                  title="View full page"
+                >
+                  <Maximize2 className="w-5 h-5" />
+                </Link>
+              );
+            })()}
+            <button 
+              onClick={onClose} 
+              className="p-2 bg-black/40 hover:bg-black/80 rounded-full backdrop-blur-md transition-all border border-white/5"
+              title="Close"
+            >
+              <X className="w-5 h-5 text-white/80 hover:text-white" />
+            </button>
+          </div>
 
           <div className="absolute bottom-0 left-0 w-full p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-end z-10">
             {displayItem.posterUrl && (
               <img src={displayItem.posterUrl} className="w-24 sm:w-32 rounded-xl shadow-2xl border border-white/10 hidden sm:block" alt="Poster" />
             )}
             <div className="flex-1">
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
                 {displayItem.adult && <Badge variant="destructive" className="font-bold border-0 h-5">18+</Badge>}
                 {displayItem.networks?.[0] && (
                   <Badge variant="outline" className="bg-white/10 border-white/10 backdrop-blur-md h-5">{displayItem.networks[0].name}</Badge>
@@ -314,31 +424,52 @@ export function AddToListModal({
                 {displayItem.title} {displayItem.year ? <span className="text-white/40 font-light">({displayItem.year})</span> : ''}
               </h2>
               {displayItem.tagline && <p className="text-sm text-white/70 italic mt-1 font-light">"{displayItem.tagline}"</p>}
-              {/* View full page link */}
-              {(() => {
-                const pid = item.tmdbId ?? item.malId;
-                if (!pid) return null;
-                const url = buildContentUrl(item.contentType, displayItem.title, pid);
-                return (
-                  <Link href={url} onClick={onClose}
-                    className="mt-2 inline-flex items-center gap-1.5 text-xs text-white/50 hover:text-white/90 transition-colors"
-                  >
-                    <ExternalLink className="w-3 h-3" /> View full page
-                  </Link>
-                );
-              })()}
 
-              {/* OMDB Ratings Row */}
-              {displayItem.omdbRatings && displayItem.omdbRatings.length > 0 && (
-                <div className="flex items-center gap-4 mt-3 flex-wrap">
-                  {displayItem.omdbRatings.map((r: any) => (
-                    <div key={r.Source} className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10">
-                      {r.Source === 'Rotten Tomatoes' && <span className="text-[10px] font-black text-red-500 leading-none">RT</span>}
-                      {r.Source === 'Internet Movie Database' && <span className="text-[10px] font-black text-yellow-400 leading-none">IMDb</span>}
-                      {r.Source === 'Metacritic' && <span className="text-[10px] font-black text-green-400 leading-none">MC</span>}
-                      <span className="text-xs font-bold text-white/90">{r.Value}</span>
-                    </div>
+              {/* Unified Scrollable Metadata (Consistent with Details Page) */}
+              {((displayItem.genres && displayItem.genres.length > 0) || displayItem.runtimeMins || airedDateRange) && (
+                <div className="flex items-center overflow-x-auto gap-2.5 mt-2 pb-1 no-scrollbar pr-4 select-none">
+                  {airedDateRange && (
+                    <span className="px-2 py-0.5 whitespace-nowrap text-[10px] font-bold text-white/40 bg-white/5 border border-white/5 rounded px-2 shadow-sm">
+                       {airedDateRange}
+                    </span>
+                  )}
+                  {displayItem.runtimeMins && (
+                    <span className="px-2 py-0.5 whitespace-nowrap text-[10px] font-black text-white/60 bg-white/5 border border-white/10 rounded px-2 flex items-center gap-1 shadow-sm">
+                      <Clock className="w-2.5 h-2.5 opacity-60" /> {displayItem.runtimeMins}m
+                    </span>
+                  )}
+                  {displayItem.episode_run_time?.[0] && (
+                    <span className="px-2 py-0.5 whitespace-nowrap text-[10px] font-black text-white/60 bg-white/5 border border-white/10 rounded px-2 flex items-center gap-1 shadow-sm">
+                      <Clock className="w-2.5 h-2.5 opacity-60" /> {displayItem.episode_run_time[0]}m/ep
+                    </span>
+                  )}
+
+                  {displayItem.genres && displayItem.genres.length > 0 && <div className="w-px h-3 bg-white/10 shrink-0 mx-1" />}
+
+                  {displayItem.genres && displayItem.genres.map((g: any) => (
+                    <span key={g.id} className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-white/90 text-[10px] font-black border border-white/5 whitespace-nowrap uppercase tracking-tight shadow-md">
+                      {g.name}
+                    </span>
                   ))}
+                </div>
+              )}
+              <RatingBadges 
+                tmdbRating={displayItem.tmdbRating} 
+                omdbRatings={displayItem.omdbRatings} 
+                malScore={displayItem.malScore}
+                className="mt-2" 
+              />
+
+              {/* Shared WatchProvider Component (Integrated into Hero) */}
+              {(providersLoading || watchProviders) && (
+                <div className="mt-2 pt-2 border-t border-white/10">
+                   {providersLoading ? (
+                     <div className="flex gap-2.5 animate-pulse">
+                       {[1,2,3,4].map(i => <div key={i} className="w-7 h-7 rounded-lg bg-white/10" />)}
+                     </div>
+                   ) : (
+                     <WatchProviders providers={watchProviders} title={displayItem.title} className="gap-x-6 gap-y-3" />
+                   )}
                 </div>
               )}
             </div>
@@ -348,9 +479,14 @@ export function AddToListModal({
         {/* Body content */}
         <div className="p-4 sm:px-6 flex flex-col gap-6">
 
-          {/* ── Compact/Full rating on first fold ── */}
           <div className="pt-1">
-            {editingRating ? FullRatingForm : CompactRatingBar}
+            {checkingExistence ? (
+              <div className="h-16 w-full rounded-2xl bg-white/5 animate-pulse flex items-center justify-center border border-white/10">
+                <Loader2 className="w-5 h-5 text-white/20 animate-spin" />
+              </div>
+            ) : (
+              editingRating ? FullRatingForm : CompactRatingBar
+            )}
           </div>
 
           {/* Metadata grid */}
@@ -453,9 +589,32 @@ export function AddToListModal({
                   const detectedType = s.media_type === 'tv' ? 'TV_SHOW' : (item.contentType === 'ANIME' ? 'ANIME' : 'MOVIE');
                   const displayId = s.id || s.mal_id;
                   const simTitle = s.title || s.name || s.title_english || 'Unknown';
-                  const href = buildContentUrl(detectedType, simTitle, displayId);
+                  
                   return (
-                    <Link href={href} key={displayId} className="block group">
+                    <button
+                      key={displayId}
+                      onClick={async () => {
+                        try {
+                          const res = await fetch('/api/content/ensure', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              tmdbId: s.id,
+                              malId: s.mal_id,
+                              contentType: detectedType,
+                            }),
+                          });
+                          if (res.ok) {
+                            const { amdbId } = await res.json();
+                            router.push(buildContentUrl(detectedType, simTitle, amdbId));
+                            onClose();
+                          }
+                        } catch (e) {
+                          console.error('Similar nav error:', e);
+                        }
+                      }}
+                      className="block group text-left"
+                    >
                       <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 relative">
                         {(s.poster_path || s.images?.jpg?.large_image_url) ? (
                           <img
@@ -471,7 +630,7 @@ export function AddToListModal({
                           <span className="text-xs font-bold leading-tight">{simTitle}</span>
                         </div>
                       </div>
-                    </Link>
+                    </button>
                   );
                 })}
               </div>

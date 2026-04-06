@@ -7,6 +7,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import type { ContentType } from '@prisma/client';
+import { GlassPanel } from './ui/glass-panel';
 
 export type SortBy = 'addedAt' | 'userRating' | 'tmdbRating' | 'title' | 'year';
 
@@ -33,7 +34,8 @@ export const DEFAULT_FILTERS: ListFilters = {
 const CONTENT_TYPE_PILLS: { value: ContentType | 'ALL'; label: string }[] = [
   { value: 'ALL', label: 'All' },
   { value: 'MOVIE', label: 'Movies' },
-  { value: 'TV_SHOW', label: 'TV Shows' },
+  { value: 'TV_SHOW', label: 'TV' },
+  { value: 'ANIME', label: 'Anime' },
 ];
 
 const SORT_OPTIONS: { value: SortBy; label: string }[] = [
@@ -124,38 +126,41 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
   const currentSort = SORT_OPTIONS.find((o) => o.value === filters.sortBy)!;
 
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-3 flex-wrap">
-        {/* Content type pills */}
-        <div className="flex items-center gap-1 bg-muted rounded-lg p-1">
-          {CONTENT_TYPE_PILLS.map(({ value, label }) => (
-            <button
-              key={value}
-              onClick={() => set('contentType', value)}
-              className={cn(
-                'px-3 py-1 rounded-md text-sm font-medium transition-all',
-                filters.contentType === value
-                  ? 'bg-background text-foreground shadow-sm'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
-            >
-              {label}
-            </button>
-          ))}
+    <div className="flex flex-col gap-3 relative z-30">
+      <div className="flex items-center justify-between gap-2">
+        {/* Scrollable Content type pills */}
+        <div className="flex-1 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5 w-max">
+            {CONTENT_TYPE_PILLS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => set('contentType', value)}
+                className={cn(
+                  'px-3 py-1.5 rounded-md text-xs font-bold transition-all whitespace-nowrap',
+                  filters.contentType === value
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 ml-auto">
+        {/* Fixed Sort & Filter buttons */}
+        <div className="flex items-center gap-1.5 shrink-0 ml-2">
           {/* Sort dropdown */}
           <div className="relative" ref={sortRef}>
             <Button
               variant="outline"
               size="sm"
-              className="gap-1.5 text-sm h-8"
+              className="gap-1.5 text-xs h-8 px-2.5 md:px-3 relative z-10"
               onClick={() => { setSortOpen((o) => !o); setFilterOpen(false); }}
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
-              {currentSort.label}
-              <ChevronDown className="w-3 h-3 opacity-50" />
+              <span className="hidden md:inline">{currentSort.label}</span>
+              <ChevronDown className="w-3 h-3 opacity-50 hidden md:inline" />
             </Button>
             <AnimatePresence>
               {sortOpen && (
@@ -164,9 +169,10 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute right-0 top-full mt-1 z-50 bg-popover border border-border rounded-lg shadow-xl overflow-hidden min-w-[170px]"
+                  className="absolute right-0 top-full mt-1 z-[200] min-w-[170px]"
                 >
-                  {SORT_OPTIONS.map((opt) => (
+                  <GlassPanel className="rounded-xl">
+                    {SORT_OPTIONS.map((opt) => (
                     <button
                       key={opt.value}
                       onClick={() => {
@@ -196,6 +202,7 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
                       )}
                     </button>
                   ))}
+                  </GlassPanel>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -206,13 +213,13 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
             <Button
               variant="outline"
               size="sm"
-              className={cn('gap-1.5 text-sm h-8', activeFilterCount > 0 && 'border-primary text-primary')}
+              className={cn('gap-1.5 text-xs h-8 px-2.5 md:px-3 relative z-10', activeFilterCount > 0 && 'border-primary text-primary')}
               onClick={() => { setFilterOpen((o) => !o); setSortOpen(false); }}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              Filters
+              <span className="hidden md:inline">Filters</span>
               {activeFilterCount > 0 && (
-                <span className="ml-0.5 bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">
+                <span className="md:ml-0.5 bg-primary text-primary-foreground rounded-full w-4 h-4 flex items-center justify-center text-[10px] font-bold">
                   {activeFilterCount}
                 </span>
               )}
@@ -225,8 +232,9 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -6 }}
                   transition={{ duration: 0.12 }}
-                  className="absolute right-0 top-full mt-1 z-50 bg-popover border border-border rounded-xl shadow-xl w-72 p-4 flex flex-col gap-4"
+                  className="absolute right-0 top-full mt-1 z-[200] w-72"
                 >
+                  <GlassPanel className="rounded-xl p-4 flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold">Filters</p>
                     {activeFilterCount > 0 && (
@@ -310,6 +318,7 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
                       ))}
                     </div>
                   </div>
+                  </GlassPanel>
                 </motion.div>
               )}
             </AnimatePresence>
