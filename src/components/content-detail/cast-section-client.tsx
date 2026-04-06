@@ -1,7 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, User } from 'lucide-react';
+import Image from 'next/image';
+import { tmdbImageLoader } from '@/lib/tmdb';
 import { Button } from '../ui/button';
 
 interface Actor {
@@ -60,18 +62,22 @@ export function CastSectionClient({ cast }: { cast: Actor[] }) {
               key={`${actor.id}-${i}`}
               className={`flex-col group ${isHiddenOnMobile ? 'hidden md:flex' : 'flex'}`}
             >
-              {actor.profile_path ? (
-                <img
-                  src={actor.profile_path}
-                  alt={actor.name}
-                  className="w-full aspect-[2/3] object-cover rounded-xl border border-white/10 mb-1.5 group-hover:border-primary/50 transition-colors"
-                  loading="lazy"
-                />
-              ) : (
-                <div className="w-full aspect-[2/3] rounded-xl bg-white/5 border border-white/10 mb-1.5 flex items-center justify-center text-white/20 text-xs text-center px-1">
-                  {actor.name}
-                </div>
-              )}
+              <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden border border-white/10 mb-2">
+                {actor.profile_path ? (
+                  <Image
+                    loader={tmdbImageLoader}
+                    src={actor.profile_path}
+                    alt={actor.name}
+                    fill
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    sizes="128px"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-white/5 flex items-center justify-center p-2 text-center text-xs text-white/30">
+                    <User className="w-8 h-8 opacity-20" />
+                  </div>
+                )}
+              </div>
               <p className="text-xs font-semibold leading-tight line-clamp-1">{actor.name}</p>
               <p className="text-[10px] text-white/40 line-clamp-1 leading-tight mt-0.5">
                 {actor.character}

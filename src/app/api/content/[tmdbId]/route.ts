@@ -16,11 +16,23 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
   const id = Number(tmdbId);
 
   try {
-    // ANIME and TV_SHOW both use TMDB TV details (search only returns TMDB IDs, not MAL IDs)
-    const raw =
+    // 1. Parallelize TMDB fetch and internal DB check
+    const tmdbPromise =
       type === 'TV_SHOW' || type === 'ANIME'
-        ? await tmdb.tvDetails(id)
-        : await tmdb.movieDetails(id);
+        ? tmdb.tvDetails(id)
+        : tmdb.movieDetails(id);
+
+    const prismaPromise = prisma.content.findFirst({
+      where: { tmdbId: id },
+      include: {
+        enrichments: {
+          where: { source: { in: ['omdb', 'jikan'] } },
+        },
+      },
+    });
+
+    const [raw, storedContent] = await Promise.all([tmdbPromise, prismaPromise]);
+
     const crewBase = raw.credits?.crew ?? [];
     const cast =
       raw.credits?.cast
@@ -71,18 +83,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
       similar: raw.similar,
     };
 
-    // ── Enrichments: check DB first, fall back to live OMDB ───────────────
+    // ── Enrichments ─────────────────────────────────────
     let omdbRatings: { Source: string; Value: string }[] = [];
     let malScore: number | null = null;
-
-    const storedContent = await prisma.content.findFirst({
-      where: { tmdbId: id },
-      include: {
-        enrichments: {
-          where: { source: { in: ['omdb', 'jikan'] } },
-        },
-      },
-    });
 
     // OMDB — prefer stored enrichment, fall back to live fetch
     const omdbEnrichment = storedContent?.enrichments?.find((e) => e.source === 'omdb');
@@ -103,7 +106,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
       }
     }
 
-    // Jikan (MAL) — DB only, populated when user first adds an anime
+    // Jikan (MAL) — DB only
     if (type === 'ANIME') {
       const jikanEnrichment = storedContent?.enrichments?.find((e) => e.source === 'jikan');
       if (jikanEnrichment) {
@@ -112,7 +115,14 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
       }
     }
 
-    return NextResponse.json({ ...content, omdbRatings, malScore });
+    return NextResponse.json(
+      { ...content, omdbRatings, malScore },
+      {
+        headers: {
+          'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400',
+        },
+      },
+    );
   } catch (err) {
     console.error('Content detail error:', err);
     return NextResponse.json({ error: 'Failed to fetch content details' }, { status: 500 });

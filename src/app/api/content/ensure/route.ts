@@ -72,6 +72,10 @@ export async function POST(req: Request) {
         imdbId: (raw as any).imdb_id ?? (raw as any).external_ids?.imdb_id ?? null,
         tmdbRating: raw.vote_average ? Number(raw.vote_average.toFixed(1)) : null,
         tmdbVoteCount: raw.vote_count ?? null,
+        genreNames:
+          raw.genres && raw.genres.length > 0
+            ? `|${raw.genres.map((g: any) => g.name).join('|')}|`
+            : null,
       };
 
       // Handle age certification
@@ -100,6 +104,10 @@ export async function POST(req: Request) {
         status: raw.status,
         malId: raw.mal_id,
         tmdbRating: raw.score,
+        genreNames:
+          raw.genres && raw.genres.length > 0
+            ? `|${raw.genres.map((g: any) => g.name).join('|')}|`
+            : null,
       };
     }
 

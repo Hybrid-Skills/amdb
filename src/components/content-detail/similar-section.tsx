@@ -1,5 +1,8 @@
 import * as React from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
+import { PlayCircle } from 'lucide-react';
+import { tmdbImageLoader } from '@/lib/tmdb';
 import { buildContentUrl } from '@/lib/slug';
 import { fetchMovieSimilar, fetchTvSimilar } from '@/lib/content-detail';
 
@@ -30,21 +33,28 @@ export async function SimilarSection({ tmdbId, contentType }: SimilarSectionProp
       <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
         {items.map((s: SimilarItem) => {
           const href = buildContentUrl(contentType, s.title, String(s.id));
+          const simTitle = s.title;
           return (
             <Link key={s.id} href={href} className="group flex flex-col">
               <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 relative mb-1.5">
                 {s.poster_path ? (
-                  <img
+                  <Image
+                    loader={tmdbImageLoader}
                     src={s.poster_path}
-                    alt={s.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
+                    alt={simTitle}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                    sizes="(max-width: 768px) 33vw, 150px"
                   />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-center text-[10px] text-white/30 p-2">
-                    {s.title}
+                  <div className="w-full h-full flex items-center justify-center text-center p-2 text-xs text-white/50">
+                    {simTitle}
                   </div>
                 )}
+                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center flex-col p-2 text-center">
+                  <PlayCircle className="w-8 h-8 text-white mb-2" />
+                  <span className="text-xs font-bold leading-tight">{simTitle}</span>
+                </div>
               </div>
               <p className="text-xs font-semibold line-clamp-2 leading-tight group-hover:text-primary transition-colors">
                 {s.title}

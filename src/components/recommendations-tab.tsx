@@ -7,6 +7,8 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
+import Image from 'next/image';
+import { tmdbImageLoader } from '@/lib/tmdb';
 
 interface RecommendationsTabProps {
   profileId: string;
@@ -202,10 +204,13 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
                     {/* Poster */}
                     <div className="relative aspect-[2/3] overflow-hidden">
                       {item.posterUrl ? (
-                        <img
+                        <Image
+                          loader={tmdbImageLoader}
                           src={item.posterUrl}
                           alt={item.title}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          fill
+                          className="object-cover transition-transform duration-500 group-hover:scale-105"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm px-3 text-center">

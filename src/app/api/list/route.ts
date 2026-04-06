@@ -58,23 +58,36 @@ export async function GET(req: Request) {
   // Build where clause
   const where: Prisma.UserContentWhereInput = {
     profileId,
-    userRating: { gte: minRating, lte: maxRating },
+    ...(minRating > 1 || maxRating < 10
+      ? { userRating: { gte: minRating, lte: maxRating } }
+      : {}),
     ...(watchStatus &&
       watchStatus !== '' && {
         watchStatus: { in: watchStatus.split(',') as WatchStatusValue[] },
       }),
-    content: {
-      ...(contentType && {
+    content: (Object.keys({
+      ...(contentType && contentType !== 'ALL' && {
         contentType: contentType as ContentType,
       }),
-      // Genre filter: use string_contains on the JSON field (works for name strings)
       ...(genres &&
         genres !== '' && {
           AND: genres.split(',').map((g) => ({
-            genres: { string_contains: g.trim() },
+            genreNames: { contains: `|${g.trim()}|` },
           })),
-        }),
-    },
+        } as any),
+    }).length > 0
+      ? {
+          ...(contentType && contentType !== 'ALL' && {
+            contentType: contentType as ContentType,
+          }),
+          ...(genres &&
+            genres !== '' && {
+              AND: genres.split(',').map((g) => ({
+                genreNames: { contains: `|${g.trim()}|` },
+              })),
+            } as any),
+        }
+      : undefined) as any,
   };
 
   // Build orderBy

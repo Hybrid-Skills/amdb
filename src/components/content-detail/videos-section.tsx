@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { X } from 'lucide-react';
+import { X, PlayCircle } from 'lucide-react';
+import Image from 'next/image';
 
 interface video {
   key: string;
@@ -57,22 +58,17 @@ export function VideosSection({ videos }: VideosSectionProps) {
             onClick={() => setActiveVideoKey(v.key)}
             className="flex flex-col gap-2 p-3 rounded-xl border border-white/10 hover:bg-white/5 transition-colors group snap-start shrink-0 w-[65vw] md:w-[320px] text-left"
           >
-            <div className="w-full aspect-video rounded-lg overflow-hidden relative border border-white/5">
-              <img
-                src={`https://img.youtube.com/vi/${v.key}/mqdefault.jpg`}
+            <div className="relative aspect-video rounded-xl overflow-hidden border border-white/5 bg-zinc-900 shadow-lg">
+              <Image
+                src={`https://img.youtube.com/vi/${v.key}/maxresdefault.jpg`}
                 alt={v.name}
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                fill
+                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                sizes="(max-width: 768px) 100vw, 350px"
               />
-              <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                <div className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center shadow-lg">
-                  <svg
-                    className="w-4 h-4 text-white ml-0.5"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </div>
+              <div className="absolute inset-0 bg-black/30 group-hover:bg-black/10 transition-colors" />
+              <div className="absolute inset-0 flex items-center justify-center opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all">
+                <PlayCircle className="w-12 h-12 text-white shadow-xl" />
               </div>
             </div>
             <div className="flex-1 flex flex-col justify-between">

@@ -80,27 +80,28 @@ model Content {
   overview         String?
   tagline          String?
   genres           Json                @default("[]")
-  runtimeMins      Int?
-  status           String?
-  tmdbId           Int?                @unique
-  imdbId           String?
-  malId            Int?                @unique
-  tmdbRating       Decimal?            @db.Decimal(3, 1)
-  tmdbVoteCount    Int?
-  language         String?
-  createdAt        DateTime            @default(now())
-  updatedAt        DateTime            @updatedAt
-  adult            Boolean?            @default(false)
-  episodeRuntime   Int?
-  episodes         Int?
-  languages        Json                @default("[]")
-  networks         Json                @default("[]")
-  revenue          Float?
-  seasons          Int?
+  genreNames      String?
+  runtimeMins     Int?
+  status          String?
+  tmdbId          Int?                @unique
+  imdbId          String?
+  malId           Int?                @unique
+  tmdbRating      Decimal?            @db.Decimal(3, 1)
+  tmdbVoteCount   Int?
+  language        String?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  adult           Boolean?            @default(false)
+  episodeRuntime  Int?
+  episodes        Int?
+  languages       Json                @default("[]")
+  networks        Json                @default("[]")
+  revenue         Float?
+  seasons         Int?
   ageCertification String?
-  omdbRatings      Json                @default("[]")
-  enrichments      ContentEnrichment[]
-  userContent      UserContent[]
+  omdbRatings     Json                @default("[]")
+  enrichments     ContentEnrichment[]
+  userContent     UserContent[]
 
   @@index([contentType])
   @@index([tmdbId])
@@ -108,6 +109,7 @@ model Content {
   @@index([tmdbRating(sort: Desc)])
   @@index([title])
   @@index([year(sort: Desc)])
+  @@index([genreNames])
 }
 
 model ContentEnrichment {

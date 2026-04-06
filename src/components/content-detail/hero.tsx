@@ -1,4 +1,6 @@
 import * as React from 'react';
+import { tmdbImageLoader } from '@/lib/tmdb';
+import Image from 'next/image';
 import Link from 'next/link';
 import { Home, Clock } from 'lucide-react';
 import type { ContentDetail } from '@/lib/content-detail';
@@ -22,7 +24,15 @@ export function DetailHero({ data }: HeroProps) {
   return (
     <div className="relative w-full h-[45vh] md:h-[65vh]">
       {data.backdropUrl ? (
-        <img src={data.backdropUrl} alt="" className="w-full h-full object-cover" />
+        <Image
+          loader={tmdbImageLoader}
+          src={data.backdropUrl}
+          alt=""
+          fill
+          priority
+          className="object-cover"
+          sizes="100vw"
+        />
       ) : (
         <div className="w-full h-full bg-gradient-to-br from-zinc-900 to-black" />
       )}
@@ -43,11 +53,17 @@ export function DetailHero({ data }: HeroProps) {
 
       <div className="absolute bottom-0 left-0 right-0 px-5 pt-5 pb-0 md:px-10 md:pt-10 md:pb-2 flex gap-6 items-end z-10">
         {data.posterUrl && (
-          <img
-            src={data.posterUrl}
-            alt={data.title}
-            className="hidden md:block w-40 rounded-2xl shadow-2xl border border-white/10 shrink-0"
-          />
+          <div className="relative w-32 md:w-56 aspect-[2/3] shrink-0 rounded-2xl md:rounded-3xl shadow-2xl border border-white/5 overflow-hidden">
+            <Image
+              loader={tmdbImageLoader}
+              src={data.posterUrl}
+              alt={data.title}
+              fill
+              priority
+              className="object-cover"
+              sizes="(max-width: 768px) 128px, 224px"
+            />
+          </div>
         )}
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap gap-2 mb-1">

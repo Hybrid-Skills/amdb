@@ -2,6 +2,8 @@ import * as React from 'react';
 import { ArrowUpRight } from 'lucide-react';
 import { getProviderSearchUrl, uniqueProviders } from '@/lib/utils/watch';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
+import { tmdbImageLoader } from '@/lib/tmdb';
 
 interface WatchProvidersProps {
   providers: {
@@ -46,7 +48,7 @@ export function WatchProviders({ providers, title, className }: WatchProvidersPr
         {hasFlatrate &&
           uniqueProviders(providers.flatrate)
             .slice(0, 10)
-            .map((p) => {
+            .map((p: any) => {
               const searchUrl = getProviderSearchUrl(p.provider_name, title, providers.link!);
               return (
                 <a
@@ -57,14 +59,13 @@ export function WatchProviders({ providers, title, className }: WatchProvidersPr
                   className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 hover:border-primary/50 transition-all hover:scale-110 active:scale-95 shadow-lg group relative shrink-0"
                   title={`Watch on ${p.provider_name}`}
                 >
-                  <img
-                    src={
-                      p.logo_path.startsWith('http')
-                        ? p.logo_path
-                        : `https://image.tmdb.org/t/p/original${p.logo_path}`
-                    }
+                  <Image
+                    loader={tmdbImageLoader}
+                    src={p.logo_path}
                     alt={p.provider_name}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="32px"
                   />
                   <div className="absolute inset-0 bg-primary/20 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 </a>
@@ -76,7 +77,7 @@ export function WatchProviders({ providers, title, className }: WatchProvidersPr
         {hasRentBuy &&
           uniqueProviders([...(providers.rent || []), ...(providers.buy || [])])
             .slice(0, 8)
-            .map((p) => {
+            .map((p: any) => {
               const searchUrl = getProviderSearchUrl(p.provider_name, title, providers.link!);
               return (
                 <a
@@ -87,14 +88,13 @@ export function WatchProviders({ providers, title, className }: WatchProvidersPr
                   className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 hover:border-primary/50 transition-all hover:scale-110 active:scale-95 shadow-lg grayscale hover:grayscale-0 opacity-60 hover:opacity-100 group relative shrink-0"
                   title={`Rent/Buy on ${p.provider_name}`}
                 >
-                  <img
-                    src={
-                      p.logo_path.startsWith('http')
-                        ? p.logo_path
-                        : `https://image.tmdb.org/t/p/original${p.logo_path}`
-                    }
+                  <Image
+                    loader={tmdbImageLoader}
+                    src={p.logo_path}
                     alt={p.provider_name}
-                    className="w-full h-full object-cover"
+                    fill
+                    className="object-cover"
+                    sizes="32px"
                   />
                   <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
                 </a>

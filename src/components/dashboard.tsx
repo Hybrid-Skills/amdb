@@ -6,6 +6,7 @@ import { Button } from './ui/button';
 import { ProfileDropdown } from './profile-dropdown';
 import { type Profile } from './profile-selector';
 import { RefreshCw } from 'lucide-react';
+import Image from 'next/image';
 import { SearchBar } from './search-bar';
 import { AddToListModal, type SearchResult } from './add-to-list-modal';
 import { MovieCard } from './movie-card';
@@ -182,9 +183,11 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
             {/* Logo & Brand */}
             <div className="flex items-center gap-2.5 shrink-0">
               <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 p-0.5 shadow-lg shadow-cyan-500/20">
-                <img
+                <Image
                   src="/logo.png"
                   alt="AMDB"
+                  width={32}
+                  height={32}
                   className="w-full h-full object-cover rounded-[6px]"
                 />
               </div>
