@@ -22,15 +22,24 @@ interface ProfileSelectorProps {
 }
 
 const AVATAR_COLORS = [
-  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
-  '#f97316', '#eab308', '#22c55e', '#06b6d4',
+  '#6366f1',
+  '#8b5cf6',
+  '#ec4899',
+  '#ef4444',
+  '#f97316',
+  '#eab308',
+  '#22c55e',
+  '#06b6d4',
 ];
 
 function ProfileAvatar({ profile, size = 'md' }: { profile: Profile; size?: 'sm' | 'md' | 'lg' }) {
   const sizes = { sm: 'w-8 h-8 text-xs', md: 'w-10 h-10 text-sm', lg: 'w-16 h-16 text-xl' };
   return (
     <div
-      className={cn('rounded-md flex items-center justify-center font-bold text-white', sizes[size])}
+      className={cn(
+        'rounded-md flex items-center justify-center font-bold text-white',
+        sizes[size],
+      )}
       style={{ backgroundColor: profile.avatarColor }}
     >
       {profile.name[0].toUpperCase()}
@@ -117,10 +126,16 @@ export function ProfileSelector({
                 className="bg-transparent text-sm w-24 outline-none"
                 maxLength={30}
               />
-              <button onClick={() => handleRename(profile.id)} className="text-green-400 hover:text-green-300">
+              <button
+                onClick={() => handleRename(profile.id)}
+                className="text-green-400 hover:text-green-300"
+              >
                 <Check className="w-3.5 h-3.5" />
               </button>
-              <button onClick={() => setEditingId(null)} className="text-muted-foreground hover:text-foreground">
+              <button
+                onClick={() => setEditingId(null)}
+                className="text-muted-foreground hover:text-foreground"
+              >
                 <X className="w-3.5 h-3.5" />
               </button>
             </motion.div>
@@ -129,7 +144,10 @@ export function ProfileSelector({
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => onSelect(profile.id)}
-              onDoubleClick={() => { setEditingId(profile.id); setEditName(profile.name); }}
+              onDoubleClick={() => {
+                setEditingId(profile.id);
+                setEditName(profile.name);
+              }}
               title="Click to select · Double-click to rename"
               className={cn(
                 'flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all text-sm shrink-0',
@@ -159,8 +177,8 @@ export function ProfileSelector({
       ))}
 
       {/* Add profile */}
-      {profiles.length < 5 && (
-        adding ? (
+      {profiles.length < 5 &&
+        (adding ? (
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -171,7 +189,10 @@ export function ProfileSelector({
                 <button
                   key={c}
                   onClick={() => setNewColor(c)}
-                  className={cn('w-4 h-4 rounded-full border-2', newColor === c ? 'border-white' : 'border-transparent')}
+                  className={cn(
+                    'w-4 h-4 rounded-full border-2',
+                    newColor === c ? 'border-white' : 'border-transparent',
+                  )}
                   style={{ backgroundColor: c }}
                 />
               ))}
@@ -188,10 +209,17 @@ export function ProfileSelector({
               className="bg-transparent text-sm w-28 outline-none placeholder:text-muted-foreground"
               maxLength={30}
             />
-            <button onClick={handleAddProfile} disabled={loading || !newName.trim()} className="text-green-400 hover:text-green-300 disabled:opacity-40">
+            <button
+              onClick={handleAddProfile}
+              disabled={loading || !newName.trim()}
+              className="text-green-400 hover:text-green-300 disabled:opacity-40"
+            >
               <Check className="w-4 h-4" />
             </button>
-            <button onClick={() => setAdding(false)} className="text-muted-foreground hover:text-foreground">
+            <button
+              onClick={() => setAdding(false)}
+              className="text-muted-foreground hover:text-foreground"
+            >
               <X className="w-4 h-4" />
             </button>
           </motion.div>
@@ -205,8 +233,7 @@ export function ProfileSelector({
           >
             <Plus className="w-5 h-5" />
           </motion.button>
-        )
-      )}
+        ))}
 
       {/* Delete confirmation */}
       <AnimatePresence>
@@ -229,8 +256,15 @@ export function ProfileSelector({
                 This will permanently delete the profile and all its ratings. This cannot be undone.
               </p>
               <div className="flex gap-2 justify-end">
-                <Button variant="ghost" size="sm" onClick={() => setDeletingId(null)}>Cancel</Button>
-                <Button variant="destructive" size="sm" onClick={() => handleDelete(deletingId)} disabled={loading}>
+                <Button variant="ghost" size="sm" onClick={() => setDeletingId(null)}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => handleDelete(deletingId)}
+                  disabled={loading}
+                >
                   Delete
                 </Button>
               </div>

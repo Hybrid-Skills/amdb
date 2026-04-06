@@ -16,9 +16,8 @@ interface SimilarSectionProps {
 }
 
 export async function SimilarSection({ tmdbId, contentType }: SimilarSectionProps) {
-  const items = contentType === 'MOVIE'
-    ? await fetchMovieSimilar(tmdbId)
-    : await fetchTvSimilar(tmdbId);
+  const items =
+    contentType === 'MOVIE' ? await fetchMovieSimilar(tmdbId) : await fetchTvSimilar(tmdbId);
 
   if (!items?.length) return null;
 
@@ -35,13 +34,26 @@ export async function SimilarSection({ tmdbId, contentType }: SimilarSectionProp
             <Link key={s.id} href={href} className="group flex flex-col">
               <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 relative mb-1.5">
                 {s.poster_path ? (
-                  <img src={s.poster_path} alt={s.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" loading="lazy" />
+                  <img
+                    src={s.poster_path}
+                    alt={s.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-center text-[10px] text-white/30 p-2">{s.title}</div>
+                  <div className="w-full h-full flex items-center justify-center text-center text-[10px] text-white/30 p-2">
+                    {s.title}
+                  </div>
                 )}
               </div>
-              <p className="text-xs font-semibold line-clamp-2 leading-tight group-hover:text-primary transition-colors">{s.title}</p>
-              {s.vote_average > 0 && <p className="text-[10px] text-yellow-400 mt-0.5 font-bold">★ {s.vote_average.toFixed(1)}</p>}
+              <p className="text-xs font-semibold line-clamp-2 leading-tight group-hover:text-primary transition-colors">
+                {s.title}
+              </p>
+              {s.vote_average > 0 && (
+                <p className="text-[10px] text-yellow-400 mt-0.5 font-bold">
+                  ★ {s.vote_average.toFixed(1)}
+                </p>
+              )}
             </Link>
           );
         })}

@@ -8,7 +8,20 @@ import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from './ui/draw
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
-import { Loader2, X, Users, Clapperboard, Calendar, DollarSign, Activity, Pencil, Check, ExternalLink, Play, Clock } from 'lucide-react';
+import {
+  Loader2,
+  X,
+  Users,
+  Clapperboard,
+  Calendar,
+  DollarSign,
+  Activity,
+  Pencil,
+  Check,
+  ExternalLink,
+  Play,
+  Clock,
+} from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { RatingPicker } from './rating-picker';
 import { DatePicker } from './date-picker';
@@ -122,29 +135,33 @@ export function AddToListModal({
   const today = new Date();
 
   React.useEffect(() => {
-    if (!item) { 
-      setDetailedItem(null); 
-      setWatchProviders(null); 
+    if (!item) {
+      setDetailedItem(null);
+      setWatchProviders(null);
       setCheckingExistence(false);
-      return; 
+      return;
     }
     const controller = new AbortController();
     const id = item.tmdbId ?? item.malId;
-    
+
     // 1. Fetch Details
     setLoadingDetails(true);
     fetch(`/api/content/${id}?type=${item.contentType}`, { signal: controller.signal })
       .then((res) => res.json())
-      .then((data) => { if (!data.error) setDetailedItem(data); })
+      .then((data) => {
+        if (!data.error) setDetailedItem(data);
+      })
       .catch(() => {})
       .finally(() => setLoadingDetails(false));
 
     // 2. Fetch Providers
     if (item.tmdbId) {
       setProvidersLoading(true);
-      fetch(`/api/watch-providers?id=${item.tmdbId}&type=${item.contentType}`, { signal: controller.signal })
-        .then(r => r.json())
-        .then(data => setWatchProviders(data.watchProviders))
+      fetch(`/api/watch-providers?id=${item.tmdbId}&type=${item.contentType}`, {
+        signal: controller.signal,
+      })
+        .then((r) => r.json())
+        .then((data) => setWatchProviders(data.watchProviders))
         .catch(() => setWatchProviders(null))
         .finally(() => setProvidersLoading(false));
     }
@@ -157,8 +174,8 @@ export function AddToListModal({
       if (item.malId) params.set('malId', String(item.malId));
 
       fetch(`/api/list/check?${params}`, { signal: controller.signal })
-        .then(r => r.json())
-        .then(data => {
+        .then((r) => r.json())
+        .then((data) => {
           if (data.exists) {
             setRating(data.userRating);
             setNotes(data.notes ?? '');
@@ -207,7 +224,9 @@ export function AddToListModal({
   if (!item) return null;
   const displayItem = detailedItem ?? item;
 
-  const trailer = displayItem.videos?.results?.find((v: any) => v.type === 'Trailer' && v.site === 'YouTube');
+  const trailer = displayItem.videos?.results?.find(
+    (v: any) => v.type === 'Trailer' && v.site === 'YouTube',
+  );
   const similarItems = displayItem.similar?.results?.slice(0, 8) ?? [];
   const cast = displayItem.cast ?? [];
 
@@ -217,7 +236,7 @@ export function AddToListModal({
     const lastD = displayItem.last_air_date ? new Date(displayItem.last_air_date) : null;
     const lastStr = !lastD
       ? 'Ongoing'
-      : (today.getTime() - lastD.getTime()) < 7 * 24 * 60 * 60 * 1000
+      : today.getTime() - lastD.getTime() < 7 * 24 * 60 * 60 * 1000
         ? 'Ongoing'
         : lastD.getFullYear().toString();
     airedDateRange = `${first} – ${lastStr}`;
@@ -233,7 +252,9 @@ export function AddToListModal({
         {rating ?? '?'}
       </div>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-white">{rating ? `Rated ${rating}/10` : 'Not rated yet'}</p>
+        <p className="text-sm font-semibold text-white">
+          {rating ? `Rated ${rating}/10` : 'Not rated yet'}
+        </p>
         {notes ? (
           <p className="text-xs text-white/50 truncate italic">"{notes}"</p>
         ) : (
@@ -258,26 +279,55 @@ export function AddToListModal({
         <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-start">
           <div className="flex-1">
             <div className="flex items-baseline gap-2 mb-3">
-              <p className="text-sm font-medium text-white/90">Your rating <span className="text-destructive">*</span></p>
+              <p className="text-sm font-medium text-white/90">
+                Your rating <span className="text-destructive">*</span>
+              </p>
               <motion.span
                 key={activeRatingLabel ?? 'none'}
                 initial={{ opacity: 0, x: -4 }}
                 animate={{ opacity: 1, x: 0 }}
                 className="text-sm font-semibold"
-                style={{ color: activeRatingValue ? ratingColor(activeRatingValue) : 'rgba(255,255,255,0.25)' }}
+                style={{
+                  color: activeRatingValue
+                    ? ratingColor(activeRatingValue)
+                    : 'rgba(255,255,255,0.25)',
+                }}
               >
                 {activeRatingLabel ?? 'Select a rating'}
               </motion.span>
             </div>
             <div className="mt-3">
-              <RatingPicker value={rating} onChange={setRating} onActiveRating={(r) => {
-                setActiveRatingValue(r);
-                setActiveRatingLabel(r ? ({1:'Unwatchable',2:'Terrible',3:'Bad',4:'Below average',5:'Average',6:'Decent',7:'Good',8:'Great',9:'Excellent',10:'Masterpiece'} as Record<number,string>)[r] : null);
-              }} />
+              <RatingPicker
+                value={rating}
+                onChange={setRating}
+                onActiveRating={(r) => {
+                  setActiveRatingValue(r);
+                  setActiveRatingLabel(
+                    r
+                      ? (
+                          {
+                            1: 'Unwatchable',
+                            2: 'Terrible',
+                            3: 'Bad',
+                            4: 'Below average',
+                            5: 'Average',
+                            6: 'Decent',
+                            7: 'Good',
+                            8: 'Great',
+                            9: 'Excellent',
+                            10: 'Masterpiece',
+                          } as Record<number, string>
+                        )[r]
+                      : null,
+                  );
+                }}
+              />
             </div>
           </div>
           <div className="md:w-56 shrink-0">
-            <p className="text-sm font-medium mb-3 text-white/80">Date watched <span className="text-white/40 text-xs">(optional)</span></p>
+            <p className="text-sm font-medium mb-3 text-white/80">
+              Date watched <span className="text-white/40 text-xs">(optional)</span>
+            </p>
             <div className="flex gap-2 mt-3">
               <DatePicker
                 value={watchedDate}
@@ -309,10 +359,14 @@ export function AddToListModal({
             <div>
               <p className="text-sm font-medium mb-2 text-white/80">Watch status</p>
               <Select value={watchStatus} onValueChange={setWatchStatus}>
-                <SelectTrigger className="bg-black/50 border-white/10"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="bg-black/50 border-white/10">
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent className="bg-zinc-950 border-zinc-900 text-white">
                   {WATCH_STATUS_OPTIONS.map((opt) => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    <SelectItem key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -325,7 +379,7 @@ export function AddToListModal({
                 value={episodeCount}
                 onChange={(e) => setEpisodeCount(e.target.value)}
                 placeholder="e.g. 12"
-                className="flex h-9 w-full rounded-md border border-white/10 bg-black/50 px-3 py-1 text-sm shadow-sm placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
+                className="flex h-9 w-full rounded-md border border-white/10 bg-black/50 px-3 py-1 text-base md:text-sm shadow-sm placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
               />
             </div>
           </div>
@@ -344,10 +398,12 @@ export function AddToListModal({
             placeholder='e.g. "Ending was super confusing"'
             maxLength={200}
             rows={2}
-            className="w-full bg-transparent resize-none placeholder:text-white/30 text-white text-sm px-3 pt-2 outline-none"
+            className="w-full bg-transparent resize-none placeholder:text-white/30 text-white text-base md:text-sm px-3 pt-2 outline-none"
           />
           <div className="flex justify-end px-2.5 pb-1.5">
-            <span className={`text-[10px] tabular-nums ${notes.length >= 190 ? 'text-orange-400' : 'text-white/25'}`}>
+            <span
+              className={`text-[10px] tabular-nums ${notes.length >= 190 ? 'text-orange-400' : 'text-white/25'}`}
+            >
               {200 - notes.length}
             </span>
           </div>
@@ -370,7 +426,6 @@ export function AddToListModal({
   const InnerContent = (
     // outer: flex col, fill height, no overflow — children handle scroll
     <div className="relative flex flex-col h-full bg-black text-white overflow-hidden">
-
       {/* ── Scrollable body ─────────────────────────────── */}
       <div className="flex-1 overflow-y-auto">
         {/* Backdrop hero */}
@@ -390,8 +445,8 @@ export function AddToListModal({
               if (!pid) return null;
               const url = buildContentUrl(item.contentType, displayItem.title, pid);
               return (
-                <Link 
-                  href={url} 
+                <Link
+                  href={url}
                   onClick={onClose}
                   className="p-2 bg-black/40 hover:bg-black/80 rounded-full backdrop-blur-md transition-all text-white/60 hover:text-white shadow-xl border border-white/5"
                   title="View full page"
@@ -400,8 +455,8 @@ export function AddToListModal({
                 </Link>
               );
             })()}
-            <button 
-              onClick={onClose} 
+            <button
+              onClick={onClose}
               className="p-2 bg-black/40 hover:bg-black/80 rounded-full backdrop-blur-md transition-all border border-white/5"
               title="Close"
             >
@@ -411,26 +466,50 @@ export function AddToListModal({
 
           <div className="absolute bottom-0 left-0 w-full p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:items-end z-10">
             {displayItem.posterUrl && (
-              <img src={displayItem.posterUrl} className="w-24 sm:w-32 rounded-xl shadow-2xl border border-white/10 hidden sm:block" alt="Poster" />
+              <img
+                src={displayItem.posterUrl}
+                className="w-24 sm:w-32 rounded-xl shadow-2xl border border-white/10 hidden sm:block"
+                alt="Poster"
+              />
             )}
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-1 flex-wrap">
-                {displayItem.adult && <Badge variant="destructive" className="font-bold border-0 h-5">18+</Badge>}
+                {displayItem.adult && (
+                  <Badge variant="destructive" className="font-bold border-0 h-5">
+                    18+
+                  </Badge>
+                )}
                 {displayItem.networks?.[0] && (
-                  <Badge variant="outline" className="bg-white/10 border-white/10 backdrop-blur-md h-5">{displayItem.networks[0].name}</Badge>
+                  <Badge
+                    variant="outline"
+                    className="bg-white/10 border-white/10 backdrop-blur-md h-5"
+                  >
+                    {displayItem.networks[0].name}
+                  </Badge>
                 )}
               </div>
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight drop-shadow-xl">
-                {displayItem.title} {displayItem.year ? <span className="text-white/40 font-light">({displayItem.year})</span> : ''}
+                {displayItem.title}{' '}
+                {displayItem.year ? (
+                  <span className="text-white/40 font-light">({displayItem.year})</span>
+                ) : (
+                  ''
+                )}
               </h2>
-              {displayItem.tagline && <p className="text-sm text-white/70 italic mt-1 font-light">"{displayItem.tagline}"</p>}
+              {displayItem.tagline && (
+                <p className="text-sm text-white/70 italic mt-1 font-light">
+                  "{displayItem.tagline}"
+                </p>
+              )}
 
               {/* Unified Scrollable Metadata (Consistent with Details Page) */}
-              {((displayItem.genres && displayItem.genres.length > 0) || displayItem.runtimeMins || airedDateRange) && (
+              {((displayItem.genres && displayItem.genres.length > 0) ||
+                displayItem.runtimeMins ||
+                airedDateRange) && (
                 <div className="flex items-center overflow-x-auto gap-2.5 mt-2 pb-1 no-scrollbar pr-4 select-none">
                   {airedDateRange && (
                     <span className="px-2 py-0.5 whitespace-nowrap text-[10px] font-bold text-white/40 bg-white/5 border border-white/5 rounded px-2 shadow-sm">
-                       {airedDateRange}
+                      {airedDateRange}
                     </span>
                   )}
                   {displayItem.runtimeMins && (
@@ -440,36 +519,49 @@ export function AddToListModal({
                   )}
                   {displayItem.episode_run_time?.[0] && (
                     <span className="px-2 py-0.5 whitespace-nowrap text-[10px] font-black text-white/60 bg-white/5 border border-white/10 rounded px-2 flex items-center gap-1 shadow-sm">
-                      <Clock className="w-2.5 h-2.5 opacity-60" /> {displayItem.episode_run_time[0]}m/ep
+                      <Clock className="w-2.5 h-2.5 opacity-60" /> {displayItem.episode_run_time[0]}
+                      m/ep
                     </span>
                   )}
 
-                  {displayItem.genres && displayItem.genres.length > 0 && <div className="w-px h-3 bg-white/10 shrink-0 mx-1" />}
+                  {displayItem.genres && displayItem.genres.length > 0 && (
+                    <div className="w-px h-3 bg-white/10 shrink-0 mx-1" />
+                  )}
 
-                  {displayItem.genres && displayItem.genres.map((g: any) => (
-                    <span key={g.id} className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-white/90 text-[10px] font-black border border-white/5 whitespace-nowrap uppercase tracking-tight shadow-md">
-                      {g.name}
-                    </span>
-                  ))}
+                  {displayItem.genres &&
+                    displayItem.genres.map((g: any) => (
+                      <span
+                        key={g.id}
+                        className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-white/90 text-[10px] font-black border border-white/5 whitespace-nowrap uppercase tracking-tight shadow-md"
+                      >
+                        {g.name}
+                      </span>
+                    ))}
                 </div>
               )}
-              <RatingBadges 
-                tmdbRating={displayItem.tmdbRating} 
-                omdbRatings={displayItem.omdbRatings} 
+              <RatingBadges
+                tmdbRating={displayItem.tmdbRating}
+                omdbRatings={displayItem.omdbRatings}
                 malScore={displayItem.malScore}
-                className="mt-2" 
+                className="mt-2"
               />
 
               {/* Shared WatchProvider Component (Integrated into Hero) */}
               {(providersLoading || watchProviders) && (
                 <div className="mt-2 pt-2 border-t border-white/10">
-                   {providersLoading ? (
-                     <div className="flex gap-2.5 animate-pulse">
-                       {[1,2,3,4].map(i => <div key={i} className="w-7 h-7 rounded-lg bg-white/10" />)}
-                     </div>
-                   ) : (
-                     <WatchProviders providers={watchProviders} title={displayItem.title} className="gap-x-6 gap-y-3" />
-                   )}
+                  {providersLoading ? (
+                    <div className="flex gap-2.5 animate-pulse">
+                      {[1, 2, 3, 4].map((i) => (
+                        <div key={i} className="w-7 h-7 rounded-lg bg-white/10" />
+                      ))}
+                    </div>
+                  ) : (
+                    <WatchProviders
+                      providers={watchProviders}
+                      title={displayItem.title}
+                      className="gap-x-6 gap-y-3"
+                    />
+                  )}
                 </div>
               )}
             </div>
@@ -478,14 +570,15 @@ export function AddToListModal({
 
         {/* Body content */}
         <div className="p-4 sm:px-6 flex flex-col gap-6">
-
           <div className="pt-1">
             {checkingExistence ? (
               <div className="h-16 w-full rounded-2xl bg-white/5 animate-pulse flex items-center justify-center border border-white/10">
                 <Loader2 className="w-5 h-5 text-white/20 animate-spin" />
               </div>
+            ) : editingRating ? (
+              FullRatingForm
             ) : (
-              editingRating ? FullRatingForm : CompactRatingBar
+              CompactRatingBar
             )}
           </div>
 
@@ -493,61 +586,96 @@ export function AddToListModal({
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-sm p-3 bg-white/5 rounded-2xl border border-white/10">
             {displayItem.popularity && (
               <div className="flex flex-col">
-                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><Activity className="w-3 h-3" /> Popularity</span>
-                <span className="font-medium text-white/90">{Number(displayItem.popularity).toFixed(0)}</span>
+                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
+                  <Activity className="w-3 h-3" /> Popularity
+                </span>
+                <span className="font-medium text-white/90">
+                  {Number(displayItem.popularity).toFixed(0)}
+                </span>
               </div>
             )}
             {(displayItem.budget || displayItem.revenue) && (
               <div className="flex flex-col">
-                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><DollarSign className="w-3 h-3" /> Box Office</span>
-                <span className="font-medium text-white/90">{formatCurrency(displayItem.revenue || displayItem.budget)}</span>
+                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
+                  <DollarSign className="w-3 h-3" /> Box Office
+                </span>
+                <span className="font-medium text-white/90">
+                  {formatCurrency(displayItem.revenue || displayItem.budget)}
+                </span>
               </div>
             )}
             {airedDateRange && (
               <div className="flex flex-col">
-                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><Calendar className="w-3 h-3" /> Timeline</span>
+                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
+                  <Calendar className="w-3 h-3" /> Timeline
+                </span>
                 <span className="font-medium text-white/90">{airedDateRange}</span>
               </div>
             )}
             {(displayItem.number_of_seasons || displayItem.number_of_episodes) && (
               <div className="flex flex-col">
-                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1"><Clapperboard className="w-3 h-3" /> Layout</span>
+                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1 flex items-center gap-1">
+                  <Clapperboard className="w-3 h-3" /> Layout
+                </span>
                 <span className="font-medium text-white/90">
-                  {displayItem.number_of_seasons ? displayItem.number_of_seasons + ' Seasons · ' : ''}{displayItem.number_of_episodes} Episodes
+                  {displayItem.number_of_seasons
+                    ? displayItem.number_of_seasons + ' Seasons · '
+                    : ''}
+                  {displayItem.number_of_episodes} Episodes
                 </span>
               </div>
             )}
             {displayItem.production_companies?.length > 0 && (
               <div className="flex flex-col lg:col-span-2">
-                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1">Production</span>
-                <span className="font-medium text-white/90 truncate">{displayItem.production_companies.map((p: any) => p.name).join(', ')}</span>
+                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1">
+                  Production
+                </span>
+                <span className="font-medium text-white/90 truncate">
+                  {displayItem.production_companies.map((p: any) => p.name).join(', ')}
+                </span>
               </div>
             )}
             {displayItem.spoken_languages?.length > 0 && (
               <div className="flex flex-col lg:col-span-2">
-                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1">Languages</span>
-                <span className="font-medium text-white/90">{displayItem.spoken_languages.map((l: any) => l.english_name).join(', ')}</span>
+                <span className="text-white/50 text-xs uppercase font-bold tracking-wider mb-1">
+                  Languages
+                </span>
+                <span className="font-medium text-white/90">
+                  {displayItem.spoken_languages.map((l: any) => l.english_name).join(', ')}
+                </span>
               </div>
             )}
           </div>
 
           {/* Overview */}
-          <p className="text-sm md:text-base text-white/80 leading-relaxed font-light">{displayItem.overview}</p>
+          <p className="text-sm md:text-base text-white/80 leading-relaxed font-light">
+            {displayItem.overview}
+          </p>
 
           {/* Crew */}
-          {displayItem.crew && (displayItem.crew.director || displayItem.crew.writer || displayItem.crew.producer) && (
-            <div className="flex flex-wrap gap-x-8 gap-y-4">
-              {displayItem.crew.director && (
-                <div><p className="text-white font-bold">{displayItem.crew.director}</p><p className="text-xs text-white/50">Director</p></div>
-              )}
-              {displayItem.crew.writer && (
-                <div><p className="text-white font-bold">{displayItem.crew.writer}</p><p className="text-xs text-white/50">Writer</p></div>
-              )}
-              {displayItem.crew.producer && (
-                <div><p className="text-white font-bold">{displayItem.crew.producer}</p><p className="text-xs text-white/50">Producer</p></div>
-              )}
-            </div>
-          )}
+          {displayItem.crew &&
+            (displayItem.crew.director || displayItem.crew.writer || displayItem.crew.producer) && (
+              <div className="flex flex-wrap gap-x-8 gap-y-4">
+                {displayItem.crew.director && (
+                  <div>
+                    <p className="text-white font-bold">{displayItem.crew.director}</p>
+                    <p className="text-xs text-white/50">Director</p>
+                  </div>
+                )}
+                {displayItem.crew.writer && (
+                  <div>
+                    <p className="text-white font-bold">{displayItem.crew.writer}</p>
+                    <p className="text-xs text-white/50">Writer</p>
+                  </div>
+                )}
+                {displayItem.crew.producer && (
+                  <div>
+                    <p className="text-white font-bold">{displayItem.crew.producer}</p>
+                    <p className="text-xs text-white/50">Producer</p>
+                  </div>
+                )}
+              </div>
+            )}
 
           {/* Trailer */}
           {trailer && (
@@ -563,17 +691,27 @@ export function AddToListModal({
           {/* Cast */}
           {cast.length > 0 && (
             <div className="space-y-3">
-              <h3 className="text-lg font-bold flex items-center gap-2"><Users className="w-5 h-5 text-primary" /> Top Cast</h3>
+              <h3 className="text-lg font-bold flex items-center gap-2">
+                <Users className="w-5 h-5 text-primary" /> Top Cast
+              </h3>
               <div className="flex gap-4 overflow-x-auto pb-4 snap-x pr-4">
                 {cast.map((actor: any) => (
                   <div key={actor.id} className="w-24 shrink-0 snap-start flex flex-col">
                     {actor.profile_path ? (
-                      <img src={actor.profile_path} className="w-full aspect-[2/3] object-cover rounded-xl border border-white/10 mb-2" alt={actor.name} />
+                      <img
+                        src={actor.profile_path}
+                        className="w-full aspect-[2/3] object-cover rounded-xl border border-white/10 mb-2"
+                        alt={actor.name}
+                      />
                     ) : (
-                      <div className="w-full aspect-[2/3] bg-white/5 rounded-xl border border-white/10 mb-2 flex items-center justify-center p-2 text-center text-xs text-white/30">{actor.name}</div>
+                      <div className="w-full aspect-[2/3] bg-white/5 rounded-xl border border-white/10 mb-2 flex items-center justify-center p-2 text-center text-xs text-white/30">
+                        {actor.name}
+                      </div>
                     )}
                     <p className="text-xs font-bold leading-tight truncate">{actor.name}</p>
-                    <p className="text-[10px] text-white/50 line-clamp-2 leading-tight mt-0.5">{actor.character}</p>
+                    <p className="text-[10px] text-white/50 line-clamp-2 leading-tight mt-0.5">
+                      {actor.character}
+                    </p>
                   </div>
                 ))}
               </div>
@@ -586,10 +724,15 @@ export function AddToListModal({
               <h3 className="text-xl font-bold">Similar Titles</h3>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-3">
                 {similarItems.map((s: any) => {
-                  const detectedType = s.media_type === 'tv' ? 'TV_SHOW' : (item.contentType === 'ANIME' ? 'ANIME' : 'MOVIE');
+                  const detectedType =
+                    s.media_type === 'tv'
+                      ? 'TV_SHOW'
+                      : item.contentType === 'ANIME'
+                        ? 'ANIME'
+                        : 'MOVIE';
                   const displayId = s.id || s.mal_id;
                   const simTitle = s.title || s.name || s.title_english || 'Unknown';
-                  
+
                   return (
                     <button
                       key={displayId}
@@ -616,14 +759,20 @@ export function AddToListModal({
                       className="block group text-left"
                     >
                       <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 relative">
-                        {(s.poster_path || s.images?.jpg?.large_image_url) ? (
+                        {s.poster_path || s.images?.jpg?.large_image_url ? (
                           <img
-                            src={s.poster_path ? `https://image.tmdb.org/t/p/w500${s.poster_path}` : s.images.jpg.large_image_url}
+                            src={
+                              s.poster_path
+                                ? `https://image.tmdb.org/t/p/w500${s.poster_path}`
+                                : s.images.jpg.large_image_url
+                            }
                             alt={simTitle}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-center p-2 text-xs text-white/50">{simTitle}</div>
+                          <div className="w-full h-full flex items-center justify-center text-center p-2 text-xs text-white/50">
+                            {simTitle}
+                          </div>
                         )}
                         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center flex-col p-2 text-center">
                           <PlayCircle className="w-8 h-8 text-white mb-2" />
@@ -642,7 +791,12 @@ export function AddToListModal({
       {/* ── Sticky CTA bar ─────────────────────────────── */}
       {editingRating && (
         <div className="shrink-0 border-t border-white/10 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center gap-3 justify-end">
-          <Button variant="ghost" onClick={onClose} disabled={submitting} className="hover:bg-white/10 hover:text-white">
+          <Button
+            variant="ghost"
+            onClick={onClose}
+            disabled={submitting}
+            className="hover:bg-white/10 hover:text-white"
+          >
             Cancel
           </Button>
           <Button
@@ -650,10 +804,13 @@ export function AddToListModal({
             disabled={!rating || submitting}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold min-w-[120px]"
           >
-            {submitting
-              ? <Loader2 className="w-4 h-4 animate-spin" />
-              : isEditing ? 'Update List' : 'Add to List'
-            }
+            {submitting ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : isEditing ? (
+              'Update List'
+            ) : (
+              'Add to List'
+            )}
           </Button>
         </div>
       )}

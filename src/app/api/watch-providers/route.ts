@@ -22,7 +22,10 @@ export async function GET(req: Request) {
     }
 
     // Extract watch providers: Prefer IN (consistent with lib/content-detail), fallback to US
-    const watchProviders = (details as any)['watch/providers']?.results?.IN || (details as any)['watch/providers']?.results?.US || null;
+    const watchProviders =
+      (details as any)['watch/providers']?.results?.IN ||
+      (details as any)['watch/providers']?.results?.US ||
+      null;
 
     return NextResponse.json({ watchProviders });
   } catch (error) {

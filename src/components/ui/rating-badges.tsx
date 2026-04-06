@@ -31,11 +31,13 @@ export function RatingBadges({ tmdbRating, omdbRatings, malScore, className }: R
   });
 
   return (
-    <div className={cn("flex flex-wrap items-center gap-3", className)}>
+    <div className={cn('flex flex-wrap items-center gap-3', className)}>
       {/* 0. MAL (first, for anime) */}
       {hasMal && (
         <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 shadow-sm">
-          <span className="text-[10px] font-black text-blue-400 leading-none uppercase tracking-tight">MAL</span>
+          <span className="text-[10px] font-black text-blue-400 leading-none uppercase tracking-tight">
+            MAL
+          </span>
           <span className="text-xs font-bold text-white/90">{malScore}</span>
         </div>
       )}
@@ -57,8 +59,15 @@ export function RatingBadges({ tmdbRating, omdbRatings, malScore, className }: R
         }
 
         return (
-          <div key={r.Source} className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 shadow-sm">
-            <span className={cn("text-[10px] font-black leading-none uppercase tracking-tight", color)}>{label}</span>
+          <div
+            key={r.Source}
+            className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 shadow-sm"
+          >
+            <span
+              className={cn('text-[10px] font-black leading-none uppercase tracking-tight', color)}
+            >
+              {label}
+            </span>
             <span className="text-xs font-bold text-white/90">{formatRatingValue(r.Value)}</span>
           </div>
         );
@@ -67,7 +76,9 @@ export function RatingBadges({ tmdbRating, omdbRatings, malScore, className }: R
       {/* 2. TMDB (Last) */}
       {hasTmdb && (
         <div className="flex items-center gap-1.5 bg-black/40 backdrop-blur-md px-2 py-1 rounded-lg border border-white/10 shadow-sm">
-          <span className="text-[10px] font-black text-yellow-400 leading-none uppercase tracking-tight">TMDB</span>
+          <span className="text-[10px] font-black text-yellow-400 leading-none uppercase tracking-tight">
+            TMDB
+          </span>
           <span className="text-xs font-bold text-white/90">{tmdbRating}</span>
         </div>
       )}

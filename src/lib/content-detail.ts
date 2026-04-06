@@ -125,7 +125,11 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
 
   try {
     if (!tmdbId) throw new Error('Missing tmdbId for movie enrichment');
-    raw = await getTmdbCommon(tmdbId, 'movie', 'videos,keywords,external_ids,release_dates,watch/providers');
+    raw = await getTmdbCommon(
+      tmdbId,
+      'movie',
+      'videos,keywords,external_ids,release_dates,watch/providers',
+    );
   } catch (e) {
     console.error(`[AMDB] TMDB fetch error for movie ${id}:`, e);
   }
@@ -133,7 +137,8 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
   const crewBase: any[] = raw.credits?.crew ?? [];
   const castBase: any[] = raw.credits?.cast ?? [];
   const usEntry = raw.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US');
-  const ageCertification = usEntry?.release_dates?.find((d: any) => d.certification)?.certification ?? null;
+  const ageCertification =
+    usEntry?.release_dates?.find((d: any) => d.certification)?.certification ?? null;
 
   const releaseDates: ContentDetail['releaseDates'] = [];
   for (const country of raw.release_dates?.results ?? []) {
@@ -143,25 +148,42 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
           country: country.iso_3166_1,
           date: rd.release_date,
           certification: rd.certification,
-          type: rd.type === 3 ? 'Theatrical' : rd.type === 1 ? 'Premiere' : rd.type === 4 ? 'Digital' : rd.type === 5 ? 'Physical' : rd.type === 6 ? 'TV' : 'Other',
+          type:
+            rd.type === 3
+              ? 'Theatrical'
+              : rd.type === 1
+                ? 'Premiere'
+                : rd.type === 4
+                  ? 'Digital'
+                  : rd.type === 5
+                    ? 'Physical'
+                    : rd.type === 6
+                      ? 'TV'
+                      : 'Other',
         });
       }
     }
   }
 
-  const watchProviderRaw = raw['watch/providers']?.results?.IN ?? raw['watch/providers']?.results?.US ?? null;
+  const watchProviderRaw =
+    raw['watch/providers']?.results?.IN ?? raw['watch/providers']?.results?.US ?? null;
   let omdbRatings = [];
   const storedOmdb = contentRecord.enrichments.find((e: any) => e.source === 'omdb');
   if (storedOmdb) {
     omdbRatings = (storedOmdb.data as any).Ratings ?? [];
   } else if (raw.imdb_id && process.env.OMDB_API_KEY) {
     try {
-      const omdbRes = await fetch(`https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${raw.imdb_id}`, { next: { revalidate: 3600 } });
+      const omdbRes = await fetch(
+        `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${raw.imdb_id}`,
+        { next: { revalidate: 3600 } },
+      );
       if (omdbRes.ok) {
         const omdbData = await omdbRes.json();
         if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
       }
-    } catch (e) { console.error('OMDB fetch error:', e); }
+    } catch (e) {
+      console.error('OMDB fetch error:', e);
+    }
   }
 
   return {
@@ -178,7 +200,11 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
     status: raw.status ?? contentRecord.status,
     imdbId: raw.imdb_id ?? contentRecord.imdbId,
     tmdbId: tmdbId ?? null,
-    tmdbRating: raw.vote_average ? Number(raw.vote_average.toFixed(1)) : (contentRecord.tmdbRating ? Number(contentRecord.tmdbRating) : null),
+    tmdbRating: raw.vote_average
+      ? Number(raw.vote_average.toFixed(1))
+      : contentRecord.tmdbRating
+        ? Number(contentRecord.tmdbRating)
+        : null,
     tmdbVoteCount: raw.vote_count ?? contentRecord.tmdbVoteCount,
     popularity: raw.popularity ?? null,
     adult: raw.adult ?? false,
@@ -208,10 +234,21 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
       profile_path: tmdbImageUrl(c.profile_path, 'w185'),
       order: c.order,
     })),
-    fullCrew: crewBase.map((c) => ({ id: c.id, name: c.name, job: c.job, department: c.department })),
+    fullCrew: crewBase.map((c) => ({
+      id: c.id,
+      name: c.name,
+      job: c.job,
+      department: c.department,
+    })),
     videos: (raw.videos?.results ?? [])
       .filter((v: any) => v.site === 'YouTube')
-      .map((v: any) => ({ key: v.key, name: v.name, type: v.type, site: v.site, official: v.official ?? false })),
+      .map((v: any) => ({
+        key: v.key,
+        name: v.name,
+        type: v.type,
+        site: v.site,
+        official: v.official ?? false,
+      })),
     keywords: raw.keywords?.keywords?.map((k: any) => k.name) ?? [],
     similar: (raw.similar?.results ?? []).slice(0, 12).map((s: any) => ({
       id: s.id,
@@ -225,12 +262,32 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
       instagram_id: raw.external_ids?.instagram_id ?? null,
       twitter_id: raw.external_ids?.twitter_id ?? null,
     },
-    watchProviders: raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US ? {
-      link: (raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US).link ?? '',
-      flatrate: (raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US).flatrate?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
-      rent: (raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US).rent?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
-      buy: (raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US).buy?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
-    } : null,
+    watchProviders:
+      raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US
+        ? {
+            link:
+              (raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US).link ??
+              '',
+            flatrate: (
+              raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US
+            ).flatrate?.map((p: any) => ({
+              ...p,
+              logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+            })),
+            rent: (
+              raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US
+            ).rent?.map((p: any) => ({
+              ...p,
+              logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+            })),
+            buy: (
+              raw['watch/providers']?.results?.IN || raw['watch/providers']?.results?.US
+            ).buy?.map((p: any) => ({
+              ...p,
+              logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+            })),
+          }
+        : null,
     releaseDates,
     omdbRatings,
   };
@@ -243,7 +300,11 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
 
   try {
     if (!tmdbId) throw new Error('Missing tmdbId for TV enrichment');
-    raw = await getTmdbCommon(tmdbId, 'tv', 'videos,keywords,external_ids,content_ratings,watch/providers');
+    raw = await getTmdbCommon(
+      tmdbId,
+      'tv',
+      'videos,keywords,external_ids,content_ratings,watch/providers',
+    );
   } catch (e) {
     console.error(`[AMDB] TMDB fetch error for TV ${id}:`, e);
   }
@@ -253,7 +314,8 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
   const usRating = raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
   const ageCertification = usRating?.rating ?? null;
 
-  const watchProviderRaw = raw['watch/providers']?.results?.IN ?? raw['watch/providers']?.results?.US ?? null;
+  const watchProviderRaw =
+    raw['watch/providers']?.results?.IN ?? raw['watch/providers']?.results?.US ?? null;
   let omdbRatings = [];
   let malScore: number | null = null;
   const imdbId = raw.external_ids?.imdb_id || null;
@@ -261,22 +323,30 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
   const storedOmdb = contentRecord.enrichments.find((e: any) => e.source === 'omdb');
   if (storedOmdb) omdbRatings = (storedOmdb.data as any).Ratings ?? [];
   const storedJikan = contentRecord.enrichments.find((e: any) => e.source === 'jikan');
-  if (storedJikan) malScore = (storedJikan.data as any).score ? Number(Number((storedJikan.data as any).score).toFixed(1)) : null;
+  if (storedJikan)
+    malScore = (storedJikan.data as any).score
+      ? Number(Number((storedJikan.data as any).score).toFixed(1))
+      : null;
 
   if (omdbRatings.length === 0 && imdbId && process.env.OMDB_API_KEY) {
     try {
-      const omdbRes = await fetch(`https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${imdbId}`, { next: { revalidate: 3600 } });
+      const omdbRes = await fetch(
+        `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${imdbId}`,
+        { next: { revalidate: 3600 } },
+      );
       if (omdbRes.ok) {
         const omdbData = await omdbRes.json();
         if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
       }
-    } catch (e) { console.error('OMDB fetch error:', e); }
+    } catch (e) {
+      console.error('OMDB fetch error:', e);
+    }
   }
 
   const lastAirDate = raw.last_air_date ?? null;
   const today = new Date();
   const lastAirObj = lastAirDate ? new Date(lastAirDate) : null;
-  const isOngoing = !lastAirObj || (today.getTime() - lastAirObj.getTime()) < 7 * 24 * 60 * 60 * 1000;
+  const isOngoing = !lastAirObj || today.getTime() - lastAirObj.getTime() < 7 * 24 * 60 * 60 * 1000;
 
   return {
     id,
@@ -292,7 +362,11 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
     status: isOngoing ? 'Ongoing' : (raw.status ?? contentRecord.status),
     imdbId: raw.external_ids?.imdb_id ?? contentRecord.imdbId,
     tmdbId: tmdbId ?? null,
-    tmdbRating: raw.vote_average ? Number(raw.vote_average.toFixed(1)) : (contentRecord.tmdbRating ? Number(contentRecord.tmdbRating) : null),
+    tmdbRating: raw.vote_average
+      ? Number(raw.vote_average.toFixed(1))
+      : contentRecord.tmdbRating
+        ? Number(contentRecord.tmdbRating)
+        : null,
     tmdbVoteCount: raw.vote_count ?? contentRecord.tmdbVoteCount,
     popularity: raw.popularity ?? null,
     adult: raw.adult ?? false,
@@ -310,7 +384,9 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
     productionCompanies: raw.production_companies ?? [],
     crew: {
       director: crewBase.find((c) => c.job === 'Director')?.name ?? null,
-      writer: crewBase.find((c) => c.job === 'Writer' || c.job === 'Screenplay' || c.job === 'Creator')?.name ?? null,
+      writer:
+        crewBase.find((c) => c.job === 'Writer' || c.job === 'Screenplay' || c.job === 'Creator')
+          ?.name ?? null,
       producer: crewBase.find((c) => c.job === 'Executive Producer')?.name ?? null,
       cinematographer: crewBase.find((c) => c.job === 'Director of Photography')?.name ?? null,
       composer: crewBase.find((c) => c.job === 'Original Music Composer')?.name ?? null,
@@ -322,17 +398,51 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
       profile_path: tmdbImageUrl(c.profile_path, 'w185'),
       order: c.order,
     })),
-    fullCrew: crewBase.map((c) => ({ id: c.id, name: c.name, job: c.job, department: c.department })),
-    videos: (raw.videos?.results ?? []).filter((v: any) => v.site === 'YouTube').map((v: any) => ({ key: v.key, name: v.name, type: v.type, site: v.site, official: v.official ?? false })),
+    fullCrew: crewBase.map((c) => ({
+      id: c.id,
+      name: c.name,
+      job: c.job,
+      department: c.department,
+    })),
+    videos: (raw.videos?.results ?? [])
+      .filter((v: any) => v.site === 'YouTube')
+      .map((v: any) => ({
+        key: v.key,
+        name: v.name,
+        type: v.type,
+        site: v.site,
+        official: v.official ?? false,
+      })),
     keywords: raw.keywords?.results?.map((k: any) => k.name) ?? [],
-    similar: (raw.similar?.results ?? []).slice(0, 12).map((s: any) => ({ id: s.id, title: s.title ?? s.name ?? '', poster_path: s.poster_path ? tmdbImageUrl(s.poster_path) : null, vote_average: s.vote_average })),
-    externalIds: { imdb_id: raw.external_ids?.imdb_id ?? null, facebook_id: raw.external_ids?.facebook_id ?? null, instagram_id: raw.external_ids?.instagram_id ?? null, twitter_id: raw.external_ids?.twitter_id ?? null },
-    watchProviders: watchProviderRaw ? {
-      link: watchProviderRaw.link ?? '',
-      flatrate: watchProviderRaw.flatrate?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
-      rent: watchProviderRaw.rent?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
-      buy: watchProviderRaw.buy?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
-    } : null,
+    similar: (raw.similar?.results ?? []).slice(0, 12).map((s: any) => ({
+      id: s.id,
+      title: s.title ?? s.name ?? '',
+      poster_path: s.poster_path ? tmdbImageUrl(s.poster_path) : null,
+      vote_average: s.vote_average,
+    })),
+    externalIds: {
+      imdb_id: raw.external_ids?.imdb_id ?? null,
+      facebook_id: raw.external_ids?.facebook_id ?? null,
+      instagram_id: raw.external_ids?.instagram_id ?? null,
+      twitter_id: raw.external_ids?.twitter_id ?? null,
+    },
+    watchProviders: watchProviderRaw
+      ? {
+          link: watchProviderRaw.link ?? '',
+          flatrate: watchProviderRaw.flatrate?.map((p: any) => ({
+            ...p,
+            logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+          })),
+          rent: watchProviderRaw.rent?.map((p: any) => ({
+            ...p,
+            logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+          })),
+          buy: watchProviderRaw.buy?.map((p: any) => ({
+            ...p,
+            logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+          })),
+        }
+      : null,
     releaseDates: [],
     omdbRatings,
     malScore,
@@ -341,13 +451,18 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
 
 export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
   const contentRecord = await fetchMainContent(id);
-  if (!contentRecord.tmdbId && contentRecord.malId) return fetchAnimeByMalId(contentRecord.malId, id);
+  if (!contentRecord.tmdbId && contentRecord.malId)
+    return fetchAnimeByMalId(contentRecord.malId, id);
 
   const tmdbId = contentRecord.tmdbId;
   let raw: any = {};
   try {
     if (!tmdbId) throw new Error('Anime missing TMDB ID');
-    raw = await getTmdbCommon(tmdbId, 'tv', 'videos,keywords,external_ids,content_ratings,watch/providers');
+    raw = await getTmdbCommon(
+      tmdbId,
+      'tv',
+      'videos,keywords,external_ids,content_ratings,watch/providers',
+    );
   } catch (e) {
     console.error(`[AMDB] TMDB fetch error for Anime ${id}:`, e);
   }
@@ -356,29 +471,38 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
   const castBase: any[] = raw.credits?.cast ?? [];
   const usRating = raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
   const ageCertification = usRating?.rating ?? null;
-  const watchProviderRaw = raw['watch/providers']?.results?.IN ?? raw['watch/providers']?.results?.US ?? null;
+  const watchProviderRaw =
+    raw['watch/providers']?.results?.IN ?? raw['watch/providers']?.results?.US ?? null;
 
   const lastAirDate = raw.last_air_date ?? null;
   const today = new Date();
   const lastAirObj = lastAirDate ? new Date(lastAirDate) : null;
-  const isOngoing = !lastAirObj || (today.getTime() - lastAirObj.getTime()) < 7 * 24 * 60 * 60 * 1000;
+  const isOngoing = !lastAirObj || today.getTime() - lastAirObj.getTime() < 7 * 24 * 60 * 60 * 1000;
 
   let omdbRatings = [];
   let malScore: number | null = null;
   const storedOmdb = contentRecord.enrichments.find((e: any) => e.source === 'omdb');
   if (storedOmdb) omdbRatings = (storedOmdb.data as any).Ratings ?? [];
   const storedJikan = contentRecord.enrichments.find((e: any) => e.source === 'jikan');
-  if (storedJikan) malScore = (storedJikan.data as any).score ? Number(Number((storedJikan.data as any).score).toFixed(1)) : null;
+  if (storedJikan)
+    malScore = (storedJikan.data as any).score
+      ? Number(Number((storedJikan.data as any).score).toFixed(1))
+      : null;
 
   const imdbId = raw.external_ids?.imdb_id || null;
   if (omdbRatings.length === 0 && imdbId && process.env.OMDB_API_KEY) {
     try {
-      const omdbRes = await fetch(`https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${imdbId}`, { next: { revalidate: 3600 } });
+      const omdbRes = await fetch(
+        `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${imdbId}`,
+        { next: { revalidate: 3600 } },
+      );
       if (omdbRes.ok) {
         const omdbData = await omdbRes.json();
         if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
       }
-    } catch (e) { console.error('OMDB fetch error:', e); }
+    } catch (e) {
+      console.error('OMDB fetch error:', e);
+    }
   }
 
   return {
@@ -395,7 +519,11 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
     status: isOngoing ? 'Ongoing' : (raw.status ?? contentRecord.status),
     imdbId: raw.external_ids?.imdb_id ?? contentRecord.imdbId,
     tmdbId: tmdbId ?? null,
-    tmdbRating: raw.vote_average ? Number(raw.vote_average.toFixed(1)) : (contentRecord.tmdbRating ? Number(contentRecord.tmdbRating) : null),
+    tmdbRating: raw.vote_average
+      ? Number(raw.vote_average.toFixed(1))
+      : contentRecord.tmdbRating
+        ? Number(contentRecord.tmdbRating)
+        : null,
     tmdbVoteCount: raw.vote_count ?? contentRecord.tmdbVoteCount,
     popularity: raw.popularity ?? null,
     adult: raw.adult ?? false,
@@ -413,10 +541,20 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
     productionCompanies: raw.production_companies ?? [],
     crew: {
       director: crewBase.find((c) => c.job === 'Director')?.name ?? null,
-      writer: crewBase.find((c) => c.job === 'Writer' || c.job === 'Screenplay' || c.job === 'Creator' || c.job === 'Story')?.name ?? null,
-      producer: crewBase.find((c) => c.job === 'Executive Producer' || c.job === 'Producer')?.name ?? null,
+      writer:
+        crewBase.find(
+          (c) =>
+            c.job === 'Writer' ||
+            c.job === 'Screenplay' ||
+            c.job === 'Creator' ||
+            c.job === 'Story',
+        )?.name ?? null,
+      producer:
+        crewBase.find((c) => c.job === 'Executive Producer' || c.job === 'Producer')?.name ?? null,
       cinematographer: crewBase.find((c) => c.job === 'Director of Photography')?.name ?? null,
-      composer: crewBase.find((c) => c.job === 'Original Music Composer' || c.job === 'Music')?.name ?? null,
+      composer:
+        crewBase.find((c) => c.job === 'Original Music Composer' || c.job === 'Music')?.name ??
+        null,
     },
     cast: castBase.map((c) => ({
       id: c.id,
@@ -425,17 +563,51 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
       profile_path: tmdbImageUrl(c.profile_path, 'w185'),
       order: c.order,
     })),
-    fullCrew: crewBase.map((c) => ({ id: c.id, name: c.name, job: c.job, department: c.department })),
-    videos: (raw.videos?.results ?? []).filter((v: any) => v.site === 'YouTube').map((v: any) => ({ key: v.key, name: v.name, type: v.type, site: v.site, official: v.official ?? false })),
+    fullCrew: crewBase.map((c) => ({
+      id: c.id,
+      name: c.name,
+      job: c.job,
+      department: c.department,
+    })),
+    videos: (raw.videos?.results ?? [])
+      .filter((v: any) => v.site === 'YouTube')
+      .map((v: any) => ({
+        key: v.key,
+        name: v.name,
+        type: v.type,
+        site: v.site,
+        official: v.official ?? false,
+      })),
     keywords: raw.keywords?.results?.map((k: any) => k.name) ?? [],
-    similar: (raw.similar?.results ?? []).slice(0, 12).map((s: any) => ({ id: s.id, title: s.title ?? s.name ?? '', poster_path: s.poster_path ? tmdbImageUrl(s.poster_path) : null, vote_average: s.vote_average })),
-    externalIds: { imdb_id: raw.external_ids?.imdb_id ?? null, facebook_id: raw.external_ids?.facebook_id ?? null, instagram_id: raw.external_ids?.instagram_id ?? null, twitter_id: raw.external_ids?.twitter_id ?? null },
-    watchProviders: watchProviderRaw ? {
-      link: watchProviderRaw.link ?? '',
-      flatrate: watchProviderRaw.flatrate?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
-      rent: watchProviderRaw.rent?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
-      buy: watchProviderRaw.buy?.map((p: any) => ({ ...p, logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}` })),
-    } : null,
+    similar: (raw.similar?.results ?? []).slice(0, 12).map((s: any) => ({
+      id: s.id,
+      title: s.title ?? s.name ?? '',
+      poster_path: s.poster_path ? tmdbImageUrl(s.poster_path) : null,
+      vote_average: s.vote_average,
+    })),
+    externalIds: {
+      imdb_id: raw.external_ids?.imdb_id ?? null,
+      facebook_id: raw.external_ids?.facebook_id ?? null,
+      instagram_id: raw.external_ids?.instagram_id ?? null,
+      twitter_id: raw.external_ids?.twitter_id ?? null,
+    },
+    watchProviders: watchProviderRaw
+      ? {
+          link: watchProviderRaw.link ?? '',
+          flatrate: watchProviderRaw.flatrate?.map((p: any) => ({
+            ...p,
+            logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+          })),
+          rent: watchProviderRaw.rent?.map((p: any) => ({
+            ...p,
+            logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+          })),
+          buy: watchProviderRaw.buy?.map((p: any) => ({
+            ...p,
+            logo_path: `https://image.tmdb.org/t/p/w92${p.logo_path}`,
+          })),
+        }
+      : null,
     releaseDates: [],
     omdbRatings,
     malScore,
@@ -457,7 +629,7 @@ export async function fetchAnimeByMalId(malId: number, amdbId: string): Promise<
     overview: raw.synopsis ?? null,
     tagline: null,
     genres: raw.genres?.map((g: any) => ({ id: g.mal_id, name: g.name })) ?? [],
-    status: isOngoing ? 'Ongoing' : raw.status ?? null,
+    status: isOngoing ? 'Ongoing' : (raw.status ?? null),
     imdbId: null,
     tmdbId: null,
     tmdbRating: raw.score ? Number(raw.score.toFixed(1)) : null,
@@ -475,21 +647,46 @@ export async function fetchAnimeByMalId(malId: number, amdbId: string): Promise<
     lastAirDate: isOngoing ? null : (raw.aired?.to ?? null),
     networks: raw.broadcast?.string ? [{ id: 1, name: raw.broadcast.string, logo_path: null }] : [],
     spokenLanguages: [{ english_name: 'Japanese', iso_639_1: 'ja' }],
-    productionCompanies: raw.studios?.map((s: any) => ({ id: s.mal_id, name: s.name, logo_path: null })) ?? [],
+    productionCompanies:
+      raw.studios?.map((s: any) => ({ id: s.mal_id, name: s.name, logo_path: null })) ?? [],
     crew: { director: null, writer: null, producer: null, cinematographer: null, composer: null },
-    cast: raw.characters?.slice(0, 20).map((c: any) => ({
-      id: c.character?.mal_id ?? 0,
-      name: c.character?.name ?? '',
-      character: c.role ?? '',
-      profile_path: c.character?.images?.jpg?.image_url ?? null,
-      order: 0,
-    })) ?? [],
+    cast:
+      raw.characters?.slice(0, 20).map((c: any) => ({
+        id: c.character?.mal_id ?? 0,
+        name: c.character?.name ?? '',
+        character: c.role ?? '',
+        profile_path: c.character?.images?.jpg?.image_url ?? null,
+        order: 0,
+      })) ?? [],
     fullCrew: [],
-    videos: raw.trailer?.youtube_id ? [{ key: raw.trailer.youtube_id, name: 'Trailer', type: 'Trailer', site: 'YouTube', official: true }] : [],
+    videos: raw.trailer?.youtube_id
+      ? [
+          {
+            key: raw.trailer.youtube_id,
+            name: 'Trailer',
+            type: 'Trailer',
+            site: 'YouTube',
+            official: true,
+          },
+        ]
+      : [],
     keywords: raw.themes?.map((t: any) => t.name) ?? [],
-    similar: (raw.relations?.filter((r: any) => r.relation === 'Sequel' || r.relation === 'Prequel' || r.relation === 'Side story').flatMap((r: any) => r.entry ?? []) ?? []).slice(0, 8).map((e: any) => ({
-      id: e.mal_id, title: e.name, poster_path: null, vote_average: 0,
-    })) ?? [],
+    similar:
+      (
+        raw.relations
+          ?.filter(
+            (r: any) =>
+              r.relation === 'Sequel' || r.relation === 'Prequel' || r.relation === 'Side story',
+          )
+          .flatMap((r: any) => r.entry ?? []) ?? []
+      )
+        .slice(0, 8)
+        .map((e: any) => ({
+          id: e.mal_id,
+          title: e.name,
+          poster_path: null,
+          vote_average: 0,
+        })) ?? [],
     externalIds: { imdb_id: null, facebook_id: null, instagram_id: null, twitter_id: null },
     watchProviders: null,
     releaseDates: [],
@@ -510,7 +707,12 @@ export async function fetchMovieCredits(tmdbId: number) {
       profile_path: tmdbImageUrl(c.profile_path, 'w185'),
       order: c.order,
     })),
-    fullCrew: crewBase.map((c: any) => ({ id: c.id, name: c.name, job: c.job, department: c.department })),
+    fullCrew: crewBase.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      job: c.job,
+      department: c.department,
+    })),
   };
 }
 
@@ -536,7 +738,12 @@ export async function fetchTvCredits(tmdbId: number) {
       profile_path: tmdbImageUrl(c.profile_path, 'w185'),
       order: c.order,
     })),
-    fullCrew: crewBase.map((c: any) => ({ id: c.id, name: c.name, job: c.job, department: c.department })),
+    fullCrew: crewBase.map((c: any) => ({
+      id: c.id,
+      name: c.name,
+      job: c.job,
+      department: c.department,
+    })),
   };
 }
 
@@ -549,4 +756,3 @@ export async function fetchTvSimilar(tmdbId: number) {
     vote_average: s.vote_average,
   }));
 }
-

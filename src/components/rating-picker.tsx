@@ -61,7 +61,11 @@ export function RatingPicker({ value, onChange, onActiveRating }: RatingPickerPr
                   ? 'text-background border-transparent'
                   : 'text-muted-foreground border-muted-foreground/30 hover:border-transparent',
               )}
-              style={isActive ? { backgroundColor: ratingColor(active!), borderColor: 'transparent' } : {}}
+              style={
+                isActive
+                  ? { backgroundColor: ratingColor(active!), borderColor: 'transparent' }
+                  : {}
+              }
             >
               {n}
             </motion.button>

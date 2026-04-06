@@ -6,7 +6,10 @@ import { z } from 'zod';
 
 const createSchema = z.object({
   name: z.string().min(1).max(30),
-  avatarColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  avatarColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
 });
 
 export async function GET() {

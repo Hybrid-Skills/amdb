@@ -32,7 +32,10 @@ function CrewDepartmentAccordion({ title, members }: { title: string; members: C
       {isOpen && (
         <div className="px-5 pb-5 pt-0 grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-2 border-t border-white/5 mt-0 animate-in fade-in slide-in-from-top-1 duration-200">
           {members.map((member, i) => (
-            <div key={`${member.id}-${i}`} className="flex items-center justify-between py-1 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 -mx-2 rounded transition-colors">
+            <div
+              key={`${member.id}-${i}`}
+              className="flex items-center justify-between py-1 border-b border-white/5 last:border-0 hover:bg-white/5 px-2 -mx-2 rounded transition-colors"
+            >
               <span className="text-sm font-medium">{member.name}</span>
               <span className="text-xs text-white/40 italic">{member.job}</span>
             </div>

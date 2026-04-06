@@ -22,7 +22,13 @@ interface DatePickerProps {
   className?: string;
 }
 
-export function DatePicker({ value, onChange, placeholder = 'Pick a date', maxDate, className }: DatePickerProps) {
+export function DatePicker({
+  value,
+  onChange,
+  placeholder = 'Pick a date',
+  maxDate,
+  className,
+}: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
 
   return (

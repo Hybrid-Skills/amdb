@@ -37,7 +37,9 @@ export function SearchBar({ onSelect, activeType = 'all' }: SearchBarProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
 
-  React.useEffect(() => { setMounted(true); }, []);
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
 
   React.useEffect(() => {
     if (debouncedQuery.length < 2) {
@@ -70,7 +72,9 @@ export function SearchBar({ onSelect, activeType = 'all' }: SearchBarProps) {
     return () => controller.abort();
   }, [debouncedQuery, page, activeType]);
 
-  React.useEffect(() => { setPage(1); }, [debouncedQuery, activeType]);
+  React.useEffect(() => {
+    setPage(1);
+  }, [debouncedQuery, activeType]);
 
   React.useEffect(() => {
     function handler(e: MouseEvent) {
@@ -92,81 +96,99 @@ export function SearchBar({ onSelect, activeType = 'all' }: SearchBarProps) {
     setResults([]);
   }
 
-  const panel = mounted && createPortal(
-    <AnimatePresence>
-      {open && results.length > 0 && (
-        <motion.div
-          ref={panelRef}
-          key="search-results"
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: 0.15 }}
-          style={{
-            position: 'fixed',
-            top: panelPos.top,
-            left: panelPos.left,
-            width: panelPos.width,
-            zIndex: 9999,
-          }}
-          className="bg-card border border-border rounded-lg shadow-2xl overflow-hidden max-h-[480px] flex flex-col"
-        >
-          <div className="overflow-y-auto flex-1">
-            {results.map((result, i) => (
-              <motion.button
-                key={`${result.tmdbId ?? result.malId}-${i}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: i * 0.03 }}
-                onClick={() => handleSelect(result)}
-                className="w-full flex items-center gap-3 p-3 hover:bg-accent transition-colors text-left"
-              >
-                <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted">
-                  {result.posterUrl ? (
-                    <img src={result.posterUrl} alt={result.title} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">?</div>
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium text-sm truncate">{result.title}</p>
-                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                    {result.year && <span className="text-xs text-muted-foreground">{result.year}</span>}
-                    <Badge variant="outline" className="text-xs px-1.5 py-0">
-                      {result.contentType === 'TV_SHOW' ? 'TV' : result.contentType === 'ANIME' ? 'Anime' : 'Movie'}
-                    </Badge>
-                    {result.tmdbRating != null && result.tmdbRating > 0 && (
-                      <span className="text-xs text-yellow-400">★ {result.tmdbRating.toFixed(1)}</span>
+  const panel =
+    mounted &&
+    createPortal(
+      <AnimatePresence>
+        {open && results.length > 0 && (
+          <motion.div
+            ref={panelRef}
+            key="search-results"
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.15 }}
+            style={{
+              position: 'fixed',
+              top: panelPos.top,
+              left: panelPos.left,
+              width: panelPos.width,
+              zIndex: 9999,
+            }}
+            className="bg-card border border-border rounded-lg shadow-2xl overflow-hidden max-h-[480px] flex flex-col"
+          >
+            <div className="overflow-y-auto flex-1">
+              {results.map((result, i) => (
+                <motion.button
+                  key={`${result.tmdbId ?? result.malId}-${i}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: i * 0.03 }}
+                  onClick={() => handleSelect(result)}
+                  className="w-full flex items-center gap-3 p-3 hover:bg-accent transition-colors text-left"
+                >
+                  <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted">
+                    {result.posterUrl ? (
+                      <img
+                        src={result.posterUrl}
+                        alt={result.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center text-muted-foreground text-xs">
+                        ?
+                      </div>
                     )}
                   </div>
-                </div>
-              </motion.button>
-            ))}
-          </div>
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-3 py-2 border-t border-border text-xs text-muted-foreground bg-card">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="hover:text-foreground disabled:opacity-40"
-              >
-                ← Prev
-              </button>
-              <span>Page {page} of {totalPages}</span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="hover:text-foreground disabled:opacity-40"
-              >
-                Next →
-              </button>
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-sm truncate">{result.title}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {result.year && (
+                        <span className="text-xs text-muted-foreground">{result.year}</span>
+                      )}
+                      <Badge variant="outline" className="text-xs px-1.5 py-0">
+                        {result.contentType === 'TV_SHOW'
+                          ? 'TV'
+                          : result.contentType === 'ANIME'
+                            ? 'Anime'
+                            : 'Movie'}
+                      </Badge>
+                      {result.tmdbRating != null && result.tmdbRating > 0 && (
+                        <span className="text-xs text-yellow-400">
+                          ★ {result.tmdbRating.toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </motion.button>
+              ))}
             </div>
-          )}
-        </motion.div>
-      )}
-    </AnimatePresence>,
-    document.body
-  );
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-3 py-2 border-t border-border text-xs text-muted-foreground bg-card">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="hover:text-foreground disabled:opacity-40"
+                >
+                  ← Prev
+                </button>
+                <span>
+                  Page {page} of {totalPages}
+                </span>
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages}
+                  className="hover:text-foreground disabled:opacity-40"
+                >
+                  Next →
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>,
+      document.body,
+    );
 
   return (
     <div ref={containerRef} className="relative w-full max-w-2xl mx-auto">
@@ -177,7 +199,11 @@ export function SearchBar({ onSelect, activeType = 'all' }: SearchBarProps) {
         )}
         {!loading && query && (
           <button
-            onClick={() => { setQuery(''); setResults([]); setOpen(false); }}
+            onClick={() => {
+              setQuery('');
+              setResults([]);
+              setOpen(false);
+            }}
             className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
           >
             <X className="h-4 w-4" />
@@ -192,7 +218,11 @@ export function SearchBar({ onSelect, activeType = 'all' }: SearchBarProps) {
             if (results.length > 0) {
               if (containerRef.current) {
                 const rect = containerRef.current.getBoundingClientRect();
-                setPanelPos({ top: rect.bottom + window.scrollY + 8, left: rect.left, width: rect.width });
+                setPanelPos({
+                  top: rect.bottom + window.scrollY + 8,
+                  left: rect.left,
+                  width: rect.width,
+                });
               }
               setOpen(true);
             }

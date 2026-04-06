@@ -8,13 +8,15 @@ import { generateShortId } from '@/lib/id';
 import { z } from 'zod';
 import type { ContentType, Prisma } from '@prisma/client';
 
-const ensureSchema = z.object({
-  tmdbId: z.number().int().optional(),
-  malId: z.number().int().optional(),
-  contentType: z.enum(['MOVIE', 'TV_SHOW', 'ANIME']),
-}).refine(data => data.tmdbId || data.malId, {
-  message: "Either tmdbId or malId must be provided",
-});
+const ensureSchema = z
+  .object({
+    tmdbId: z.number().int().optional(),
+    malId: z.number().int().optional(),
+    contentType: z.enum(['MOVIE', 'TV_SHOW', 'ANIME']),
+  })
+  .refine((data) => data.tmdbId || data.malId, {
+    message: 'Either tmdbId or malId must be provided',
+  });
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -23,7 +25,8 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const parsed = ensureSchema.safeParse(body);
-    if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+    if (!parsed.success)
+      return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
     const { tmdbId, malId, contentType } = parsed.data;
 
@@ -44,9 +47,10 @@ export async function POST(req: Request) {
 
     if (tmdbId) {
       // Fetch from TMDB
-      const raw = (contentType === 'TV_SHOW' || contentType === 'ANIME') 
-        ? await tmdb.tvDetails(tmdbId) 
-        : await tmdb.movieDetails(tmdbId);
+      const raw =
+        contentType === 'TV_SHOW' || contentType === 'ANIME'
+          ? await tmdb.tvDetails(tmdbId)
+          : await tmdb.movieDetails(tmdbId);
 
       contentData = {
         contentType: contentType as ContentType,
@@ -73,12 +77,12 @@ export async function POST(req: Request) {
       // Handle age certification
       if (contentType === 'MOVIE') {
         const usEntry = raw.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US');
-        contentData.ageCertification = usEntry?.release_dates?.find((d: any) => d.certification)?.certification ?? null;
+        contentData.ageCertification =
+          usEntry?.release_dates?.find((d: any) => d.certification)?.certification ?? null;
       } else {
         const usRating = raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
         contentData.ageCertification = usRating?.rating ?? null;
       }
-
     } else if (malId && contentType === 'ANIME') {
       // Fetch exclusively from Jikan (MAL-only title)
       const raw = await getJikanDetails(malId);
@@ -91,7 +95,7 @@ export async function POST(req: Request) {
         backdropUrl: null,
         overview: raw.synopsis,
         tagline: null,
-        genres: raw.genres.map(g => ({ id: g.mal_id, name: g.name })),
+        genres: raw.genres.map((g) => ({ id: g.mal_id, name: g.name })),
         runtimeMins: typeof raw.duration === 'number' ? raw.duration : null,
         status: raw.status,
         malId: raw.mal_id,
@@ -113,9 +117,9 @@ export async function POST(req: Request) {
       try {
         const title = content.title;
         const jikanSearch = await searchJikan(title);
-        const match = jikanSearch.results.find(
-          (r: any) => r.title.toLowerCase() === title.toLowerCase()
-        ) ?? jikanSearch.results[0];
+        const match =
+          jikanSearch.results.find((r: any) => r.title.toLowerCase() === title.toLowerCase()) ??
+          jikanSearch.results[0];
 
         if (match?.malId) {
           await prisma.content.update({
@@ -144,14 +148,16 @@ export async function POST(req: Request) {
           update: { data: jikanData as any, fetchedAt: new Date() },
         });
       } catch (e) {
-         console.error('Jikan direct enrichment error in ensure:', e);
+        console.error('Jikan direct enrichment error in ensure:', e);
       }
     }
 
     // 3. OMDB enrichment if we have an IMDB ID
     if (contentData.imdbId && process.env.OMDB_API_KEY) {
       try {
-        const omdbRes = await fetch(`https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${contentData.imdbId}`);
+        const omdbRes = await fetch(
+          `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${contentData.imdbId}`,
+        );
         if (omdbRes.ok) {
           const omdbData = await omdbRes.json();
           if (omdbData.Response === 'True') {
@@ -168,7 +174,6 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ amdbId: content.id });
-
   } catch (err) {
     console.error('Ensure content error:', err);
     return NextResponse.json({ error: 'Failed to ensure content' }, { status: 500 });

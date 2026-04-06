@@ -13,8 +13,18 @@ interface CalendarProps {
 }
 
 const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
@@ -52,19 +62,11 @@ export function Calendar({ value, onChange, className, maxDate }: CalendarProps)
 
   function isSelected(day: number) {
     if (!value) return false;
-    return (
-      value.getFullYear() === year &&
-      value.getMonth() === month &&
-      value.getDate() === day
-    );
+    return value.getFullYear() === year && value.getMonth() === month && value.getDate() === day;
   }
 
   function isToday(day: number) {
-    return (
-      today.getFullYear() === year &&
-      today.getMonth() === month &&
-      today.getDate() === day
-    );
+    return today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
   }
 
   function isDisabled(day: number) {
@@ -116,7 +118,12 @@ export function Calendar({ value, onChange, className, maxDate }: CalendarProps)
       </div>
       {value && (
         <div className="mt-2 flex justify-center">
-          <Button variant="ghost" size="sm" onClick={() => onChange(null)} className="text-xs text-muted-foreground h-7">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange(null)}
+            className="text-xs text-muted-foreground h-7"
+          >
             Clear date
           </Button>
         </div>

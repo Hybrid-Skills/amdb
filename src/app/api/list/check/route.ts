@@ -13,11 +13,12 @@ export async function GET(req: Request) {
   const malId = searchParams.get('malId');
 
   if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
-  if (!tmdbId && !malId) return NextResponse.json({ error: 'tmdbId or malId required' }, { status: 400 });
+  if (!tmdbId && !malId)
+    return NextResponse.json({ error: 'tmdbId or malId required' }, { status: 400 });
 
   // verify profile belongs to user
   const profile = await prisma.profile.findFirst({
-    where: { id: profileId, userId: session.user.id }
+    where: { id: profileId, userId: session.user.id },
   });
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
@@ -29,24 +30,26 @@ export async function GET(req: Request) {
         OR: [
           ...(tmdbId ? [{ tmdbId: parseInt(tmdbId) }] : []),
           ...(malId ? [{ malId: parseInt(malId) }] : []),
-        ]
-      }
+        ],
+      },
     },
     include: {
-      content: true
-    }
+      content: true,
+    },
   });
 
-  return NextResponse.json({ 
+  return NextResponse.json({
     exists: !!existing,
     userRating: existing?.userRating ?? null,
     notes: existing?.notes ?? null,
     watchStatus: existing?.watchStatus ?? null,
-    item: existing ? {
-      ...existing.content,
-      userRating: existing.userRating,
-      notes: existing.notes,
-      watchStatus: existing.watchStatus
-    } : null
+    item: existing
+      ? {
+          ...existing.content,
+          userRating: existing.userRating,
+          notes: existing.notes,
+          watchStatus: existing.watchStatus,
+        }
+      : null,
   });
 }

@@ -25,7 +25,7 @@ export function CastSectionClient({ cast }: { cast: Actor[] }) {
           <span className="w-1 h-5 rounded-full bg-primary inline-block" />
           Full Cast
         </h2>
-        
+
         {(hasMoreMobile || hasMoreDesktop) && (
           <div className={showCastButtonClass}>
             <Button
@@ -35,9 +35,13 @@ export function CastSectionClient({ cast }: { cast: Actor[] }) {
               className="text-primary hover:bg-primary/10 font-bold gap-1"
             >
               {isExpanded ? (
-                <>Show less <ChevronUp className="w-4 h-4" /></>
+                <>
+                  Show less <ChevronUp className="w-4 h-4" />
+                </>
               ) : (
-                <>Show full cast <ChevronDown className="w-4 h-4" /></>
+                <>
+                  Show full cast <ChevronDown className="w-4 h-4" />
+                </>
               )}
             </Button>
           </div>
@@ -48,12 +52,12 @@ export function CastSectionClient({ cast }: { cast: Actor[] }) {
         {cast.map((actor, i) => {
           const isHidden = !isExpanded && i >= 16;
           const isHiddenOnMobile = !isExpanded && i >= 9 && i < 16;
-          
+
           if (isHidden) return null;
 
           return (
-            <div 
-              key={`${actor.id}-${i}`} 
+            <div
+              key={`${actor.id}-${i}`}
               className={`flex-col group ${isHiddenOnMobile ? 'hidden md:flex' : 'flex'}`}
             >
               {actor.profile_path ? (

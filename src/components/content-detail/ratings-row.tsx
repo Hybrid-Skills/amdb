@@ -11,8 +11,8 @@ export function RatingsRow({ data }: RatingsRowProps) {
 
   return (
     <div className="flex flex-wrap items-center gap-x-4 md:gap-x-6 gap-y-1.5">
-      <RatingBadges 
-        tmdbRating={data.tmdbRating} 
+      <RatingBadges
+        tmdbRating={data.tmdbRating}
         omdbRatings={data.omdbRatings}
         malScore={data.malScore}
       />
@@ -21,14 +21,22 @@ export function RatingsRow({ data }: RatingsRowProps) {
         <div className="flex items-center gap-6 md:border-l border-white/10 md:pl-6 py-1">
           {data.tmdbVoteCount && (
             <div className="flex flex-col">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-white/30">Votes</span>
-              <span className="text-xs font-semibold text-white/60">{(data.tmdbVoteCount / 1000).toFixed(1)}k</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-white/30">
+                Votes
+              </span>
+              <span className="text-xs font-semibold text-white/60">
+                {(data.tmdbVoteCount / 1000).toFixed(1)}k
+              </span>
             </div>
           )}
           {data.popularity && (
             <div className="flex flex-col">
-              <span className="text-[9px] font-bold uppercase tracking-wider text-white/30">Popularity</span>
-              <span className="text-xs font-semibold text-white/60">{data.popularity.toFixed(0)}</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider text-white/30">
+                Popularity
+              </span>
+              <span className="text-xs font-semibold text-white/60">
+                {data.popularity.toFixed(0)}
+              </span>
             </div>
           )}
         </div>

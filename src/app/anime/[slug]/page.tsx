@@ -14,7 +14,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const { id } = parseSlug(slug);
   const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
-  
+
   try {
     const data = await fetchAnimeDetail(id);
     const yearSuffix = data.year ? ` (${data.year})` : '';

@@ -54,8 +54,20 @@ const WATCH_STATUSES = [
 ];
 
 const GENRES = [
-  'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary',
-  'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Thriller', 'Western',
+  'Action',
+  'Adventure',
+  'Animation',
+  'Comedy',
+  'Crime',
+  'Documentary',
+  'Drama',
+  'Fantasy',
+  'Horror',
+  'Mystery',
+  'Romance',
+  'Sci-Fi',
+  'Thriller',
+  'Western',
 ];
 
 interface ListFilterBarProps {
@@ -156,7 +168,10 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
               variant="outline"
               size="sm"
               className="gap-1.5 text-xs h-8 px-2.5 md:px-3 relative z-10"
-              onClick={() => { setSortOpen((o) => !o); setFilterOpen(false); }}
+              onClick={() => {
+                setSortOpen((o) => !o);
+                setFilterOpen(false);
+              }}
             >
               <ArrowUpDown className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{currentSort.label}</span>
@@ -173,35 +188,35 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
                 >
                   <GlassPanel className="rounded-xl">
                     {SORT_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => {
-                        if (filters.sortBy === opt.value) {
-                          set('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc');
-                        } else {
-                          // Sensible default order per field
-                          const defaultDesc = ['addedAt', 'userRating', 'tmdbRating', 'year'];
-                          onChange({
-                            ...filters,
-                            sortBy: opt.value,
-                            sortOrder: defaultDesc.includes(opt.value) ? 'desc' : 'asc',
-                          });
-                        }
-                        setSortOpen(false);
-                      }}
-                      className={cn(
-                        'w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-accent transition-colors',
-                        filters.sortBy === opt.value && 'text-primary font-medium',
-                      )}
-                    >
-                      {opt.label}
-                      {filters.sortBy === opt.value && (
-                        <span className="text-xs text-muted-foreground">
-                          {filters.sortOrder === 'desc' ? '↓' : '↑'}
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                      <button
+                        key={opt.value}
+                        onClick={() => {
+                          if (filters.sortBy === opt.value) {
+                            set('sortOrder', filters.sortOrder === 'asc' ? 'desc' : 'asc');
+                          } else {
+                            // Sensible default order per field
+                            const defaultDesc = ['addedAt', 'userRating', 'tmdbRating', 'year'];
+                            onChange({
+                              ...filters,
+                              sortBy: opt.value,
+                              sortOrder: defaultDesc.includes(opt.value) ? 'desc' : 'asc',
+                            });
+                          }
+                          setSortOpen(false);
+                        }}
+                        className={cn(
+                          'w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-accent transition-colors',
+                          filters.sortBy === opt.value && 'text-primary font-medium',
+                        )}
+                      >
+                        {opt.label}
+                        {filters.sortBy === opt.value && (
+                          <span className="text-xs text-muted-foreground">
+                            {filters.sortOrder === 'desc' ? '↓' : '↑'}
+                          </span>
+                        )}
+                      </button>
+                    ))}
                   </GlassPanel>
                 </motion.div>
               )}
@@ -213,8 +228,14 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
             <Button
               variant="outline"
               size="sm"
-              className={cn('gap-1.5 text-xs h-8 px-2.5 md:px-3 relative z-10', activeFilterCount > 0 && 'border-primary text-primary')}
-              onClick={() => { setFilterOpen((o) => !o); setSortOpen(false); }}
+              className={cn(
+                'gap-1.5 text-xs h-8 px-2.5 md:px-3 relative z-10',
+                activeFilterCount > 0 && 'border-primary text-primary',
+              )}
+              onClick={() => {
+                setFilterOpen((o) => !o);
+                setSortOpen(false);
+              }}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
               <span className="hidden md:inline">Filters</span>
@@ -235,89 +256,101 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
                   className="absolute right-0 top-full mt-1 z-[200] w-72"
                 >
                   <GlassPanel className="rounded-xl p-4 flex flex-col gap-4">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold">Filters</p>
-                    {activeFilterCount > 0 && (
-                      <button
-                        onClick={clearAllFilters}
-                        className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-                      >
-                        <X className="w-3 h-3" /> Clear all
-                      </button>
-                    )}
-                  </div>
-
-                  {/* My Rating range */}
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      My Rating
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={filters.minRating}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          onChange({ ...filters, minRating: val, maxRating: Math.max(val, filters.maxRating) });
-                        }}
-                        className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                      >
-                        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
-                      <span className="text-muted-foreground text-sm">to</span>
-                      <select
-                        value={filters.maxRating}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          onChange({ ...filters, maxRating: val, minRating: Math.min(val, filters.minRating) });
-                        }}
-                        className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                      >
-                        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                          <option key={n} value={n}>{n}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Watch Status */}
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Watch Status
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {WATCH_STATUSES.map(({ value, label }) => (
-                        <Badge
-                          key={value}
-                          variant={filters.watchStatus.includes(value) ? 'default' : 'outline'}
-                          className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-                          onClick={() => toggleWatchStatus(value)}
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold">Filters</p>
+                      {activeFilterCount > 0 && (
+                        <button
+                          onClick={clearAllFilters}
+                          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
                         >
-                          {label}
-                        </Badge>
-                      ))}
+                          <X className="w-3 h-3" /> Clear all
+                        </button>
+                      )}
                     </div>
-                  </div>
 
-                  {/* Genres */}
-                  <div className="space-y-2">
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                      Genre
-                    </p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {GENRES.map((g) => (
-                        <Badge
-                          key={g}
-                          variant={filters.genres.includes(g) ? 'default' : 'outline'}
-                          className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-                          onClick={() => toggleGenre(g)}
+                    {/* My Rating range */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        My Rating
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <select
+                          value={filters.minRating}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            onChange({
+                              ...filters,
+                              minRating: val,
+                              maxRating: Math.max(val, filters.maxRating),
+                            });
+                          }}
+                          className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                         >
-                          {g}
-                        </Badge>
-                      ))}
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))}
+                        </select>
+                        <span className="text-muted-foreground text-sm">to</span>
+                        <select
+                          value={filters.maxRating}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            onChange({
+                              ...filters,
+                              maxRating: val,
+                              minRating: Math.min(val, filters.minRating),
+                            });
+                          }}
+                          className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                        >
+                          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                            <option key={n} value={n}>
+                              {n}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
                     </div>
-                  </div>
+
+                    {/* Watch Status */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Watch Status
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {WATCH_STATUSES.map(({ value, label }) => (
+                          <Badge
+                            key={value}
+                            variant={filters.watchStatus.includes(value) ? 'default' : 'outline'}
+                            className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
+                            onClick={() => toggleWatchStatus(value)}
+                          >
+                            {label}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Genres */}
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                        Genre
+                      </p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {GENRES.map((g) => (
+                          <Badge
+                            key={g}
+                            variant={filters.genres.includes(g) ? 'default' : 'outline'}
+                            className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
+                            onClick={() => toggleGenre(g)}
+                          >
+                            {g}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
                   </GlassPanel>
                 </motion.div>
               )}
@@ -329,9 +362,14 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
       {/* Active filter chips + result count */}
       {(activeFilterCount > 0 || filters.contentType !== 'ALL') && (
         <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
-          <span>{total} result{total !== 1 ? 's' : ''}</span>
+          <span>
+            {total} result{total !== 1 ? 's' : ''}
+          </span>
           {(filters.minRating > 1 || filters.maxRating < 10) && (
-            <Chip label={`Rating ${filters.minRating}–${filters.maxRating}`} onRemove={() => onChange({ ...filters, minRating: 1, maxRating: 10 })} />
+            <Chip
+              label={`Rating ${filters.minRating}–${filters.maxRating}`}
+              onRemove={() => onChange({ ...filters, minRating: 1, maxRating: 10 })}
+            />
           )}
           {filters.watchStatus.map((s) => (
             <Chip

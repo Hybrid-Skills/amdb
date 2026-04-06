@@ -35,7 +35,7 @@ export async function GET(req: Request) {
         contentType: 'ANIME' as ContentType,
       }));
 
-      const tmdbTitles = new Set(tmdbResults.map(r => r.title.toLowerCase()));
+      const tmdbTitles = new Set(tmdbResults.map((r) => r.title.toLowerCase()));
 
       const jikanResults = jikanData.results
         .filter((r: any) => !tmdbTitles.has((r.title_english || r.title).toLowerCase()))
@@ -92,7 +92,7 @@ export async function GET(req: Request) {
 
     // Heuristic: Japanese animation on TMDB appears as media_type='tv'.
     // Classify as ANIME if: original_language is 'ja' AND genre 16 (Animation) is present.
-    function detectContentType(r: typeof data.results[0]): ContentType {
+    function detectContentType(r: (typeof data.results)[0]): ContentType {
       if (r.media_type === 'movie') return 'MOVIE';
       const isJapaneseAnimation =
         (r as any).original_language === 'ja' && (r.genre_ids ?? []).includes(16);

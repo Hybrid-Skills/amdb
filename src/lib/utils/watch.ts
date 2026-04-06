@@ -9,17 +9,22 @@ export function getProviderSearchUrl(providerName: string, title: string, defaul
   // Search patterns for major global/IN services
   if (name.includes('netflix')) return `https://www.netflix.com/search?q=${query}`;
   // Handle Amazon Video and Amazon Channels (e.g., "Crunchyroll Amazon Channel")
-  if (name.includes('amazon') || name.includes('prime')) return `https://www.primevideo.com/search?phrase=${query}`;
-  if (name.includes('disney') || name.includes('hotstar')) return `https://www.hotstar.com/in/explore?search_query=${query}`;
-  if (name.includes('apple') && name.includes('tv')) return `https://tv.apple.com/search?term=${query}`;
-  if (name.includes('google') || name.includes('youtube')) return `https://www.youtube.com/results?search_query=${query}`;
+  if (name.includes('amazon') || name.includes('prime'))
+    return `https://www.primevideo.com/search?phrase=${query}`;
+  if (name.includes('disney') || name.includes('hotstar'))
+    return `https://www.hotstar.com/in/explore?search_query=${query}`;
+  if (name.includes('apple') && name.includes('tv'))
+    return `https://tv.apple.com/search?term=${query}`;
+  if (name.includes('google') || name.includes('youtube'))
+    return `https://www.youtube.com/results?search_query=${query}`;
   if (name.includes('max') || name.includes('hbo')) return `https://www.max.com/search/${query}`;
   if (name.includes('hulu')) return `https://www.hulu.com/search?q=${query}`;
   if (name.includes('mubi')) return `https://mubi.com/search/films?query=${query}`;
   if (name.includes('crunchyroll')) return `https://www.crunchyroll.com/search?q=${query}`;
   if (name.includes('jiocinema')) return `https://www.jiocinema.com/search/${query}`;
   if (name.includes('zee5')) return `https://www.zee5.com/search?q=${query}`;
-  if (name.includes('sony') && name.includes('liv')) return `https://www.sonyliv.com/search?query=${query}`;
+  if (name.includes('sony') && name.includes('liv'))
+    return `https://www.sonyliv.com/search?query=${query}`;
 
   return defaultUrl;
 }

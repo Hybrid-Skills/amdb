@@ -21,10 +21,25 @@ const CONTENT_TYPES: { value: ContentType | 'ANY'; label: string }[] = [
 ];
 
 const MOVIE_TV_GENRES = [
-  'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Documentary',
-  'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi',
-  'Thriller', 'Western', 'Isekai', 'Mecha', 'Slice of Life',
-  'Sports', 'Supernatural',
+  'Action',
+  'Adventure',
+  'Animation',
+  'Comedy',
+  'Crime',
+  'Documentary',
+  'Drama',
+  'Fantasy',
+  'Horror',
+  'Mystery',
+  'Romance',
+  'Sci-Fi',
+  'Thriller',
+  'Western',
+  'Isekai',
+  'Mecha',
+  'Slice of Life',
+  'Sports',
+  'Supernatural',
 ];
 
 type RecResult = SearchResult & { reason?: string };
@@ -133,7 +148,11 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
             onClick={generateRecs}
             disabled={loading}
           >
-            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+            {loading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Sparkles className="w-4 h-4" />
+            )}
             {loading ? 'Generating...' : 'Generate'}
           </Button>
         </div>
@@ -203,7 +222,9 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
 
                     {/* Info */}
                     <div className="p-3 flex flex-col gap-1 flex-1">
-                      <p className="font-semibold text-sm leading-tight line-clamp-1">{item.title}</p>
+                      <p className="font-semibold text-sm leading-tight line-clamp-1">
+                        {item.title}
+                      </p>
                       <p className="text-xs text-muted-foreground">{item.year}</p>
                       {item.reason && (
                         <p className="text-xs text-muted-foreground/80 leading-relaxed line-clamp-3 mt-0.5 italic">

@@ -6,10 +6,7 @@ import { prisma } from '@/lib/prisma';
 import { getJikanDetails } from '@/lib/jikan';
 import type { ContentType } from '@prisma/client';
 
-export async function GET(
-  req: Request,
-  { params }: { params: Promise<{ tmdbId: string }> },
-) {
+export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: string }> }) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
@@ -18,13 +15,17 @@ export async function GET(
   const type = (searchParams.get('type') ?? 'MOVIE') as ContentType;
   const id = Number(tmdbId);
 
-
-
   try {
     // ANIME and TV_SHOW both use TMDB TV details (search only returns TMDB IDs, not MAL IDs)
-    const raw = (type === 'TV_SHOW' || type === 'ANIME') ? await tmdb.tvDetails(id) : await tmdb.movieDetails(id);
+    const raw =
+      type === 'TV_SHOW' || type === 'ANIME'
+        ? await tmdb.tvDetails(id)
+        : await tmdb.movieDetails(id);
     const crewBase = raw.credits?.crew ?? [];
-    const cast = raw.credits?.cast?.slice(0, 10).map(c => ({...c, profile_path: tmdbImageUrl(c.profile_path)})) ?? [];
+    const cast =
+      raw.credits?.cast
+        ?.slice(0, 10)
+        .map((c) => ({ ...c, profile_path: tmdbImageUrl(c.profile_path) })) ?? [];
 
     const content = {
       tmdbId: raw.id,
@@ -61,9 +62,9 @@ export async function GET(
       last_air_date: raw.last_air_date,
       networks: raw.networks,
       crew: {
-        director: crewBase.find(c => c.job === 'Director')?.name,
-        writer: crewBase.find(c => c.job === 'Writer' || c.job === 'Screenplay')?.name,
-        producer: crewBase.find(c => c.job === 'Producer')?.name,
+        director: crewBase.find((c) => c.job === 'Director')?.name,
+        writer: crewBase.find((c) => c.job === 'Writer' || c.job === 'Screenplay')?.name,
+        producer: crewBase.find((c) => c.job === 'Producer')?.name,
       },
       cast,
       videos: raw.videos,
@@ -84,7 +85,7 @@ export async function GET(
     });
 
     // OMDB — prefer stored enrichment, fall back to live fetch
-    const omdbEnrichment = storedContent?.enrichments?.find(e => e.source === 'omdb');
+    const omdbEnrichment = storedContent?.enrichments?.find((e) => e.source === 'omdb');
     if (omdbEnrichment) {
       const omdbData = omdbEnrichment.data as Record<string, any>;
       omdbRatings = omdbData.Ratings ?? [];
@@ -104,7 +105,7 @@ export async function GET(
 
     // Jikan (MAL) — DB only, populated when user first adds an anime
     if (type === 'ANIME') {
-      const jikanEnrichment = storedContent?.enrichments?.find(e => e.source === 'jikan');
+      const jikanEnrichment = storedContent?.enrichments?.find((e) => e.source === 'jikan');
       if (jikanEnrichment) {
         const jikanData = jikanEnrichment.data as Record<string, any>;
         malScore = jikanData?.score ? Number(Number(jikanData.score).toFixed(1)) : null;

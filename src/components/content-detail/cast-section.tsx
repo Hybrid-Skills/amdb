@@ -8,10 +8,9 @@ interface CastSectionProps {
 }
 
 export async function CastSection({ tmdbId, contentType }: CastSectionProps) {
-  const credits = contentType === 'MOVIE' 
-    ? await fetchMovieCredits(tmdbId) 
-    : await fetchTvCredits(tmdbId);
-  
+  const credits =
+    contentType === 'MOVIE' ? await fetchMovieCredits(tmdbId) : await fetchTvCredits(tmdbId);
+
   const cast = credits.cast;
   if (!cast?.length) return null;
 

@@ -30,14 +30,17 @@ export async function POST(req: Request) {
       where: {
         profileId,
         content: {
-          contentType: contentType === 'ANY'
-            ? undefined
-            : contentType === 'TV_SHOW'
-              ? { in: ['TV_SHOW' as const, 'ANIME' as const] }
-              : contentType as ContentType
+          contentType:
+            contentType === 'ANY'
+              ? undefined
+              : contentType === 'TV_SHOW'
+                ? { in: ['TV_SHOW' as const, 'ANIME' as const] }
+                : (contentType as ContentType),
         },
       },
-      include: { content: { select: { title: true, year: true, contentType: true, genres: true } } },
+      include: {
+        content: { select: { title: true, year: true, contentType: true, genres: true } },
+      },
       orderBy: { userRating: 'desc' },
     });
 
@@ -55,7 +58,11 @@ export async function POST(req: Request) {
     const allWatchedTitles = allItems.map((i) => `"${i.content.title}"`).join(', ');
 
     const typeLabel =
-      contentType === 'TV_SHOW' ? 'TV show or anime' : contentType === 'MOVIE' ? 'movie' : 'movie, TV show or anime';
+      contentType === 'TV_SHOW'
+        ? 'TV show or anime'
+        : contentType === 'MOVIE'
+          ? 'movie'
+          : 'movie, TV show or anime';
 
     const genreClause =
       genres && genres.length > 0 ? `The user prefers these genres: ${genres.join(', ')}.` : '';
@@ -138,9 +145,12 @@ Return ONLY a valid JSON array. No markdown, no explanation outside the JSON. Ex
               posterUrl: tmdbImageUrl(data.poster_path),
               tmdbRating: data.vote_average,
               overview: data.overview,
-              contentType: contentType === 'ANY'
-                ? data.media_type === 'tv' ? 'TV_SHOW' : 'MOVIE'
-                : contentType,
+              contentType:
+                contentType === 'ANY'
+                  ? data.media_type === 'tv'
+                    ? 'TV_SHOW'
+                    : 'MOVIE'
+                  : contentType,
               reason: rec.reason,
             };
           }

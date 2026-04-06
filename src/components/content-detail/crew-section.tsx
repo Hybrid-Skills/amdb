@@ -14,22 +14,35 @@ interface CrewSectionProps {
   contentType: 'MOVIE' | 'TV_SHOW' | 'ANIME';
 }
 
-const deptOrder = ['Directing', 'Writing', 'Production', 'Camera', 'Sound', 'Art', 'Costume & Make-Up', 'Editing', 'Visual Effects', 'Other'];
+const deptOrder = [
+  'Directing',
+  'Writing',
+  'Production',
+  'Camera',
+  'Sound',
+  'Art',
+  'Costume & Make-Up',
+  'Editing',
+  'Visual Effects',
+  'Other',
+];
 
 export async function CrewSection({ tmdbId, contentType }: CrewSectionProps) {
-  const credits = contentType === 'MOVIE' 
-    ? await fetchMovieCredits(tmdbId) 
-    : await fetchTvCredits(tmdbId);
-  
+  const credits =
+    contentType === 'MOVIE' ? await fetchMovieCredits(tmdbId) : await fetchTvCredits(tmdbId);
+
   const fullCrew = credits.fullCrew;
   if (!fullCrew?.length) return null;
 
-  const crewByDept = fullCrew.reduce((acc: Record<string, CrewMember[]>, c: CrewMember) => {
-    const dept = c.department || 'Other';
-    acc[dept] = acc[dept] ?? [];
-    acc[dept].push(c);
-    return acc;
-  }, {} as Record<string, CrewMember[]>);
+  const crewByDept = fullCrew.reduce(
+    (acc: Record<string, CrewMember[]>, c: CrewMember) => {
+      const dept = c.department || 'Other';
+      acc[dept] = acc[dept] ?? [];
+      acc[dept].push(c);
+      return acc;
+    },
+    {} as Record<string, CrewMember[]>,
+  );
 
   return (
     <section>
@@ -41,11 +54,7 @@ export async function CrewSection({ tmdbId, contentType }: CrewSectionProps) {
         {deptOrder
           .filter((dept) => crewByDept[dept]?.length)
           .map((dept) => (
-            <CrewDepartmentAccordion
-              key={dept}
-              title={dept}
-              members={crewByDept[dept]}
-            />
+            <CrewDepartmentAccordion key={dept} title={dept} members={crewByDept[dept]} />
           ))}
       </div>
     </section>
