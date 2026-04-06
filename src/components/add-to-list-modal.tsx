@@ -359,7 +359,7 @@ export function AddToListModal({
             <div>
               <p className="text-sm font-medium mb-2 text-white/80">Watch status</p>
               <Select value={watchStatus} onValueChange={setWatchStatus}>
-                <SelectTrigger className="bg-black/50 border-white/10">
+                <SelectTrigger className="bg-black/50 border-white/10 text-base md:text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-950 border-zinc-900 text-white">
