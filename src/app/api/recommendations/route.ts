@@ -125,15 +125,7 @@ ${avoidClause}
 ${genreClause}
 ${exclusionClause}
 
-Suggest exactly 6 ${typeLabel} titles the user has NOT seen. For each, provide:
-- "title": exact title as known internationally
-- "year": release year as a number
-- "reason": one sentence (max 20 words) explaining why this fits the user's taste
-
-Return ONLY a valid JSON array. No markdown, no explanation outside the JSON. Example:
-[{"title":"Parasite","year":2019,"reason":"Dark social thriller with the same tension and twist you loved in similar films."}]
-
-Give me the 6 recommendations as JSON.`;
+Suggest 6 ${typeLabel} titles the user has NOT seen that match their tastes.`;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const genModel = genAI.getGenerativeModel({
@@ -153,26 +145,35 @@ Give me the 6 recommendations as JSON.`;
     let recs: { title: string; year: number; reason: string }[] = [];
 
     try {
-      // Direct parse (most common with strict JSON mode)
+      // 1. Direct parse (ideal for strict JSON mode)
       const parsed = JSON.parse(contentText);
       recs = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
     } catch {
-      // Lenient fallback for models that may add markdown or wrap in objects
-      const startIdx = contentText.indexOf('[');
-      const endIdx = contentText.lastIndexOf(']');
-
-      if (startIdx !== -1 && endIdx !== -1) {
+      // 2. Lenient fallback (scans for any block that looks like a JSON array)
+      const arrayMatch = contentText.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
         try {
-          const jsonText = contentText.substring(startIdx, endIdx + 1);
-          const parsed = JSON.parse(jsonText);
+          const parsed = JSON.parse(arrayMatch[0]);
           recs = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
         } catch (e) {
-          console.error('Failed to parse extracted JSON:', e, 'Raw:', contentText);
-          throw new Error('Failed to parse recommendations');
+          console.error('Failed to parse matched array:', e, 'Text:', arrayMatch[0]);
+          throw new Error('Failed to parse AI recommendations');
         }
       } else {
-        console.error('No JSON array found in response:', contentText);
-        throw new Error('AI returned an invalid recommendation format');
+        // 3. Last-ditch attempt: check if it's a JSON object wrapping an array
+        const objectMatch = contentText.match(/\{[\s\S]*\}/);
+        if (objectMatch) {
+          try {
+            const parsed = JSON.parse(objectMatch[0]);
+            recs = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
+          } catch (e) {
+            console.error('Failed to parse matched object:', e, 'Text:', objectMatch[0]);
+            throw new Error('Failed to parse AI recommendations');
+          }
+        } else {
+          console.error('No JSON block found in response:', contentText);
+          throw new Error('AI returned an invalid format');
+        }
       }
     }
 
