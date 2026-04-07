@@ -855,36 +855,46 @@ export function AddToListModal({
       {/* ── Sticky CTA bar ─────────────────────────────── */}
       {editingRating && (
         <div className="shrink-0 border-t border-white/10 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center gap-3 justify-center">
-          {!isEditing && (
-            <button
-              onClick={handlePlanToWatch}
-              disabled={planningToWatch || submitting}
-              className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white transition-all disabled:opacity-50"
-            >
-              {planningToWatch ? (
-                <Loader2 className="w-4 h-4 animate-spin text-white/40" />
-              ) : (
-                <Bookmark className="w-4 h-4" />
+          {checkingExistence ? (
+            // While the existence check is running, show a neutral loading button
+            <div className="flex-1 max-w-md mx-auto h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin text-white/40" />
+              <span className="text-sm text-white/40 uppercase tracking-tight font-bold">Checking...</span>
+            </div>
+          ) : (
+            <>
+              {!isEditing && (
+                <button
+                  onClick={handlePlanToWatch}
+                  disabled={planningToWatch || submitting}
+                  className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white transition-all disabled:opacity-50"
+                >
+                  {planningToWatch ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-white/40" />
+                  ) : (
+                    <Bookmark className="w-4 h-4" />
+                  )}
+                  <span className="text-sm font-bold uppercase tracking-tight">Plan</span>
+                </button>
               )}
-              <span className="text-sm font-bold uppercase tracking-tight">Plan</span>
-            </button>
+              <button
+                onClick={handleSubmit}
+                disabled={!rating || submitting || planningToWatch}
+                className={cn(
+                  "flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all disabled:opacity-50",
+                  isEditing && "max-w-md mx-auto"
+                )}
+              >
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <span className="text-sm font-bold uppercase tracking-tight">
+                    {isEditing ? 'Update List' : 'Add to List'}
+                  </span>
+                )}
+              </button>
+            </>
           )}
-          <button
-            onClick={handleSubmit}
-            disabled={!rating || submitting || planningToWatch}
-            className={cn(
-              "flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all disabled:opacity-50",
-              isEditing && "max-w-md mx-auto" // Center and cap width if it's the only button
-            )}
-          >
-            {submitting ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <span className="text-sm font-bold uppercase tracking-tight">
-                {isEditing ? 'Update List' : 'Add to List'}
-              </span>
-            )}
-          </button>
         </div>
       )}
     </div>
