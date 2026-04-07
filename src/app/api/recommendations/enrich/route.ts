@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { generateShortId } from '@/lib/id';
+import { ContentType } from '@prisma/client';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -30,33 +31,65 @@ export async function POST(req: Request) {
     }
 
     const tmdbId = data.id;
+    const isTv = data.media_type === 'tv' || !!data.first_air_date;
+    const contentType: ContentType = isTv ? ContentType.TV_SHOW : ContentType.MOVIE;
 
-    // 2. Check local Database Cache by TMDB ID
+    // 2. Fetch Full Details for Certification and Runtime
+    const details = isTv 
+      ? await tmdb.tvDetails(tmdbId) 
+      : await tmdb.movieDetails(tmdbId);
+
+    // Extract Certification (US Priority)
+    let ageCertification = null;
+    if (isTv) {
+      ageCertification = details.content_ratings?.results.find((r: any) => r.iso_3166_1 === 'US')?.rating || null;
+    } else {
+      ageCertification = details.release_dates?.results.find((r: any) => r.iso_3166_1 === 'US')?.release_dates.find((rd: any) => rd.certification)?.certification || null;
+    }
+
+    // Extract Runtime
+    const runtimeMins = !isTv ? (details.runtime || null) : null;
+    const episodeRuntime = isTv ? (details.episode_run_time?.[0] || null) : null;
+
+    // 3. Check local Database Cache by TMDB ID
     let content = await prisma.content.findUnique({
       where: { tmdbId },
     });
 
-    // 3. Create Content if missing
+    // 4. Create or Update Content with rich metadata
+    const contentData = {
+      contentType,
+      title: details.title ?? details.name ?? 'Untitled', 
+      year: details.release_date
+          ? new Date(details.release_date).getFullYear()
+          : details.first_air_date
+            ? new Date(details.first_air_date).getFullYear()
+            : (year || null),
+      posterUrl: tmdbImageUrl(details.poster_path),
+      tmdbRating: details.vote_average,
+      overview: details.overview,
+      ageCertification,
+      runtimeMins,
+      episodeRuntime,
+    };
+
     if (!content) {
       content = await prisma.content.create({
         data: {
           id: generateShortId(),
-          contentType: data.media_type === 'tv' ? 'TV_SHOW' : 'MOVIE',
-          title: data.title ?? data.name ?? 'Untitled', 
-          year: data.release_date
-              ? new Date(data.release_date).getFullYear()
-              : data.first_air_date
-                ? new Date(data.first_air_date).getFullYear()
-                : year,
-          posterUrl: tmdbImageUrl(data.poster_path),
           tmdbId: tmdbId,
-          tmdbRating: data.vote_average,
-          overview: data.overview,
+          ...contentData,
         },
+      });
+    } else {
+      // Update existing content with fresh metadata if it was missing
+      content = await prisma.content.update({
+        where: { id: content.id },
+        data: contentData,
       });
     }
 
-    // 4. Create UserContent entry (RECOMMENDED status)
+    // 5. Create UserContent entry (RECOMMENDED status)
     const userContent = await prisma.userContent.upsert({
       where: {
         profileId_contentId: { profileId, contentId: content.id }

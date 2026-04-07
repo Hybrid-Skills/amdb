@@ -251,26 +251,22 @@ export function MovieCard({
             >
               {CONTENT_ICONS[contentType]}
             </Badge>
-            {!isHorizontal && (
-              <>
-                {certLabel && (
-                  <Badge
-                    variant="destructive"
-                    className="h-4 text-[9px] px-1 font-bold rounded-sm border-0"
-                  >
-                    {certLabel}
-                  </Badge>
-                )}
-                {runtimeLabel && (
-                  <Badge
-                    variant="secondary"
-                    className="h-4 text-[9px] px-1 bg-black/60 text-white/90 font-medium rounded-sm border border-white/20"
-                  >
-                    <Clock className="w-2.5 h-2.5 mr-0.5 inline-block" />
-                    {runtimeLabel}
-                  </Badge>
-                )}
-              </>
+            {certLabel && (
+              <Badge
+                variant="destructive"
+                className="h-4 text-[9px] px-1 font-bold rounded-sm border-0"
+              >
+                {certLabel}
+              </Badge>
+            )}
+            {runtimeLabel && (
+              <Badge
+                variant="secondary"
+                className="h-4 text-[9px] px-1 bg-black/60 text-white/90 font-medium rounded-sm border border-white/20"
+              >
+                <Clock className="w-2.5 h-2.5 mr-0.5 inline-block" />
+                {runtimeLabel}
+              </Badge>
             )}
           </div>
 
@@ -310,11 +306,7 @@ export function MovieCard({
                      {LABEL_CONFIG[recommendationLabel].label}
                    </div>
                  )}
-                 {runtimeLabel && (
-                    <div className="text-[10px] font-black text-muted-foreground opacity-80 ml-auto whitespace-nowrap shrink-0">
-                      {runtimeLabel}
-                    </div>
-                 )}
+                 {/* Runtime removed from here - now on poster */}
                </div>
             )}
 
