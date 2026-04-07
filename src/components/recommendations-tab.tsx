@@ -46,6 +46,7 @@ interface HistoryEntry {
   contentType: string;
   createdAt: string;
   recommendationReason?: string | null;
+  recommendationLabel?: string | null;
   content: {
     id: string;
     title: string;
@@ -457,6 +458,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
                       isSecondaryLoading={isBookmarking}
                       onSecondaryAction={() => handleBookmark(entry)}
                       recommendationReason={entry.recommendationReason}
+                      recommendationLabel={entry.recommendationLabel}
                       onViewDetails={() => onSelect({
                         id:          item.id,
                         tmdbId:      item.tmdbId ?? undefined,

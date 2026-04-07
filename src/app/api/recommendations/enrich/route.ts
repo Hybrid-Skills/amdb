@@ -9,7 +9,7 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { profileId, title, year, reason } = await req.json();
+  const { profileId, title, year, reason, label } = await req.json();
   if (!profileId || !title) {
     return NextResponse.json({ error: 'profileId and title required' }, { status: 400 });
   }
@@ -62,13 +62,15 @@ export async function POST(req: Request) {
         profileId_contentId: { profileId, contentId: content.id }
       },
       update: {
-        recommendationReason: reason || null, // Updated for dedicated field
+        recommendationReason: reason || null,
+        recommendationLabel: label as any || null,
       },
       create: {
         profileId,
         contentId: content.id,
         listStatus: 'RECOMMENDED',
         recommendationReason: reason || null,
+        recommendationLabel: label as any || null,
       }
     });
 

@@ -36,6 +36,7 @@ export async function GET(req: Request) {
         listStatus: true,
         addedAt: true,
         recommendationReason: true,
+        recommendationLabel: true,
         content: {
           select: {
             id: true,

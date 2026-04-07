@@ -132,6 +132,7 @@ model UserContent {
   userRating           Int?
   notes                String?
   recommendationReason String?
+  recommendationLabel  RecommendationLabel?
   watchedDate          DateTime?   @db.Date
   watchStatus  WatchStatus?
   startDate    DateTime?   @db.Date
@@ -166,4 +167,17 @@ enum WatchStatus {
   PLAN_TO_WATCH
   COMPLETED
   DROPPED
+}
+
+enum RecommendationLabel {
+  UNDERRATED
+  CRITICALLY_ACCLAIMED
+  AWARD_WINNING
+  FAN_FAVORITE
+  CULT_CLASSIC
+  VISUAL_SPECTACLE
+  IMMERSIVE_SOUND
+  TECHNICAL_MASTERY
+  DIRECTORIAL_DEBUT
+  GENRE_DEFINING
 }

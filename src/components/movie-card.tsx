@@ -38,6 +38,7 @@ export interface MovieCardProps {
   tmdbId?: number;
   malId?: number;
   recommendationReason?: string | null;
+  recommendationLabel?: string | null;
   
   // Tab variants
   variant?: 'WATCHED' | 'PLANNED' | 'RECOMMENDED';
@@ -77,6 +78,19 @@ const CONTENT_ICONS: Record<ContentType, React.ReactNode> = {
   ),
 };
 
+const LABEL_MAP: Record<string, string> = {
+  UNDERRATED: 'Underrated',
+  CRITICALLY_ACCLAIMED: 'Critically Acclaimed',
+  AWARD_WINNING: 'Award Winning',
+  FAN_FAVORITE: 'Fan Favorite',
+  CULT_CLASSIC: 'Cult Classic',
+  VISUAL_SPECTACLE: 'Visual Spectacle',
+  IMMERSIVE_SOUND: 'Immersive Sound',
+  TECHNICAL_MASTERY: 'Technical Mastery',
+  DIRECTORIAL_DEBUT: 'Directorial Debut',
+  GENRE_DEFINING: 'Genre Defining',
+};
+
 export function MovieCard({
   id,
   title,
@@ -97,6 +111,7 @@ export function MovieCard({
   onSecondaryAction,
   isSecondaryLoading,
   recommendationReason,
+  recommendationLabel,
   onViewDetails,
 }: MovieCardProps) {
   const router = useRouter();
@@ -226,16 +241,23 @@ export function MovieCard({
 
             {/* Horizontal Metatdata (Badges on right) */}
             {isHorizontal && (
-               <div className="flex gap-2.5 mt-3 items-center opacity-80">
-                 <div className="flex items-center gap-1.5 uppercase font-black text-[10px] tracking-widest text-muted-foreground">
-                   {CONTENT_ICONS[contentType]}
-                   {contentType.replace('_', ' ')}
-                 </div>
-                 {runtimeLabel && (
-                    <div className="text-[10px] font-black text-muted-foreground">
-                      {runtimeLabel}
-                    </div>
+               <div className="flex flex-col gap-2 mt-auto">
+                 {recommendationLabel && (
+                   <div className="inline-flex items-center self-start px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-tight">
+                     {LABEL_MAP[recommendationLabel] || recommendationLabel.replace('_', ' ')}
+                   </div>
                  )}
+                 <div className="flex gap-2.5 items-center opacity-80">
+                   <div className="flex items-center gap-1.5 uppercase font-black text-[10px] tracking-widest text-muted-foreground">
+                     {CONTENT_ICONS[contentType]}
+                     {contentType.replace('_', ' ')}
+                   </div>
+                   {runtimeLabel && (
+                      <div className="text-[10px] font-black text-muted-foreground">
+                        {runtimeLabel}
+                      </div>
+                   )}
+                 </div>
                </div>
             )}
           </div>

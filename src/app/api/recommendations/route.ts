@@ -28,8 +28,12 @@ const recommendationSchema = {
       title: { type: SchemaType.STRING },
       year: { type: SchemaType.NUMBER },
       reason: { type: SchemaType.STRING },
+      label: { 
+        type: SchemaType.STRING,
+        description: 'Qualitative marker for the content. Must be one of: UNDERRATED, CRITICALLY_ACCLAIMED, AWARD_WINNING, FAN_FAVORITE, CULT_CLASSIC, VISUAL_SPECTACLE, IMMERSIVE_SOUND, TECHNICAL_MASTERY, DIRECTORIAL_DEBUT, GENRE_DEFINING.'
+      },
     },
-    required: ['title', 'year', 'reason'],
+    required: ['title', 'year', 'reason', 'label'],
   },
 } as const;
 
@@ -99,10 +103,17 @@ Avoid: ${lowerRated.map((i) => i.content.title).join(', ')}.
 Genres: ${genres?.join(', ') || 'Any'}.
 Already seen/excluded: ${exclusionList}.
 ${specialInstructions ? `Special Instructions: ${specialInstructions}` : ''}
-Suggest exactly 6 ${typeLabel} titles the user has NOT seen. Return JSON array of objects with "title", "year" (number), and "reason" (string).`;
+
+Suggest exactly 6 ${typeLabel} titles the user has NOT seen. 
+Return JSON array of objects with:
+- "title" (string)
+- "year" (number)
+- "reason" (string)
+- "label" (string) - Choose at most ONE label from this list ONLY if strongly applicable. Use exactly these strings: [UNDERRATED, CRITICALLY_ACCLAIMED, AWARD_WINNING, FAN_FAVORITE, CULT_CLASSIC, VISUAL_SPECTACLE, IMMERSIVE_SOUND, TECHNICAL_MASTERY, DIRECTORIAL_DEBUT, GENRE_DEFINING].
+- IMPORTANT: Diversify labels. Use at most 2 titles per same label in this list.`;
 
     // 2. Start AI generation
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
     const isGemini = model.startsWith('gemini');
     const genModel = genAI.getGenerativeModel({
       model,
@@ -120,7 +131,7 @@ Suggest exactly 6 ${typeLabel} titles the user has NOT seen. Return JSON array o
 
     // 3. Robust JSON extraction
     const cleanedJson = extractJson(contentText);
-    const recs: { title: string; year: number; reason: string }[] = JSON.parse(cleanedJson);
+    const recs: { title: string; year: number; reason: string; label: string }[] = JSON.parse(cleanedJson);
     const finalRecsList = Array.isArray(recs) ? recs : (recs as any).recommendations || [];
 
     // Return raw suggestions for client-side enrichment
