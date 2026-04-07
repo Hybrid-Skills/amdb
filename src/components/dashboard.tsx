@@ -190,7 +190,7 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
             <div className="flex items-center gap-2.5 shrink-0">
               <div className="w-8 h-8 rounded-lg overflow-hidden bg-gradient-to-br from-cyan-500 to-blue-600 p-0.5 shadow-lg shadow-cyan-500/20">
                 <Image
-                  src="/logo.png"
+                  src="/logo.webp"
                   alt="AMDB"
                   width={32}
                   height={32}
