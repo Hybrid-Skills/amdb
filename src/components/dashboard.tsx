@@ -16,12 +16,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { List, Sparkles } from 'lucide-react';
 import { EmptyStateIllustration } from './ui/empty-state-illustration';
 
-interface DashboardProps {
-  initialProfiles: Profile[];
-  userName: string;
-}
-
-interface ListItem {
+interface InitialListItem {
   id: string;
   userRating: number;
   notes: string | null;
@@ -56,15 +51,21 @@ interface ListItem {
   };
 }
 
-export function Dashboard({ initialProfiles }: DashboardProps) {
+interface DashboardProps {
+  initialProfiles: Profile[];
+  userName: string;
+  initialProfileId: string;
+  initialListData: { items: InitialListItem[]; total: number; totalPages: number };
+}
+
+// ListItem is the same shape as InitialListItem (defined in DashboardProps above)
+type ListItem = InitialListItem;
+
+export function Dashboard({ initialProfiles, initialProfileId, initialListData }: DashboardProps) {
   const [profiles, setProfiles] = React.useState<Profile[]>(initialProfiles);
-  const [activeProfileId, setActiveProfileId] = React.useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('amdb_last_profile_id');
-      if (saved && initialProfiles.some((p) => p.id === saved)) return saved;
-    }
-    return initialProfiles.find((p) => p.isDefault)?.id ?? initialProfiles[0]?.id ?? '';
-  });
+  // Initialise from server-provided ID to avoid SSR/client hydration mismatch.
+  // localStorage restore happens in useEffect after hydration.
+  const [activeProfileId, setActiveProfileId] = React.useState<string>(initialProfileId);
   const [selectedItem, setSelectedItem] = React.useState<SearchResult | null>(null);
   const [selectedItemMeta, setSelectedItemMeta] = React.useState<{
     rating?: number;
@@ -72,13 +73,15 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
     watchStatus?: string | null;
   }>({});
   const [modalForceEdit, setModalForceEdit] = React.useState(false);
-  const [listItems, setListItems] = React.useState<ListItem[]>([]);
+  const [listItems, setListItems] = React.useState<ListItem[]>(
+    initialListData.items as ListItem[],
+  );
   const [listLoading, setListLoading] = React.useState(false);
   const [refreshing, setRefreshing] = React.useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(1);
-  const [totalPages, setTotalPages] = React.useState(1);
-  const [total, setTotal] = React.useState(0);
+  const [totalPages, setTotalPages] = React.useState(initialListData.totalPages);
+  const [total, setTotal] = React.useState(initialListData.total);
   const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
 
   async function fetchProfiles() {
@@ -114,12 +117,19 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
     setListLoading(false);
   }
 
+  // After hydration: restore the last active profile from localStorage (once only)
+  React.useEffect(() => {
+    const saved = localStorage.getItem('amdb_last_profile_id');
+    if (saved && initialProfiles.some((p) => p.id === saved) && saved !== activeProfileId) {
+      setActiveProfileId(saved);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Fetch when profile or filters change — reset to page 1
   React.useEffect(() => {
     if (activeProfileId) {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('amdb_last_profile_id', activeProfileId);
-      }
+      localStorage.setItem('amdb_last_profile_id', activeProfileId);
       fetchList(activeProfileId, 1, filters);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -142,36 +152,32 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
     setRefreshing(false);
   }
 
-  async function handleSearchSelect(item: any) {
-    let amdbId = item.id;
-
-    // If no ID, ensure it exists in our DB first (discovery flow)
-    if (!amdbId) {
-      try {
-        const res = await fetch('/api/content/ensure', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            tmdbId: item.tmdbId,
-            malId: item.malId,
-            contentType: item.contentType,
-          }),
-        });
-        if (res.ok) {
-          const data = await res.json();
-          amdbId = data.amdbId;
-        }
-      } catch (e) {
-        console.error('Failed to ensure content on select:', e);
-      }
-    }
-
+  function handleSearchSelect(item: any) {
+    // Open modal immediately — never block on ensure
     setSelectedItemMeta({});
     setModalForceEdit(true);
-    setSelectedItem({
-      ...item,
-      id: amdbId,
-    });
+    setSelectedItem(item);
+
+    // Run ensure in the background so the detail-page link in the modal
+    // becomes available once the DB record is created/confirmed
+    if (!item.id && (item.tmdbId || item.malId)) {
+      fetch('/api/content/ensure', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tmdbId: item.tmdbId,
+          malId: item.malId,
+          contentType: item.contentType,
+        }),
+      })
+        .then((r) => (r.ok ? r.json() : null))
+        .then((data) => {
+          if (data?.amdbId) {
+            setSelectedItem((prev) => (prev ? { ...prev, id: data.amdbId } : prev));
+          }
+        })
+        .catch(() => {});
+    }
   }
 
   return (
@@ -204,7 +210,10 @@ export function Dashboard({ initialProfiles }: DashboardProps) {
 
             {/* Profile Dropdown */}
             <div className="flex items-center gap-2 shrink-0">
-              <ProfileDropdown onProfileSwitch={(p) => setActiveProfileId(p.id)} />
+              <ProfileDropdown
+                initialProfiles={initialProfiles}
+                onProfileSwitch={(p) => setActiveProfileId(p.id)}
+              />
             </div>
           </div>
         </div>

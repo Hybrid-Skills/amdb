@@ -20,14 +20,26 @@ const AVATAR_COLORS = [
 ];
 
 interface ProfileDropdownProps {
+  initialProfiles?: Profile[];
   onProfileSwitch?: (profile: Profile) => void;
   className?: string;
 }
 
-export function ProfileDropdown({ onProfileSwitch, className }: ProfileDropdownProps) {
+export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }: ProfileDropdownProps) {
   const { data: session, status } = useSession();
-  const [profiles, setProfiles] = React.useState<Profile[]>([]);
-  const [activeProfile, setActiveProfile] = React.useState<Profile | null>(null);
+  const [profiles, setProfiles] = React.useState<Profile[]>(initialProfiles ?? []);
+  const [activeProfile, setActiveProfile] = React.useState<Profile | null>(() => {
+    if (!initialProfiles?.length) return null;
+    // Try to restore last active profile from localStorage (client-only, falls back to default)
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('amdb_last_profile_id');
+      if (saved) {
+        const match = initialProfiles.find((p) => p.id === saved);
+        if (match) return match;
+      }
+    }
+    return initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0] ?? null;
+  });
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [dropdownView, setDropdownView] = React.useState<'menu' | 'switcher' | 'adding'>('menu');
   const [newName, setNewName] = React.useState('');
@@ -57,7 +69,10 @@ export function ProfileDropdown({ onProfileSwitch, className }: ProfileDropdownP
   };
 
   React.useEffect(() => {
-    if (status === 'authenticated') refreshProfiles();
+    // Skip the initial fetch if we already have server-provided data.
+    // Only fetch when session first becomes authenticated without pre-loaded data.
+    if (status === 'authenticated' && profiles.length === 0) refreshProfiles();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status]);
 
   React.useEffect(() => {
