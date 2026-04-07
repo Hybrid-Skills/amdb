@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { AnimatePresence } from 'framer-motion';
-import { Sparkles, ChevronDown, History, Star } from 'lucide-react';
+import { Sparkles, ChevronDown, History, Star, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
@@ -10,12 +10,6 @@ import { MovieCard } from './movie-card';
 import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
 import { useToast } from '@/hooks/use-toast';
-
-const CONTENT_ICONS: Record<string, React.ReactNode> = {
-  MOVIE: <Star className="w-3.5 h-3.5 text-cyan-400" />,
-  TV_SHOW: <Star className="w-3.5 h-3.5 text-blue-400" />,
-  ANIME: <Star className="w-3.5 h-3.5 text-purple-400" />,
-};
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -61,6 +55,7 @@ interface HistoryEntry {
     ageCertification: string | null;
     runtimeMins: number | null;
     episodeRuntime: number | null;
+    reason?: string; // AI generated reason
   };
 }
 
@@ -241,12 +236,12 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   const [historyTotalPages, setHistoryTotalPages] = React.useState(0);
 
   const [generating, setGenerating]               = React.useState(false);
+  const [generatingStatus, setGeneratingStatus]   = React.useState('');
   const [showGenerateModal, setShowGenerateModal] = React.useState(false);
   const [bookmarking, setBookmarking]             = React.useState<Set<string>>(new Set());
   const [deleting, setDeleting]                   = React.useState<Set<string>>(new Set());
   const { toast } = useToast();
 
-  // Fetch history on mount and profile change
   React.useEffect(() => {
     fetchHistory(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -271,38 +266,62 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   async function handleGenerate(type: ContentType | 'ANY', genres: string[], model: ModelId, specialInstructions?: string) {
     setShowGenerateModal(false);
     setGenerating(true);
+    
     try {
+      // 1. Phase 1: Fetching Data
+      setGeneratingStatus('Fetching data');
       const res = await fetch('/api/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profileId, contentType: type, genres, model, specialInstructions }),
       });
+      
+      // 2. Phase 2: Getting Recommendations
+      setGeneratingStatus('Getting recommendations');
       const data = await res.json();
-      if (!res.ok) {
-        const error = new Error(data.error || 'Failed to generate recommendations') as any;
-        error.rawResponse = data.rawResponse || data.debug?.rawResponse;
-        throw error;
-      }
-      // Refresh history — new recs appear at top
-      await fetchHistory(1);
+      if (!res.ok) throw new Error(data.error || 'Failed to generate recommendations');
+
+      const rawRecs = data.recommendations || [];
+      if (rawRecs.length === 0) throw new Error('No recommendations generated');
+
+      // 3. Phase 3: Getting Details (Enrichment)
+      setGeneratingStatus('Getting details');
+      
+      // We process them one by one but in parallel. 
+      // As they finish, we update the list locally to show progress.
+      const enrichmentPromises = rawRecs.map(async (raw: any) => {
+        try {
+          const enrichRes = await fetch('/api/recommendations/enrich', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ profileId, title: raw.title, year: raw.year, reason: raw.reason }),
+          });
+          const enrichedData = await enrichRes.json();
+          if (enrichRes.ok) {
+            // Prepend new item to list immediately for visual pop-in
+            setHistoryItems((prev) => {
+              // Avoid duplicates if user double clicks or overlaps
+              if (prev.some(item => item.id === enrichedData.id)) return prev;
+              return [enrichedData, ...prev];
+            });
+          }
+        } catch (e) {
+          console.error('Enrichment failed for', raw.title, e);
+        }
+      });
+
+      await Promise.all(enrichmentPromises);
+      toast({ title: 'Suggestions ready!' });
+
     } catch (err: any) {
       toast({
         title: 'Recommendation failed',
-        description: (
-          <div className="space-y-2">
-            <p className="text-sm font-medium">{err.message || 'The AI was unable to generate suggestions.'}</p>
-            {err.rawResponse && (
-              <details className="text-[10px] bg-black/20 p-2 rounded max-h-40 overflow-auto cursor-help border border-white/10">
-                <summary className="opacity-70">View raw AI response</summary>
-                <div className="whitespace-pre-wrap mt-1 opacity-90">{err.rawResponse}</div>
-              </details>
-            )}
-          </div>
-        ),
+        description: err.message,
         variant: 'destructive',
       });
     } finally {
       setGenerating(false);
+      setGeneratingStatus('');
     }
   }
 
@@ -347,8 +366,13 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   }
 
   const skeletons = generating
-    ? Array.from({ length: 6 }).map((_, i) => (
-        <div key={`sk-${i}`} className="aspect-[2/3] rounded-xl bg-card border border-border animate-pulse" />
+    ? Array.from({ length: 1 }).map((_, i) => (
+        <div key={`sk-${i}`} className="col-span-full flex flex-col items-center justify-center py-10 bg-accent/20 rounded-2xl border border-dashed border-primary/30 animate-pulse">
+           <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
+           <p className="text-sm font-bold uppercase tracking-widest text-primary animate-bounce">
+             {generatingStatus}...
+           </p>
+        </div>
       ))
     : [];
 
@@ -382,46 +406,52 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
 
       {/* Card grid */}
       {!historyLoading && (historyItems.length > 0 || generating) && (
-        <AnimatePresence>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-            {/* Skeleton cards for in-progress generation — shown at top */}
-            {skeletons}
-
-            {historyItems.map((entry) => {
-              const item = entry.content;
-              const isBookmarking = bookmarking.has(entry.id);
-              return (
-                <MovieCard
-                  key={entry.id}
-                  id={item.id}
-                  title={item.title}
-                  year={item.year}
-                  posterUrl={item.posterUrl}
-                  contentType={item.contentType as ContentType}
-                  tmdbRating={item.tmdbRating != null ? Number(item.tmdbRating) : null}
-                  ageCertification={item.ageCertification}
-                  runtimeMins={item.runtimeMins}
-                  episodeRuntime={item.episodeRuntime}
-                  variant="RECOMMENDED"
-                  onDelete={() => handleDelete(entry)}
-                  isSecondaryLoading={isBookmarking}
-                  onSecondaryAction={() => handleBookmark(entry)}
-                  onViewDetails={() => onSelect({
-                    id:          item.id,
-                    tmdbId:      item.tmdbId ?? undefined,
-                    malId:       item.malId ?? undefined,
-                    title:       item.title,
-                    year:        item.year,
-                    posterUrl:   item.posterUrl,
-                    tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
-                    overview:    null,
-                    contentType: item.contentType as ContentType,
-                  })}
-                />
-              );
-            })}
-          </div>
-        </AnimatePresence>
+        <div className="space-y-6">
+          {generating && (
+            <div className="grid grid-cols-1 gap-4">
+               {skeletons}
+            </div>
+          )}
+          
+          <AnimatePresence>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {historyItems.map((entry) => {
+                const item = entry.content;
+                const isBookmarking = bookmarking.has(entry.id);
+                return (
+                  <MovieCard
+                    key={entry.id}
+                    id={item.id}
+                    title={item.title}
+                    year={item.year}
+                    posterUrl={item.posterUrl}
+                    contentType={item.contentType as ContentType}
+                    tmdbRating={item.tmdbRating != null ? Number(item.tmdbRating) : null}
+                    ageCertification={item.ageCertification}
+                    runtimeMins={item.runtimeMins}
+                    episodeRuntime={item.episodeRuntime}
+                    variant="RECOMMENDED"
+                    onDelete={() => handleDelete(entry)}
+                    isSecondaryLoading={isBookmarking}
+                    onSecondaryAction={() => handleBookmark(entry)}
+                    notes={item.reason} // Use the AI reason as notes
+                    onViewDetails={() => onSelect({
+                      id:          item.id,
+                      tmdbId:      item.tmdbId ?? undefined,
+                      malId:       item.malId ?? undefined,
+                      title:       item.title,
+                      year:        item.year,
+                      posterUrl:   item.posterUrl,
+                      tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                      overview:    null,
+                      contentType: item.contentType as ContentType,
+                    })}
+                  />
+                );
+              })}
+            </div>
+          </AnimatePresence>
+        </div>
       )}
 
       {/* Pagination */}
@@ -461,7 +491,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
           ) : (
             <Sparkles className="w-4 h-4" />
           )}
-          {generating ? 'Generating…' : 'Generate'}
+          {generating ? generatingStatus + '...' : 'Generate'}
         </button>
       </div>
 

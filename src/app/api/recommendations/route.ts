@@ -3,11 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
-import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
-import { generateShortId } from '@/lib/id';
 import type { ContentType } from '@prisma/client';
-import fs from 'fs';
-import path from 'path';
 
 export const maxDuration = 60;
 
@@ -60,21 +56,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Missing credentials or profileId' }, { status: 400 });
   }
 
-  // Optimized: Parallelize profile check and AI model init
-  const profilePromise = prisma.profile.findFirst({
+  const profile = await prisma.profile.findFirst({
     where: { id: profileId, userId: session.user.id },
   });
+  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
 
   const model: AllowedModel = ALLOWED_MODELS.has(requestedModel)
     ? (requestedModel as AllowedModel)
     : 'gemma-4-31b-it';
 
-  const profile = await profilePromise;
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-
   let contentText = '';
   try {
-    // 1. Fetch personalization data + Exclusion list in ONE parallel query
+    // 1. Fetch personalization data + Exclusion list
     const allProfileItems = await prisma.userContent.findMany({
       where: {
         profileId,
@@ -91,13 +84,12 @@ export async function POST(req: Request) {
         content: { select: { title: true, year: true, contentType: true, genres: true } },
       },
       orderBy: { userRating: 'desc' },
-      take: 200, // Safety limit for exclusion list to prevent prompt overflow
+      take: 200,
     });
 
     const watchedItems = allProfileItems.filter((i) => i.listStatus === 'WATCHED');
     const highRated = watchedItems.filter((i) => (i.userRating ?? 0) >= 7).slice(0, 15);
     const lowerRated = watchedItems.filter((i) => i.userRating != null && i.userRating < 7).slice(0, 5);
-
     const exclusionList = allProfileItems.map((i) => i.content.title).join(', ');
     const typeLabel = contentType === 'TV_SHOW' ? 'TV show or anime' : contentType === 'MOVIE' ? 'movie' : 'content';
 
@@ -131,87 +123,8 @@ Suggest exactly 6 ${typeLabel} titles the user has NOT seen. Return JSON array o
     const recs: { title: string; year: number; reason: string }[] = JSON.parse(cleanedJson);
     const finalRecsList = Array.isArray(recs) ? recs : (recs as any).recommendations || [];
 
-    // 4. Optimized Parallel Enrichment (TMDB only for speed and reliability)
-    const enriched = await Promise.all(
-      finalRecsList.map(async (rec: any) => {
-        try {
-          const search = await tmdb.searchMulti(rec.title);
-          const data = search.results.find(
-            (r: any) =>
-              (r.title ?? r.name)?.toLowerCase() === rec.title.toLowerCase() ||
-              Math.abs((r.release_date ? new Date(r.release_date).getFullYear() : (r.first_air_date ? new Date(r.first_air_date).getFullYear() : 0)) - rec.year) <= 1
-          ) || search.results[0];
-
-          if (!data) return null;
-
-          return {
-            tmdbId: data.id,
-            title: data.title ?? data.name ?? rec.title,
-            year: data.release_date
-              ? new Date(data.release_date).getFullYear()
-              : data.first_air_date
-                ? new Date(data.first_air_date).getFullYear()
-                : rec.year,
-            posterUrl: tmdbImageUrl(data.poster_path),
-            tmdbRating: data.vote_average,
-            overview: data.overview,
-            contentType: data.media_type === 'tv' ? 'TV_SHOW' : 'MOVIE',
-            reason: rec.reason,
-          };
-        } catch {
-          return null;
-        }
-      }),
-    );
-
-    const finalRecs = enriched.filter(Boolean) as any[];
-
-    // 5. Optimized DB Save (WAITED - for better stability but fast batching)
-    if (finalRecs.length > 0) {
-      try {
-        const tmdbIds = finalRecs.filter((r) => r.tmdbId).map((r) => r.tmdbId!);
-        const existing = await prisma.content.findMany({
-          where: { tmdbId: { in: tmdbIds } },
-          select: { id: true, tmdbId: true }
-        });
-        const byTmdb = new Map(existing.map((c) => [c.tmdbId!, c.id]));
-
-        const contentIds = await Promise.all(finalRecs.map(async (rec) => {
-          if (rec.tmdbId && byTmdb.get(rec.tmdbId)) return byTmdb.get(rec.tmdbId);
-          try {
-            const created = await prisma.content.create({
-              data: {
-                id: generateShortId(),
-                contentType: rec.contentType,
-                title: rec.title,
-                year: rec.year,
-                posterUrl: rec.posterUrl,
-                tmdbId: rec.tmdbId,
-                tmdbRating: rec.tmdbRating,
-                overview: rec.overview,
-              }
-            });
-            return created.id;
-          } catch { return null; }
-        }));
-
-        const validIds = contentIds.filter(Boolean) as string[];
-        if (validIds.length > 0) {
-          await prisma.userContent.createMany({
-            data: validIds.map(cid => ({
-              profileId,
-              contentId: cid,
-              listStatus: 'RECOMMENDED',
-            })),
-            skipDuplicates: true,
-          });
-        }
-      } catch (e) {
-        console.error('[rec-history] save failed:', e);
-      }
-    }
-
-    return NextResponse.json({ recommendations: finalRecs, debug: { rawResponse: contentText } });
+    // Return raw suggestions for client-side enrichment
+    return NextResponse.json({ recommendations: finalRecsList, debug: { rawResponse: contentText } });
 
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
