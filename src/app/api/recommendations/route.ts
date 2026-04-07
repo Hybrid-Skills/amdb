@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { searchJikan } from '@/lib/jikan';
+import { generateShortId } from '@/lib/id';
 import type { ContentType } from '@prisma/client';
 
 export const maxDuration = 45;
@@ -28,6 +29,12 @@ export async function POST(req: Request) {
 
   const { profileId, contentType, genres, model: requestedModel } = await req.json();
   if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
+
+  // Verify profile belongs to session user
+  const profile = await prisma.profile.findFirst({
+    where: { id: profileId, userId: session.user.id },
+  });
+  if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   // Validate model against whitelist — fall back to default if invalid/missing
   const model: AllowedModel = ALLOWED_MODELS.has(requestedModel)
@@ -176,7 +183,104 @@ Give me the 6 recommendations as JSON.`;
       }),
     );
 
-    return NextResponse.json({ recommendations: enriched.filter(Boolean) });
+    interface EnrichedRec {
+      tmdbId?: number;
+      malId?: number;
+      title: string;
+      year: number | null;
+      posterUrl: string | null;
+      tmdbRating: number | null;
+      overview: string | null;
+      contentType: string;
+      reason?: string;
+    }
+    const finalRecs = enriched.filter(Boolean) as EnrichedRec[];
+    const response = NextResponse.json({ recommendations: finalRecs });
+
+    // Fire-and-forget: save recommendations to history without blocking the response
+    void (async () => {
+      try {
+        const userId = session.user.id;
+
+        // Look up existing Content records by tmdbId / malId in one batch query
+        const tmdbIds = finalRecs.filter((r) => r.tmdbId).map((r) => r.tmdbId!);
+        const malIds  = finalRecs.filter((r) => r.malId).map((r) => r.malId!);
+
+        const existing = await prisma.content.findMany({
+          where: {
+            OR: [
+              ...(tmdbIds.length ? [{ tmdbId: { in: tmdbIds } }] : []),
+              ...(malIds.length  ? [{ malId:  { in: malIds  } }] : []),
+            ],
+          },
+          select: { id: true, tmdbId: true, malId: true },
+        });
+
+        const byTmdb = new Map(existing.filter((c) => c.tmdbId).map((c) => [c.tmdbId!, c.id]));
+        const byMal  = new Map(existing.filter((c) => c.malId).map((c) => [c.malId!, c.id]));
+
+        // For recs whose Content doesn't exist yet, create lightweight records
+        // using enriched data already in hand — no extra API calls needed
+        const contentIds = await Promise.all(
+          finalRecs.map(async (rec) => {
+            const existingId = rec.tmdbId
+              ? byTmdb.get(rec.tmdbId)
+              : rec.malId
+                ? byMal.get(rec.malId)
+                : undefined;
+            if (existingId) return existingId;
+
+            try {
+              const created = await prisma.content.create({
+                data: {
+                  id:          generateShortId(),
+                  contentType: rec.contentType as ContentType,
+                  title:       rec.title,
+                  year:        rec.year ?? null,
+                  posterUrl:   rec.posterUrl ?? null,
+                  tmdbId:      rec.tmdbId ?? null,
+                  malId:       rec.malId  ?? null,
+                  tmdbRating:  rec.tmdbRating != null ? Number(rec.tmdbRating) : null,
+                  overview:    rec.overview ?? null,
+                },
+              });
+              return created.id;
+            } catch {
+              // Content may have been created concurrently — try to find it
+              const fallback = await prisma.content.findFirst({
+                where: rec.tmdbId
+                  ? { tmdbId: rec.tmdbId }
+                  : { malId: rec.malId ?? undefined },
+                select: { id: true },
+              });
+              return fallback?.id ?? null;
+            }
+          }),
+        );
+
+        const validPairs = finalRecs
+          .map((rec, i) => ({ rec, contentId: contentIds[i] }))
+          .filter((p): p is { rec: NonNullable<(typeof finalRecs)[number]>; contentId: string } =>
+            p.contentId != null,
+          );
+
+        if (validPairs.length > 0) {
+          await prisma.userRecommendation.createMany({
+            data: validPairs.map(({ rec, contentId }) => ({
+              userId,
+              profileId,
+              contentType: String(rec.contentType),
+              contentId,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      } catch (e) {
+        console.error('[rec-history] save failed:', e);
+      }
+    })();
+
+    return response;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to generate recommendations';
     console.error('Recommendation error:', err);

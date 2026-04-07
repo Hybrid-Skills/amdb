@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Sparkles, Filter, ChevronDown } from 'lucide-react';
+import { Loader2, Sparkles, Filter, ChevronDown, History } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import type { SearchResult } from './add-to-list-modal';
@@ -54,6 +54,23 @@ const MOVIE_TV_GENRES = [
 ];
 
 type RecResult = SearchResult & { reason?: string };
+type ViewMode = 'generate' | 'history';
+
+interface HistoryEntry {
+  id: string;
+  contentType: string;
+  createdAt: string;
+  content: {
+    id: string;
+    title: string;
+    year: number | null;
+    posterUrl: string | null;
+    tmdbRating: string | null; // Prisma Decimal serialises as string in JSON
+    tmdbId: number | null;
+    malId: number | null;
+    contentType: string;
+  };
+}
 
 function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: ModelId) => void }) {
   const [open, setOpen] = React.useState(false);
@@ -113,6 +130,7 @@ function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: Mode
 }
 
 export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabProps) {
+  // Generate view state
   const [loading, setLoading] = React.useState(false);
   const [recs, setRecs] = React.useState<RecResult[]>([]);
   const [type, setType] = React.useState<ContentType | 'ANY' | 'ANIME'>('MOVIE');
@@ -120,12 +138,26 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   const [selectedModel, setSelectedModel] = React.useState<ModelId>('gemma-4-31b-it');
   const [error, setError] = React.useState('');
 
+  // History view state
+  const [view, setView] = React.useState<ViewMode>('generate');
+  const [historyItems, setHistoryItems] = React.useState<HistoryEntry[]>([]);
+  const [historyPage, setHistoryPage] = React.useState(1);
+  const [historyTotal, setHistoryTotal] = React.useState(0);
+  const [historyTotalPages, setHistoryTotalPages] = React.useState(0);
+  const [historyLoading, setHistoryLoading] = React.useState(false);
+
   const genres = MOVIE_TV_GENRES;
 
   // Clear selected genres when type changes to avoid stale genre filters
   React.useEffect(() => {
     setSelectedGenres([]);
   }, [type]);
+
+  // Fetch history when switching to history view
+  React.useEffect(() => {
+    if (view === 'history') fetchHistory(1);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [view, profileId]);
 
   function toggleGenre(g: string) {
     setSelectedGenres((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
@@ -150,6 +182,23 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function fetchHistory(page: number) {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch(`/api/recommendations/history?profileId=${profileId}&page=${page}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setHistoryItems(data.items ?? []);
+      setHistoryPage(data.page);
+      setHistoryTotal(data.total);
+      setHistoryTotalPages(data.totalPages);
+    } catch {
+      // non-critical — show empty state
+    } finally {
+      setHistoryLoading(false);
     }
   }
 
@@ -234,86 +283,239 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
 
         {/* Results */}
         <div className="flex-1 w-full min-h-[400px]">
-          {error && (
-            <div className="bg-destructive/10 text-destructive p-4 rounded-xl text-center border border-destructive/20 text-sm">
-              {error}
-            </div>
+          {/* View toggle */}
+          <div className="flex items-center gap-1 mb-5 bg-muted/40 rounded-full p-1 w-fit">
+            <button
+              onClick={() => setView('generate')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all
+                ${view === 'generate'
+                  ? 'bg-background shadow text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Generate
+            </button>
+            <button
+              onClick={() => setView('history')}
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all
+                ${view === 'history'
+                  ? 'bg-background shadow text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              <History className="w-3.5 h-3.5" />
+              History{historyTotal > 0 ? ` (${historyTotal})` : ''}
+            </button>
+          </div>
+
+          {/* ── Generate view ── */}
+          {view === 'generate' && (
+            <>
+              {error && (
+                <div className="bg-destructive/10 text-destructive p-4 rounded-xl text-center border border-destructive/20 text-sm">
+                  {error}
+                </div>
+              )}
+
+              {!loading && !error && recs.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-muted-foreground py-24 border-2 border-dashed border-border rounded-2xl">
+                  <Sparkles className="w-12 h-12 mb-4 opacity-20" />
+                  <p className="text-lg font-medium mb-1">Discover your next obsession</p>
+                  <p className="text-sm opacity-80 max-w-sm text-center">
+                    Set your filters and hit generate — recommendations are personalised to your ratings
+                    history.
+                  </p>
+                </div>
+              )}
+
+              {loading && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[2/3] rounded-xl bg-card border border-border animate-pulse"
+                    />
+                  ))}
+                </div>
+              )}
+
+              {!loading && recs.length > 0 && (
+                <AnimatePresence>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
+                    {recs.map((item, i) => (
+                      <motion.div
+                        key={item.tmdbId ?? item.malId ?? i}
+                        initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        transition={{ delay: i * 0.08, type: 'spring', stiffness: 300, damping: 24 }}
+                        className="group flex flex-col rounded-xl overflow-hidden bg-card border border-border cursor-pointer hover:border-primary/50 shadow-sm hover:shadow-xl transition-all"
+                        onClick={() => onSelect(item)}
+                      >
+                        {/* Poster */}
+                        <div className="relative aspect-[2/3] overflow-hidden">
+                          {item.posterUrl ? (
+                            <Image
+                              loader={tmdbImageLoader}
+                              src={item.posterUrl}
+                              alt={item.title}
+                              fill
+                              className="object-cover transition-transform duration-500 group-hover:scale-105"
+                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm px-3 text-center">
+                              {item.title}
+                            </div>
+                          )}
+                          {/* Rating badge */}
+                          {item.tmdbRating != null && item.tmdbRating > 0 && (
+                            <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded">
+                              ★ {Number(item.tmdbRating).toFixed(1)}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Info */}
+                        <div className="p-3 flex flex-col gap-1 flex-1">
+                          <p className="font-semibold text-sm leading-tight line-clamp-1">
+                            {item.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">{item.year}</p>
+                          {item.reason && (
+                            <p className="text-xs text-muted-foreground/80 leading-relaxed line-clamp-3 mt-0.5 italic">
+                              {item.reason}
+                            </p>
+                          )}
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                </AnimatePresence>
+              )}
+            </>
           )}
 
-          {!loading && !error && recs.length === 0 && (
-            <div className="h-full flex flex-col items-center justify-center text-muted-foreground py-24 border-2 border-dashed border-border rounded-2xl">
-              <Sparkles className="w-12 h-12 mb-4 opacity-20" />
-              <p className="text-lg font-medium mb-1">Discover your next obsession</p>
-              <p className="text-sm opacity-80 max-w-sm text-center">
-                Set your filters and hit generate — recommendations are personalised to your ratings
-                history.
-              </p>
-            </div>
-          )}
+          {/* ── History view ── */}
+          {view === 'history' && (
+            <>
+              {/* Loading skeleton */}
+              {historyLoading && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="aspect-[2/3] rounded-xl bg-card border border-border animate-pulse"
+                    />
+                  ))}
+                </div>
+              )}
 
-          {loading && (
-            <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div
-                  key={i}
-                  className="aspect-[2/3] rounded-xl bg-card border border-border animate-pulse"
-                />
-              ))}
-            </div>
-          )}
+              {/* Empty state */}
+              {!historyLoading && historyItems.length === 0 && (
+                <div className="h-full flex flex-col items-center justify-center text-muted-foreground py-24 border-2 border-dashed border-border rounded-2xl">
+                  <History className="w-12 h-12 mb-4 opacity-20" />
+                  <p className="text-lg font-medium mb-1">No history yet</p>
+                  <p className="text-sm opacity-80 max-w-sm text-center">
+                    Generate recommendations to start building your history.
+                  </p>
+                </div>
+              )}
 
-          {!loading && recs.length > 0 && (
-            <AnimatePresence>
-              <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
-                {recs.map((item, i) => (
-                  <motion.div
-                    key={item.tmdbId ?? item.malId ?? i}
-                    initial={{ opacity: 0, scale: 0.92, y: 12 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ delay: i * 0.08, type: 'spring', stiffness: 300, damping: 24 }}
-                    className="group flex flex-col rounded-xl overflow-hidden bg-card border border-border cursor-pointer hover:border-primary/50 shadow-sm hover:shadow-xl transition-all"
-                    onClick={() => onSelect(item)}
+              {/* History cards */}
+              {!historyLoading && historyItems.length > 0 && (
+                <AnimatePresence>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
+                    {historyItems.map((entry, i) => {
+                      const item = entry.content;
+                      return (
+                        <motion.div
+                          key={entry.id}
+                          initial={{ opacity: 0, scale: 0.92, y: 12 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 24 }}
+                          className="group flex flex-col rounded-xl overflow-hidden bg-card border border-border cursor-pointer hover:border-primary/50 shadow-sm hover:shadow-xl transition-all"
+                          onClick={() =>
+                            onSelect({
+                              tmdbId:     item.tmdbId ?? undefined,
+                              malId:      item.malId ?? undefined,
+                              title:      item.title,
+                              year:       item.year,
+                              posterUrl:  item.posterUrl,
+                              tmdbRating: item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                              overview:   null,
+                              contentType: item.contentType as ContentType,
+                            })
+                          }
+                        >
+                          {/* Poster */}
+                          <div className="relative aspect-[2/3] overflow-hidden">
+                            {item.posterUrl ? (
+                              <Image
+                                loader={tmdbImageLoader}
+                                src={item.posterUrl}
+                                alt={item.title}
+                                fill
+                                className="object-cover transition-transform duration-500 group-hover:scale-105"
+                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm px-3 text-center">
+                                {item.title}
+                              </div>
+                            )}
+                            {/* Rating badge */}
+                            {item.tmdbRating != null && Number(item.tmdbRating) > 0 && (
+                              <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded">
+                                ★ {Number(item.tmdbRating).toFixed(1)}
+                              </div>
+                            )}
+                            {/* Date badge */}
+                            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white/70 text-[10px] px-1.5 py-0.5 rounded">
+                              {new Date(entry.createdAt).toLocaleDateString(undefined, {
+                                month: 'short',
+                                day: 'numeric',
+                              })}
+                            </div>
+                          </div>
+
+                          {/* Info */}
+                          <div className="p-3 flex flex-col gap-1 flex-1">
+                            <p className="font-semibold text-sm leading-tight line-clamp-1">
+                              {item.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">{item.year}</p>
+                          </div>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </AnimatePresence>
+              )}
+
+              {/* Pagination */}
+              {historyTotalPages > 1 && (
+                <div className="flex items-center justify-center gap-3 pt-6">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={historyPage === 1}
+                    onClick={() => fetchHistory(historyPage - 1)}
                   >
-                    {/* Poster */}
-                    <div className="relative aspect-[2/3] overflow-hidden">
-                      {item.posterUrl ? (
-                        <Image
-                          loader={tmdbImageLoader}
-                          src={item.posterUrl}
-                          alt={item.title}
-                          fill
-                          className="object-cover transition-transform duration-500 group-hover:scale-105"
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm px-3 text-center">
-                          {item.title}
-                        </div>
-                      )}
-                      {/* Rating badge */}
-                      {item.tmdbRating != null && item.tmdbRating > 0 && (
-                        <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded">
-                          ★ {Number(item.tmdbRating).toFixed(1)}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Info */}
-                    <div className="p-3 flex flex-col gap-1 flex-1">
-                      <p className="font-semibold text-sm leading-tight line-clamp-1">
-                        {item.title}
-                      </p>
-                      <p className="text-xs text-muted-foreground">{item.year}</p>
-                      {item.reason && (
-                        <p className="text-xs text-muted-foreground/80 leading-relaxed line-clamp-3 mt-0.5 italic">
-                          {item.reason}
-                        </p>
-                      )}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            </AnimatePresence>
+                    Prev
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    {historyPage} / {historyTotalPages}
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={historyPage === historyTotalPages}
+                    onClick={() => fetchHistory(historyPage + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
