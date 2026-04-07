@@ -255,13 +255,29 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
         body: JSON.stringify({ profileId, contentType: type, genres, model }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
+      if (!res.ok) {
+        const error = new Error(data.error || 'Failed to generate recommendations') as any;
+        error.rawResponse = data.rawResponse || data.debug?.rawResponse;
+        throw error;
+      }
       // Refresh history — new recs appear at top
       await fetchHistory(1);
     } catch (err: any) {
+      const errorData = err?.message ? { error: err.message } : {};
+      
       toast({
         title: 'Recommendation failed',
-        description: err.message || 'The AI was unable to generate suggestions at this time. Please try again.',
+        description: (
+          <div className="space-y-2">
+            <p className="text-sm font-medium">{err.message || 'The AI was unable to generate suggestions.'}</p>
+            {err.rawResponse && (
+              <details className="text-[10px] bg-black/20 p-2 rounded max-h-40 overflow-auto cursor-help border border-white/10">
+                <summary className="opacity-70">View raw AI response</summary>
+                <div className="whitespace-pre-wrap mt-1 opacity-90">{err.rawResponse}</div>
+              </details>
+            )}
+          </div>
+        ),
         variant: 'destructive',
       });
     } finally {

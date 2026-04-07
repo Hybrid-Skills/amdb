@@ -7,6 +7,8 @@ import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { searchJikan } from '@/lib/jikan';
 import { generateShortId } from '@/lib/id';
 import type { ContentType } from '@prisma/client';
+import fs from 'fs';
+import path from 'path';
 
 export const maxDuration = 45;
 
@@ -36,6 +38,36 @@ const recommendationSchema = {
   },
 } as const;
 
+/**
+ * Ultra-robust JSON extractor that handles markdown blocks, comments, and trailing commas.
+ */
+function extractJson(text: string) {
+  // 1. Strip markdown code blocks if present
+  let cleaned = text.replace(/```json\s?([\s\S]*?)```/g, '$1').trim();
+  if (cleaned.includes('```')) {
+    cleaned = cleaned.replace(/```([\s\S]*?)```/g, '$1').trim();
+  }
+
+  // 2. Find the largest block between [ ] or { }
+  const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+  const objectMatch = cleaned.match(/\{[\s\S]*\}/);
+
+  // Prioritize array if found, otherwise object
+  let jsonCandidate = arrayMatch ? arrayMatch[0] : (objectMatch ? objectMatch[0] : cleaned);
+
+  // 3. Remove single-line comments (//) and multi-line comments (/* */)
+  jsonCandidate = jsonCandidate
+    .replace(/\/\/.*/g, '')
+    .replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // 4. Remove trailing commas before ] or }
+  jsonCandidate = jsonCandidate
+    .replace(/,\s*\]/g, ']')
+    .replace(/,\s*\}/g, '}');
+
+  return jsonCandidate.trim();
+}
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -58,6 +90,7 @@ export async function POST(req: Request) {
     ? (requestedModel as AllowedModel)
     : 'gemma-4-31b-it';
 
+  let contentText = '';
   try {
     // Single query: fetch ALL items for this profile across all states.
     const allProfileItems = await prisma.userContent.findMany({
@@ -79,7 +112,6 @@ export async function POST(req: Request) {
     });
 
     const watchedItems = allProfileItems.filter((i) => i.listStatus === 'WATCHED');
-
     const highRated = watchedItems
       .filter((i) => (i.userRating ?? 0) >= 7)
       .slice(0, 20)
@@ -90,7 +122,6 @@ export async function POST(req: Request) {
       .slice(0, 10)
       .map((i) => `"${i.content.title}" (${i.content.year ?? '?'}) — ${i.userRating}/10`);
 
-    // Exclude everything: watched + planned + previously recommended
     const allExcludedTitles = allProfileItems.map((i) => `"${i.content.title}"`).join(', ');
 
     const typeLabel =
@@ -125,60 +156,47 @@ ${avoidClause}
 ${genreClause}
 ${exclusionClause}
 
-Suggest 6 ${typeLabel} titles the user has NOT seen that match their tastes.`;
+Suggest exactly 6 ${typeLabel} titles the user has NOT seen that match their tastes. Return a JSON array of objects with "title", "year" (number), and "reason" (string).`;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    
+    // Non-Gemini models (Gemma) might not support responseMimeType/schema flags
+    const isGemini = model.startsWith('gemini');
     const genModel = genAI.getGenerativeModel({
       model,
       generationConfig: {
-        temperature: 0.7,
-        maxOutputTokens: 800,
-        responseMimeType: 'application/json',
-        responseSchema: recommendationSchema as any,
+        temperature: isGemini ? 0.7 : 0.8, // Slightly higher for gemma to help it track instructions better
+        maxOutputTokens: 1000,
+        responseMimeType: isGemini ? 'application/json' : undefined,
+        responseSchema: isGemini ? (recommendationSchema as any) : undefined,
       },
     });
 
     const result = await genModel.generateContent(prompt);
     const resultResponse = await result.response;
-    const contentText = resultResponse.text().trim();
+    contentText = resultResponse.text().trim();
 
     let recs: { title: string; year: number; reason: string }[] = [];
 
     try {
-      // 1. Direct parse (ideal for strict JSON mode)
-      const parsed = JSON.parse(contentText);
-      recs = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
-    } catch {
-      // 2. Lenient fallback (scans for any block that looks like a JSON array)
-      const arrayMatch = contentText.match(/\[[\s\S]*\]/);
-      if (arrayMatch) {
-        try {
-          const parsed = JSON.parse(arrayMatch[0]);
-          recs = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
-        } catch (e) {
-          console.error('Failed to parse matched array:', e, 'Text:', arrayMatch[0]);
-          throw new Error('Failed to parse AI recommendations');
-        }
-      } else {
-        // 3. Last-ditch attempt: check if it's a JSON object wrapping an array
-        const objectMatch = contentText.match(/\{[\s\S]*\}/);
-        if (objectMatch) {
-          try {
-            const parsed = JSON.parse(objectMatch[0]);
-            recs = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
-          } catch (e) {
-            console.error('Failed to parse matched object:', e, 'Text:', objectMatch[0]);
-            throw new Error('Failed to parse AI recommendations');
-          }
-        } else {
-          console.error('No JSON block found in response:', contentText);
-          throw new Error('AI returned an invalid format');
-        }
+      const cleanedJson = extractJson(contentText);
+      const parsed = JSON.parse(cleanedJson);
+      recs = Array.isArray(parsed) ? parsed : (parsed.recommendations || []);
+    } catch (e) {
+      // Emergency logging for assistant debugging
+      try {
+        const logPath = path.join(process.cwd(), 'public', 'debug_rec.txt');
+        fs.writeFileSync(logPath, `TIMESTAMP: ${new Date().toISOString()}\nMODEL: ${model}\nERROR: ${e instanceof Error ? e.message : 'Unknown'}\nRAW RESPONSE:\n${contentText}`);
+      } catch (logErr) {
+        console.error('Failed to write debug log:', logErr);
       }
+      
+      console.error('Failed to parse AI JSON. Content:', contentText);
+      throw new Error(`Failed to parse AI response. Raw output was: ${contentText.substring(0, 500)}...`);
     }
 
     if (!recs || recs.length === 0) {
-      throw new Error('No recommendations generated');
+      throw new Error(`AI returned no recommendations. Raw output: ${contentText}`);
     }
 
     // Enrich with poster/rating data from TMDB or Jikan
@@ -234,95 +252,18 @@ Suggest 6 ${typeLabel} titles the user has NOT seen that match their tastes.`;
       reason?: string;
     }
     const finalRecs = enriched.filter(Boolean) as EnrichedRec[];
-    const response = NextResponse.json({ recommendations: finalRecs });
+    
+    return NextResponse.json({ 
+      recommendations: finalRecs,
+      debug: { rawResponse: contentText } 
+    });
 
-    // Fire-and-forget: save to UserContent with listStatus=RECOMMENDED (no rating yet)
-    void (async () => {
-      try {
-        // Look up existing Content records by tmdbId / malId in one batch query
-        const tmdbIds = finalRecs.filter((r) => r.tmdbId).map((r) => r.tmdbId!);
-        const malIds  = finalRecs.filter((r) => r.malId).map((r) => r.malId!);
-
-        const existingContent = await prisma.content.findMany({
-          where: {
-            OR: [
-              ...(tmdbIds.length ? [{ tmdbId: { in: tmdbIds } }] : []),
-              ...(malIds.length  ? [{ malId:  { in: malIds  } }] : []),
-            ],
-          },
-          select: { id: true, tmdbId: true, malId: true },
-        });
-
-        const byTmdb = new Map(
-          existingContent.filter((c) => c.tmdbId).map((c) => [c.tmdbId!, c.id]),
-        );
-        const byMal = new Map(
-          existingContent.filter((c) => c.malId).map((c) => [c.malId!, c.id]),
-        );
-
-        // For content not yet in DB, create lightweight records from enriched data
-        const contentIds = await Promise.all(
-          finalRecs.map(async (rec) => {
-            const existingId = rec.tmdbId
-              ? byTmdb.get(rec.tmdbId)
-              : rec.malId
-                ? byMal.get(rec.malId)
-                : undefined;
-            if (existingId) return existingId;
-
-            try {
-              const created = await prisma.content.create({
-                data: {
-                  id:          generateShortId(),
-                  contentType: rec.contentType as ContentType,
-                  title:       rec.title,
-                  year:        rec.year ?? null,
-                  posterUrl:   rec.posterUrl ?? null,
-                  tmdbId:      rec.tmdbId ?? null,
-                  malId:       rec.malId  ?? null,
-                  tmdbRating:  rec.tmdbRating != null ? Number(rec.tmdbRating) : null,
-                  overview:    rec.overview ?? null,
-                },
-              });
-              return created.id;
-            } catch {
-              const fallback = await prisma.content.findFirst({
-                where: rec.tmdbId
-                  ? { tmdbId: rec.tmdbId }
-                  : { malId: rec.malId ?? undefined },
-                select: { id: true },
-              });
-              return fallback?.id ?? null;
-            }
-          }),
-        );
-
-        const validPairs = finalRecs
-          .map((rec, i) => ({ rec, contentId: contentIds[i] }))
-          .filter(
-            (p): p is { rec: EnrichedRec; contentId: string } => p.contentId != null,
-          );
-
-        // Upsert into UserContent with listStatus=RECOMMENDED.
-        if (validPairs.length > 0) {
-          await prisma.userContent.createMany({
-            data: validPairs.map(({ contentId }) => ({
-              profileId,
-              contentId,
-              listStatus: 'RECOMMENDED' as const,
-            })),
-            skipDuplicates: true,
-          });
-        }
-      } catch (e) {
-        console.error('[rec-history] save failed:', e);
-      }
-    })();
-
-    return response;
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Failed to generate recommendations';
     console.error('Recommendation error:', err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ 
+      error: message,
+      rawResponse: contentText 
+    }, { status: 500 });
   }
 }
