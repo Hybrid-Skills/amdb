@@ -136,25 +136,23 @@ export function AddToListModal({
   const isSerial = item?.contentType === 'TV_SHOW' || item?.contentType === 'ANIME';
   const today = new Date();
 
+  // Effect 1: Fetch content details. Uses item object as dep but guards against
+  // re-fetching when only item.id changes (ensure() adds amdbId after open).
   React.useEffect(() => {
     if (!item) {
       setDetailedItem(null);
       setWatchProviders(null);
-      setCheckingExistence(false);
       fetchedForRef.current = null;
       return;
     }
     const id = item.tmdbId ?? item.malId;
 
-    // Skip re-fetch when only item.id (amdbId) changed — ensure() runs in background
-    // and updates item.id after the modal is already open and data is loaded
+    // Skip re-fetch when only item.id (amdbId) changed
     if (fetchedForRef.current === id) return;
     fetchedForRef.current = id;
 
     const controller = new AbortController();
 
-    // 1. Fetch Details — watch providers are included in this response
-    //    (already fetched via append_to_response, no second round trip needed)
     setLoadingDetails(true);
     setProvidersLoading(true);
     fetch(`/api/content/${id}?type=${item.contentType}`, { signal: controller.signal })
@@ -171,29 +169,39 @@ export function AddToListModal({
         setProvidersLoading(false);
       });
 
-    // 3. Check Existence (if not already known from parent)
-    if (!initialRating) {
-      setCheckingExistence(true);
-      const params = new URLSearchParams({ profileId });
-      if (item.tmdbId) params.set('tmdbId', String(item.tmdbId));
-      if (item.malId) params.set('malId', String(item.malId));
-
-      fetch(`/api/list/check?${params}`, { signal: controller.signal })
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.exists) {
-            setRating(data.userRating);
-            setNotes(data.notes ?? '');
-            setWatchStatus(data.watchStatus ?? 'COMPLETED');
-            setEditingRating(true); // Jump to full form for existing items
-            setIsRecordExisting(true);
-          }
-        })
-        .finally(() => setCheckingExistence(false));
-    }
-
     return () => controller.abort();
-  }, [item, profileId, initialRating]);
+  }, [item]);
+
+  // Effect 2: Check if item already exists in watched list.
+  // Depends only on primitive IDs so it is NOT cancelled when ensure() adds item.id.
+  React.useEffect(() => {
+    if (!item || initialRating) return;
+    if (!item.tmdbId && !item.malId) return;
+
+    setCheckingExistence(true);
+    let cancelled = false;
+
+    const params = new URLSearchParams({ profileId });
+    if (item.tmdbId) params.set('tmdbId', String(item.tmdbId));
+    if (item.malId) params.set('malId', String(item.malId));
+
+    fetch(`/api/list/check?${params}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.exists) {
+          setRating(data.userRating);
+          setNotes(data.notes ?? '');
+          setWatchStatus(data.watchStatus ?? 'COMPLETED');
+          setEditingRating(true);
+          setIsRecordExisting(true);
+        }
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setCheckingExistence(false); });
+
+    return () => { cancelled = true; };
+  }, [item?.tmdbId, item?.malId, profileId, initialRating]);
 
   async function handleSubmit() {
     if (!item || !rating) return;
