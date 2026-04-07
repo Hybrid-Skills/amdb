@@ -243,34 +243,36 @@ export function MovieCard({
             </button>
           )}
 
-          {/* Bottom badges (Left-aligned info) - Only in vertical for density */}
-          {!isHorizontal && (
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 flex gap-1 flex-wrap items-end overflow-hidden">
-              <Badge
-                variant="secondary"
-                className="h-4 w-4 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-sm border border-white/20 transition-transform active:scale-95 translate-y-[0.5px]"
-              >
-                {CONTENT_ICONS[contentType]}
-              </Badge>
-              {certLabel && (
-                <Badge
-                  variant="destructive"
-                  className="h-4 text-[9px] px-1 font-bold rounded-sm border-0"
-                >
-                  {certLabel}
-                </Badge>
-              )}
-              {runtimeLabel && (
-                <Badge
-                  variant="secondary"
-                  className="h-4 text-[9px] px-1 bg-black/60 text-white/90 font-medium rounded-sm border border-white/20"
-                >
-                  <Clock className="w-2.5 h-2.5 mr-0.5 inline-block" />
-                  {runtimeLabel}
-                </Badge>
-              )}
-            </div>
-          )}
+          {/* Bottom badges (Left-aligned info) */}
+          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 flex gap-1 flex-wrap items-end overflow-hidden z-20">
+            <Badge
+              variant="secondary"
+              className="h-4 w-4 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-sm border border-white/20 transition-transform active:scale-95 translate-y-[0.5px]"
+            >
+              {CONTENT_ICONS[contentType]}
+            </Badge>
+            {!isHorizontal && (
+              <>
+                {certLabel && (
+                  <Badge
+                    variant="destructive"
+                    className="h-4 text-[9px] px-1 font-bold rounded-sm border-0"
+                  >
+                    {certLabel}
+                  </Badge>
+                )}
+                {runtimeLabel && (
+                  <Badge
+                    variant="secondary"
+                    className="h-4 text-[9px] px-1 bg-black/60 text-white/90 font-medium rounded-sm border border-white/20"
+                  >
+                    <Clock className="w-2.5 h-2.5 mr-0.5 inline-block" />
+                    {runtimeLabel}
+                  </Badge>
+                )}
+              </>
+            )}
+          </div>
 
           {/* TMDB Rating (Pinned to Top-Right of Poster) */}
           {tmdbRating != null && Number(tmdbRating) > 0 && (
@@ -308,9 +310,6 @@ export function MovieCard({
                      {LABEL_CONFIG[recommendationLabel].label}
                    </div>
                  )}
-                 <div className="flex items-center opacity-80 backdrop-blur-sm bg-secondary/20 p-1 rounded shrink-0">
-                   {CONTENT_ICONS[contentType]}
-                 </div>
                  {runtimeLabel && (
                     <div className="text-[10px] font-black text-muted-foreground opacity-80 ml-auto whitespace-nowrap shrink-0">
                       {runtimeLabel}
