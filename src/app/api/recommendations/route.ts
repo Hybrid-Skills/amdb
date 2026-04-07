@@ -96,7 +96,7 @@ Give me the 6 recommendations as JSON.`;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: 'gemini-2.5-flash',
+      model: 'gemma-4-31b-it',
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 600,
