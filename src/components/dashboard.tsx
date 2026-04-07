@@ -73,6 +73,7 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
     watchStatus?: string | null;
   }>({});
   const [modalForceEdit, setModalForceEdit] = React.useState(false);
+  const [recommendationsRefreshTrigger, setRecommendationsRefreshTrigger] = React.useState(0);
 
   const [listItems, setListItems] = React.useState<ListItem[]>(
     initialListData.items as ListItem[],
@@ -405,7 +406,11 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
 
           {/* ── Recommendations Tab ── */}
           {activeTab === 'recommendations' && (
-            <RecommendationsTab profileId={activeProfileId} onSelect={handleSearchSelect} />
+            <RecommendationsTab 
+              profileId={activeProfileId} 
+              onSelect={handleSearchSelect} 
+              refreshTrigger={recommendationsRefreshTrigger}
+            />
           )}
         </div>
       </div>
@@ -441,7 +446,10 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
           setSelectedItem(null);
           setSelectedItemMeta({});
         }}
-        onSuccess={() => fetchList(activeProfileId, 1, filters)}
+        onSuccess={() => {
+          fetchList(activeProfileId, 1, filters);
+          setRecommendationsRefreshTrigger((t) => t + 1);
+        }}
       />
 
       {/* Delete confirmation */}

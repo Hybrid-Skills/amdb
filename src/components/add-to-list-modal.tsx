@@ -105,7 +105,6 @@ export function AddToListModal({
 }: AddToListModalProps) {
   const router = useRouter();
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const isEditing = !!initialRating; // true = existing list entry being re-opened
 
   const [rating, setRating] = React.useState<number | null>(initialRating ?? null);
   const [notes, setNotes] = React.useState(initialNotes ?? '');
@@ -123,8 +122,11 @@ export function AddToListModal({
   const [watchProviders, setWatchProviders] = React.useState<any>(null);
   const [providersLoading, setProvidersLoading] = React.useState(false);
   const [checkingExistence, setCheckingExistence] = React.useState(false);
+  const [isRecordExisting, setIsRecordExisting] = React.useState(!!initialRating);
   // For edit mode — whether the compact rating summary is in edit state
-  const [editingRating, setEditingRating] = React.useState(startInEditMode || !isEditing);
+  const [editingRating, setEditingRating] = React.useState(startInEditMode || !!initialRating);
+
+  const isEditing = isRecordExisting; // true = existing list entry
 
   // Track which external ID we've already fetched details for.
   // This prevents the background ensure() call (which only updates item.id)
@@ -183,7 +185,8 @@ export function AddToListModal({
             setRating(data.userRating);
             setNotes(data.notes ?? '');
             setWatchStatus(data.watchStatus ?? 'COMPLETED');
-            setEditingRating(false);
+            setEditingRating(true); // Jump to full form for existing items
+            setIsRecordExisting(true);
           }
         })
         .finally(() => setCheckingExistence(false));

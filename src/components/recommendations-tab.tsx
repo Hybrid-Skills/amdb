@@ -74,6 +74,7 @@ interface PendingRecommendation {
 interface RecommendationsTabProps {
   profileId: string;
   onSelect: (item: SearchResult) => void;
+  refreshTrigger?: number;
 }
 
 // ─── ModelDropdown ────────────────────────────────────────────────────────────
@@ -241,7 +242,7 @@ function GenerateModal({ open, onClose, onGenerate }: GenerateModalProps) {
 
 // ─── RecommendationsTab ───────────────────────────────────────────────────────
 
-export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabProps) {
+export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: RecommendationsTabProps) {
   const [historyItems, setHistoryItems]     = React.useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = React.useState(true);
   const [historyPage, setHistoryPage]       = React.useState(1);
@@ -285,7 +286,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       fetchHistory(1, filters);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileId, filters]);
+  }, [profileId, filters, refreshTrigger]);
 
   async function handleGenerate(type: ContentType | 'ANY', genres: string[], model: ModelId, specialInstructions?: string) {
     setShowGenerateModal(false);
