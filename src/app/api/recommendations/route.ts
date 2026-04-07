@@ -17,7 +17,11 @@ const ALLOWED_MODELS = new Set([
   'gemini-3.1-flash-lite-preview',
 ]);
 
-type AllowedModel = 'gemma-4-31b-it' | 'gemini-2.5-flash' | 'gemini-3-flash-preview' | 'gemini-3.1-flash-lite-preview';
+type AllowedModel =
+  | 'gemma-4-31b-it'
+  | 'gemini-2.5-flash'
+  | 'gemini-3-flash-preview'
+  | 'gemini-3.1-flash-lite-preview';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -42,8 +46,10 @@ export async function POST(req: Request) {
     : 'gemma-4-31b-it';
 
   try {
-    // Fetch all watched content for this profile
-    const allItems = await prisma.userContent.findMany({
+    // Single query: fetch ALL items for this profile across all states.
+    // - WATCHED items with ratings → personalise prompt
+    // - ALL items (any state) → exclusion list so we never re-recommend
+    const allProfileItems = await prisma.userContent.findMany({
       where: {
         profileId,
         content: {
@@ -61,34 +67,20 @@ export async function POST(req: Request) {
       orderBy: { userRating: 'desc' },
     });
 
-    const highRated = allItems
-      .filter((i) => i.userRating >= 7)
+    const watchedItems = allProfileItems.filter((i) => i.listStatus === 'WATCHED');
+
+    const highRated = watchedItems
+      .filter((i) => (i.userRating ?? 0) >= 7)
       .slice(0, 20)
       .map((i) => `"${i.content.title}" (${i.content.year ?? '?'}) — ${i.userRating}/10`);
 
-    const lowerRated = allItems
-      .filter((i) => i.userRating < 7)
+    const lowerRated = watchedItems
+      .filter((i) => i.userRating != null && i.userRating < 7)
       .slice(0, 10)
       .map((i) => `"${i.content.title}" (${i.content.year ?? '?'}) — ${i.userRating}/10`);
 
-    // Also fetch planned and previously recommended titles to exclude from prompt
-    const [plannedItems, pastRecs] = await Promise.all([
-      prisma.userWatchlist.findMany({
-        where: { profileId },
-        include: { content: { select: { title: true } } },
-      }),
-      prisma.userRecommendation.findMany({
-        where: { profileId },
-        include: { content: { select: { title: true } } },
-        take: 100,
-      }),
-    ]);
-
-    const allExcludedTitles = [
-      ...allItems.map((i) => `"${i.content.title}"`),
-      ...plannedItems.map((i) => `"${i.content.title}"`),
-      ...pastRecs.map((i) => `"${i.content.title}"`),
-    ].join(', ');
+    // Exclude everything: watched + planned + previously recommended
+    const allExcludedTitles = allProfileItems.map((i) => `"${i.content.title}"`).join(', ');
 
     const typeLabel =
       contentType === 'TV_SHOW'
@@ -138,14 +130,13 @@ Give me the 6 recommendations as JSON.`;
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 600,
-        responseMimeType: 'application/json', // forces valid JSON output — no parsing needed
+        responseMimeType: 'application/json',
       },
     });
 
     const result = await genModel.generateContent(prompt);
     const contentText = result.response.text().trim();
 
-    // responseMimeType ensures valid JSON but strip any accidental markdown fences just in case
     const startIdx = contentText.indexOf('[');
     const endIdx = contentText.lastIndexOf(']');
 
@@ -214,16 +205,14 @@ Give me the 6 recommendations as JSON.`;
     const finalRecs = enriched.filter(Boolean) as EnrichedRec[];
     const response = NextResponse.json({ recommendations: finalRecs });
 
-    // Fire-and-forget: save recommendations to history without blocking the response
+    // Fire-and-forget: save to UserContent with listStatus=RECOMMENDED (no rating yet)
     void (async () => {
       try {
-        const userId = session.user.id;
-
         // Look up existing Content records by tmdbId / malId in one batch query
         const tmdbIds = finalRecs.filter((r) => r.tmdbId).map((r) => r.tmdbId!);
         const malIds  = finalRecs.filter((r) => r.malId).map((r) => r.malId!);
 
-        const existing = await prisma.content.findMany({
+        const existingContent = await prisma.content.findMany({
           where: {
             OR: [
               ...(tmdbIds.length ? [{ tmdbId: { in: tmdbIds } }] : []),
@@ -233,11 +222,14 @@ Give me the 6 recommendations as JSON.`;
           select: { id: true, tmdbId: true, malId: true },
         });
 
-        const byTmdb = new Map(existing.filter((c) => c.tmdbId).map((c) => [c.tmdbId!, c.id]));
-        const byMal  = new Map(existing.filter((c) => c.malId).map((c) => [c.malId!, c.id]));
+        const byTmdb = new Map(
+          existingContent.filter((c) => c.tmdbId).map((c) => [c.tmdbId!, c.id]),
+        );
+        const byMal = new Map(
+          existingContent.filter((c) => c.malId).map((c) => [c.malId!, c.id]),
+        );
 
-        // For recs whose Content doesn't exist yet, create lightweight records
-        // using enriched data already in hand — no extra API calls needed
+        // For content not yet in DB, create lightweight records from enriched data
         const contentIds = await Promise.all(
           finalRecs.map(async (rec) => {
             const existingId = rec.tmdbId
@@ -263,7 +255,6 @@ Give me the 6 recommendations as JSON.`;
               });
               return created.id;
             } catch {
-              // Content may have been created concurrently — try to find it
               const fallback = await prisma.content.findFirst({
                 where: rec.tmdbId
                   ? { tmdbId: rec.tmdbId }
@@ -277,17 +268,18 @@ Give me the 6 recommendations as JSON.`;
 
         const validPairs = finalRecs
           .map((rec, i) => ({ rec, contentId: contentIds[i] }))
-          .filter((p): p is { rec: NonNullable<(typeof finalRecs)[number]>; contentId: string } =>
-            p.contentId != null,
+          .filter(
+            (p): p is { rec: EnrichedRec; contentId: string } => p.contentId != null,
           );
 
+        // Upsert into UserContent with listStatus=RECOMMENDED.
+        // skipDuplicates=true ensures we never downgrade PLANNED/WATCHED → RECOMMENDED.
         if (validPairs.length > 0) {
-          await prisma.userRecommendation.createMany({
-            data: validPairs.map(({ rec, contentId }) => ({
-              userId,
+          await prisma.userContent.createMany({
+            data: validPairs.map(({ contentId }) => ({
               profileId,
-              contentType: String(rec.contentType),
               contentId,
+              listStatus: 'RECOMMENDED' as const,
             })),
             skipDuplicates: true,
           });

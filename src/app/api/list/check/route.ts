@@ -26,6 +26,7 @@ export async function GET(req: Request) {
   const existing = await prisma.userContent.findFirst({
     where: {
       profileId,
+      listStatus: 'WATCHED',
       content: {
         OR: [
           ...(tmdbId ? [{ tmdbId: parseInt(tmdbId) }] : []),

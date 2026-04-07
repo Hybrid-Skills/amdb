@@ -10,26 +10,25 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const profileId = searchParams.get('profileId');
   const page  = Math.max(1, Number(searchParams.get('page') ?? '1'));
-  const limit = 18; // 3 rows of 6 cards
+  const limit = 18;
 
   if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
 
-  // Verify profile belongs to session user
   const profile = await prisma.profile.findFirst({
     where: { id: profileId, userId: session.user.id },
   });
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const [items, total] = await Promise.all([
-    prisma.userRecommendation.findMany({
-      where: { profileId },
-      orderBy: { createdAt: 'desc' },
+    prisma.userContent.findMany({
+      where: { profileId, listStatus: 'RECOMMENDED' },
+      orderBy: { addedAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
       select: {
         id: true,
-        contentType: true,
-        createdAt: true,
+        listStatus: true,
+        addedAt: true,
         content: {
           select: {
             id: true,
@@ -44,11 +43,14 @@ export async function GET(req: Request) {
         },
       },
     }),
-    prisma.userRecommendation.count({ where: { profileId } }),
+    prisma.userContent.count({ where: { profileId, listStatus: 'RECOMMENDED' } }),
   ]);
 
+  // Normalise shape: rename addedAt → createdAt for UI consistency
+  const normalised = items.map((i) => ({ ...i, createdAt: i.addedAt }));
+
   return NextResponse.json({
-    items,
+    items: normalised,
     total,
     page,
     totalPages: Math.ceil(total / limit),

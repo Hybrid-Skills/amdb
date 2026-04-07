@@ -59,6 +59,7 @@ export async function GET(req: Request) {
   // Build where clause
   const where: Prisma.UserContentWhereInput = {
     profileId,
+    listStatus: 'WATCHED',
     ...(minRating > 1 || maxRating < 10
       ? { userRating: { gte: minRating, lte: maxRating } }
       : {}),
@@ -307,8 +308,8 @@ export async function POST(req: Request) {
 
   const userContent = await prisma.userContent.upsert({
     where: { profileId_contentId: { profileId, contentId: content.id } },
-    create: { profileId, contentId: content.id, userRating, notes, ...serialFields },
-    update: { userRating, notes, ...serialFields, updatedAt: new Date() },
+    create: { profileId, contentId: content.id, listStatus: 'WATCHED', userRating, notes, ...serialFields },
+    update: { listStatus: 'WATCHED', userRating, notes, ...serialFields, updatedAt: new Date() },
     include: { content: true },
   });
 

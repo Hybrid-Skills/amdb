@@ -21,15 +21,15 @@ export async function GET(req: Request) {
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const [items, total] = await Promise.all([
-    prisma.userWatchlist.findMany({
-      where: { profileId },
-      orderBy: { createdAt: 'desc' },
+    prisma.userContent.findMany({
+      where: { profileId, listStatus: 'PLANNED' },
+      orderBy: { addedAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,
       select: {
         id: true,
-        contentType: true,
-        createdAt: true,
+        listStatus: true,
+        addedAt: true,
         content: {
           select: {
             id: true,
@@ -44,20 +44,27 @@ export async function GET(req: Request) {
         },
       },
     }),
-    prisma.userWatchlist.count({ where: { profileId } }),
+    prisma.userContent.count({ where: { profileId, listStatus: 'PLANNED' } }),
   ]);
 
-  return NextResponse.json({ items, total, page, totalPages: Math.ceil(total / limit) });
+  // Normalise shape: rename addedAt → createdAt for UI consistency
+  const normalised = items.map((i) => ({ ...i, createdAt: i.addedAt }));
+
+  return NextResponse.json({ items: normalised, total, page, totalPages: Math.ceil(total / limit) });
 }
 
-// POST /api/watchlist — add content to watchlist
+// POST /api/watchlist — create PLANNED entry, or promote RECOMMENDED → PLANNED
+// Never downgrades a WATCHED entry
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { profileId, contentId, contentType } = await req.json();
   if (!profileId || !contentId || !contentType) {
-    return NextResponse.json({ error: 'profileId, contentId, contentType required' }, { status: 400 });
+    return NextResponse.json(
+      { error: 'profileId, contentId, contentType required' },
+      { status: 400 },
+    );
   }
 
   const profile = await prisma.profile.findFirst({
@@ -65,26 +72,38 @@ export async function POST(req: Request) {
   });
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Verify content exists
-  const content = await prisma.content.findUnique({ where: { id: contentId }, select: { id: true } });
+  const content = await prisma.content.findUnique({
+    where: { id: contentId },
+    select: { id: true },
+  });
   if (!content) return NextResponse.json({ error: 'Content not found' }, { status: 404 });
 
-  try {
-    const entry = await prisma.userWatchlist.create({
-      data: {
-        userId: session.user.id,
-        profileId,
-        contentId,
-        contentType,
-      },
-    });
-    return NextResponse.json({ id: entry.id });
-  } catch (err: any) {
-    // Unique constraint = already in watchlist
-    if (err?.code === 'P2002') {
-      return NextResponse.json({ error: 'Already in watchlist' }, { status: 409 });
+  // Check if an entry already exists
+  const existing = await prisma.userContent.findUnique({
+    where: { profileId_contentId: { profileId, contentId } },
+    select: { id: true, listStatus: true },
+  });
+
+  if (existing) {
+    if (existing.listStatus === 'WATCHED') {
+      // Already watched — don't downgrade
+      return NextResponse.json({ id: existing.id, skipped: true });
     }
-    console.error('Watchlist add error:', err);
-    return NextResponse.json({ error: 'Failed to add to watchlist' }, { status: 500 });
+    if (existing.listStatus === 'PLANNED') {
+      // Already planned — no-op
+      return NextResponse.json({ id: existing.id });
+    }
+    // RECOMMENDED → promote to PLANNED
+    const updated = await prisma.userContent.update({
+      where: { id: existing.id },
+      data: { listStatus: 'PLANNED', updatedAt: new Date() },
+    });
+    return NextResponse.json({ id: updated.id });
   }
+
+  // No entry yet — create PLANNED
+  const entry = await prisma.userContent.create({
+    data: { profileId, contentId, listStatus: 'PLANNED' },
+  });
+  return NextResponse.json({ id: entry.id });
 }
