@@ -1,6 +1,6 @@
 # AMDB (Advanced Media Database) - Project Status
 
-**Last Updated:** Phase 9 (Performance, UX Polish & AI Model Selector)
+**Last Updated:** Phase 10 (Deferred Enrichment, UI Solidification & Data Persistence)
 
 ## 📌 Project Overview
 AMDB is a premium, high-performance web application to track, rate, and discover Movies, TV Shows, and Anime. It uses a unified multi-API architecture stitching together TMDB, OMDB, and Jikan (MyAnimeList), presenting content in a dense glassmorphic UI with Gemini AI-powered recommendations.
@@ -26,9 +26,10 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 - Profile deletion with confirmation
 
 ### 2. Information Architecture (Card & Detail)
-- **MovieCard (Tier 1):** Dense vertical grid (aspect 2/3).
+- **MovieCard (Unified):** Standardized across Watched, Planned, and Recommended views.
+  - **Aesthetic:** Solid-fill CTAs merged flush with the card body (primary-colored for actions, secondary for status).
+  - **Descriptive Ratings:** Watched cards display both numeric scores and human-readable labels (e.g., `★ 10 Masterpiece`, `★ 8 Great`).
   - **Poster Area:** Optimized `next/image` integration with device-specific sizing.
-  - **Info Area:** Inline Year with Title, rating badge, fast review preview on hover.
 - **AddToListModal (Tier 2 & 3):**
   - Opens instantly — `ensure()` runs fire-and-forget in background
   - Backdrop hero with priority loading; poster hidden on mobile
@@ -51,7 +52,10 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 - **Normalization:** TMDB combined genres (`Action & Adventure`) are split on ` & ` via `src/lib/genres.ts` so individual genre filters match correctly
 - **OR logic:** Selecting multiple genres returns items matching any selected genre
 
-### 5. Dashboard & Performance (Phase 7–9)
+### 5. Dashboard & Performance (Phase 7–10)
+- **Resolved Vercel Timeouts (Deferred Enrichment):**
+  - **Architecture:** AI recommendation API only returns raw titles (~4s). Metadata (posters/ratings) is fetched via parallel client-side enrichment requests.
+  - **Status Feedback:** Multi-phase progress updates ("Fetching data" → "Getting recommendations" → "Getting details").
 - **Sub-1s Load Times:**
   - JWT session: ~0ms vs ~400ms DB session lookup
   - Parallel queries: profiles + list + count in a single `Promise.all()`
@@ -70,7 +74,8 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 - **Base62 IDs:** `src/lib/id.ts` uses `0-9a-zA-Z` (62 chars) — 62^8 ≈ 218 trillion possibilities
 - Previously base36 (36 chars, 2.8 trillion). Existing IDs unaffected; new content uses base62.
 
-### 7. AI Recommendations
+### 7. AI Recommendations & Personalization
+- **Special Instructions:** Optional text field (200 chars) allows users to inject custom prompt constraints (e.g., "Movies under 2 hours").
 - **Multi-model selector:** Dropdown in filter panel lets user pick AI model
   - Gemma 4 31B (default) — `gemma-4-31b-it`
   - Gemini 2.5 Flash — `gemini-2.5-flash`
@@ -78,7 +83,7 @@ AMDB is a premium, high-performance web application to track, rate, and discover
   - Gemini 3.1 Flash Lite — `gemini-3.1-flash-lite-preview`
 - Server validates model against whitelist — falls back to `gemma-4-31b-it`
 - `responseMimeType: 'application/json'` enforces structured output natively
-- Content-type and genre-aware; per-recommendation reasoning text
+- Content-type and genre-aware; per-recommendation reasoning text saved to dedicated `recommendationReason` field.
 
 ---
 
@@ -90,6 +95,8 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 
 ### Database & Enrichment
 - **Unified `Content` table** — Primary Key is custom 8-char base62 ID (`src/lib/id.ts`)
+- **Dedicated Data Persistence:** AI recommendation context is stored in `recommendationReason`, separating it from user-provided `notes`.
+- **TMDB-ID Caching:** Recommendations API checks for existing `Content` by `tmdbId` before calling external search, prioritizing internal cache performance.
 - **Relation Joins:** `relationLoadStrategy: 'join'` on all list/modal queries
 - **Composite Indexes:** `(profileId, addedAt)`, `(profileId, userRating)`, `(profileId, watchStatus)`
 - **`genreNames`:** Pipe-wrapped string built by `src/lib/genres.ts → buildGenreNames()`. Splits TMDB combined genres on ` & `. B-tree indexed for `contains` queries.
