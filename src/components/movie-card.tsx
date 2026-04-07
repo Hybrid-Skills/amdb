@@ -207,10 +207,10 @@ export function MovieCard({
             </div>
           )}
 
-          {/* TMDB Rating (Pinned to Poster) */}
-          {variant !== 'WATCHED' && tmdbRating != null && Number(tmdbRating) > 0 && (
-            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-white/10 z-30 shadow-2xl">
-              ★ {Number(tmdbRating).toFixed(1)}
+          {/* TMDB Rating (Pinned to Top-Right of Poster) */}
+          {tmdbRating != null && Number(tmdbRating) > 0 && (
+            <div className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-yellow-400 text-[10px] font-bold z-30 shadow-2xl transition-all group-hover:bg-black/80">
+              {Number(tmdbRating).toFixed(1)}
             </div>
           )}
         </div>
