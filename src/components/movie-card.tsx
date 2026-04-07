@@ -173,13 +173,6 @@ export function MovieCard({
             )}
           </div>
 
-          {/* Bottom-Right (Poster): TMDB Rating for non-watched */}
-          {variant !== 'WATCHED' && tmdbRating != null && Number(tmdbRating) > 0 && (
-            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-white/10">
-              ★ {Number(tmdbRating).toFixed(1)}
-            </div>
-          )}
-
           {/* Bottom badges (Left-aligned info) */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 flex gap-1 flex-wrap items-end overflow-hidden">
             <Badge
@@ -207,6 +200,13 @@ export function MovieCard({
               </Badge>
             )}
           </div>
+
+          {/* Bottom-Right (Poster): TMDB Rating for non-watched */}
+          {variant !== 'WATCHED' && tmdbRating != null && Number(tmdbRating) > 0 && (
+            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-white/10 z-30 shadow-2xl">
+              ★ {Number(tmdbRating).toFixed(1)}
+            </div>
+          )}
         </div>
 
         {/* ── Info Area ── */}
