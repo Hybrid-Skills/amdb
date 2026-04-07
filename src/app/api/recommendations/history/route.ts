@@ -9,6 +9,7 @@ export async function GET(req: Request) {
 
   const { searchParams } = new URL(req.url);
   const profileId = searchParams.get('profileId');
+  const contentType = searchParams.get('contentType');
   const page  = Math.max(1, Number(searchParams.get('page') ?? '1'));
   const limit = 18;
 
@@ -19,9 +20,14 @@ export async function GET(req: Request) {
   });
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
+  const where: any = { profileId, listStatus: 'RECOMMENDED' };
+  if (contentType && contentType !== 'ALL') {
+    where.content = { contentType };
+  }
+
   const [items, total] = await Promise.all([
     prisma.userContent.findMany({
-      where: { profileId, listStatus: 'RECOMMENDED' },
+      where,
       orderBy: { addedAt: 'desc' },
       skip: (page - 1) * limit,
       take: limit,

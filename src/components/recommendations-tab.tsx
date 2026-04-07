@@ -10,8 +10,10 @@ import { MovieCard } from './movie-card';
 import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
 import { useToast } from '@/hooks/use-toast';
+import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-bar';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+// ... (rest of types)
 
 type ModelId =
   | 'gemma-4-31b-it'
@@ -234,6 +236,8 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   const [historyLoading, setHistoryLoading] = React.useState(true);
   const [historyPage, setHistoryPage]       = React.useState(1);
   const [historyTotalPages, setHistoryTotalPages] = React.useState(0);
+  const [historyTotal, setHistoryTotal]           = React.useState(0);
+  const [filters, setFilters]                     = React.useState<ListFilters>(DEFAULT_FILTERS);
 
   const [generating, setGenerating]               = React.useState(false);
   const [generatingStatus, setGeneratingStatus]   = React.useState('');
@@ -242,26 +246,35 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   const [deleting, setDeleting]                   = React.useState<Set<string>>(new Set());
   const { toast } = useToast();
 
-  React.useEffect(() => {
-    fetchHistory(1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileId]);
-
-  async function fetchHistory(page: number) {
+  async function fetchHistory(page: number, f: ListFilters) {
     setHistoryLoading(true);
     try {
-      const res = await fetch(`/api/recommendations/history?profileId=${profileId}&page=${page}`);
+      const params = new URLSearchParams({
+        profileId,
+        page: String(page),
+      });
+      if (f.contentType !== 'ALL') params.set('contentType', f.contentType);
+      
+      const res = await fetch(`/api/recommendations/history?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setHistoryItems(data.items ?? []);
       setHistoryPage(data.page);
       setHistoryTotalPages(data.totalPages);
+      setHistoryTotal(data.total);
     } catch {
       // show empty state
     } finally {
       setHistoryLoading(false);
     }
   }
+
+  React.useEffect(() => {
+    if (profileId) {
+      fetchHistory(1, filters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId, filters]);
 
   async function handleGenerate(type: ContentType | 'ANY', genres: string[], model: ModelId, specialInstructions?: string) {
     setShowGenerateModal(false);
@@ -376,21 +389,29 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       ))
     : [];
 
+  const isFiltered = filters.contentType !== 'ALL';
+
   return (
-    <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="relative space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <ListFilterBar filters={filters} onChange={setFilters} total={historyTotal} />
+
       {/* Empty state */}
       {!historyLoading && !generating && historyItems.length === 0 && (
         <div className="flex flex-col items-center justify-center py-24 text-muted-foreground border-2 border-dashed border-border rounded-2xl text-center">
           <History className="w-12 h-12 mb-4 opacity-20" />
-          <p className="text-lg font-medium mb-1 text-foreground">No recommendations yet</p>
+          <p className="text-lg font-medium mb-1 text-foreground">
+            {isFiltered ? 'No matches found' : 'No recommendations yet'}
+          </p>
           <p className="text-sm opacity-80 max-w-sm">
-            Hit Generate to get personalised recommendations based on your ratings history.
+            {isFiltered
+              ? 'Try adjusting your filters to see more results.'
+              : 'Hit Generate to get personalised recommendations based on your ratings history.'}
           </p>
         </div>
       )}
 
       {/* Loading skeleton on first load */}
-      {historyLoading && (
+      {historyLoading && historyPage === 1 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {Array.from({ length: 12 }).map((_, i) => (
             <div key={i} className="rounded-xl bg-muted animate-pulse overflow-hidden">
@@ -405,7 +426,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       )}
 
       {/* Card grid */}
-      {!historyLoading && (historyItems.length > 0 || generating) && (
+      {(!historyLoading || historyPage > 1) && (historyItems.length > 0 || generating) && (
         <div className="space-y-6">
           {generating && (
             <div className="grid grid-cols-1 gap-4">
@@ -463,7 +484,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
             variant="outline"
             size="sm"
             disabled={historyPage === 1}
-            onClick={() => fetchHistory(historyPage - 1)}
+            onClick={() => fetchHistory(historyPage - 1, filters)}
           >
             Prev
           </Button>
@@ -474,7 +495,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
             variant="outline"
             size="sm"
             disabled={historyPage === historyTotalPages}
-            onClick={() => fetchHistory(historyPage + 1)}
+            onClick={() => fetchHistory(historyPage + 1, filters)}
           >
             Next
           </Button>
