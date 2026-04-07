@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Star, Tv, Film, Clock, Pencil, Trash2, Bookmark, PlayCircle, Loader2 } from 'lucide-react';
+import { Star, Tv, Film, Clock, Pencil, Trash2, Bookmark, CheckCircle2, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { buildContentUrl } from '@/lib/slug';
@@ -210,7 +210,7 @@ export function MovieCard({
         </div>
 
         {/* ── Info Area ── */}
-        <div className="p-3 flex flex-col gap-1.5 flex-1">
+        <div className="p-3 flex flex-col gap-2.5 flex-1">
           <div className="flex-1 min-w-0">
             <p className="font-bold text-sm leading-snug line-clamp-2">
               {title}{' '}
@@ -222,9 +222,14 @@ export function MovieCard({
             </p>
           </div>
 
-          {/* Bottom CTA Row */}
+          {/* Bottom CTA Row (Redesigned) */}
           <div 
-            className="mt-auto pt-2 border-t border-border flex items-center justify-between hover:text-primary transition-colors h-6"
+            className={cn(
+              "mt-auto px-2.5 py-2 rounded-lg flex items-center justify-between transition-all active:scale-[0.98] group/cta",
+              variant === 'WATCHED' 
+                ? "bg-secondary/40 hover:bg-secondary/60 text-foreground" 
+                : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+            )}
             onClick={(e) => {
               e.stopPropagation();
               if (variant === 'WATCHED') {
@@ -236,17 +241,18 @@ export function MovieCard({
           >
             {variant === 'WATCHED' ? (
               <>
-                <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 opacity-80">
-                  Edit <span className="text-primary">Rating</span>
-                </span>
-                <Pencil className="w-3 h-3 text-primary" />
+                <div className="flex items-center gap-1.5">
+                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
+                  <span className="text-[12px] font-black">
+                    {userRating} <span className="font-bold opacity-60 ml-0.5">Rating</span>
+                  </span>
+                </div>
+                <Pencil className="w-3.5 h-3.5 opacity-40 group-hover/cta:opacity-100 transition-opacity" />
               </>
             ) : (
               <>
-                <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 opacity-80">
-                  Watched? <span className="text-primary">Rate</span>
-                </span>
-                <Star className="w-3 h-3 text-primary" />
+                <span className="text-[12px] font-black uppercase tracking-tight">Mark Watched</span>
+                <CheckCircle2 className="w-4 h-4" />
               </>
             )}
           </div>
