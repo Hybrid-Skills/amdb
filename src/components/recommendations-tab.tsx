@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Sparkles, ChevronDown, Bookmark, History } from 'lucide-react';
+import { Loader2, Sparkles, ChevronDown, Bookmark, History, Trash2, Film, Tv, PlayCircle, Star, X } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
@@ -12,6 +12,19 @@ import type { ContentType } from '@prisma/client';
 import Image from 'next/image';
 import { tmdbImageLoader } from '@/lib/tmdb';
 import { useToast } from '@/hooks/use-toast';
+
+const CONTENT_ICONS: Record<string, React.ReactNode> = {
+  MOVIE: <Film className="w-2.5 h-2.5 text-cyan-400" />,
+  TV_SHOW: <Tv className="w-2.5 h-2.5 text-blue-400" />,
+  ANIME: (
+    <span
+      className="text-[10px] font-black text-purple-400 leading-none select-none"
+      style={{ fontFamily: 'serif' }}
+    >
+      ア
+    </span>
+  ),
+};
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -221,6 +234,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   const [generating, setGenerating]               = React.useState(false);
   const [showGenerateModal, setShowGenerateModal] = React.useState(false);
   const [bookmarking, setBookmarking]             = React.useState<Set<string>>(new Set());
+  const [deleting, setDeleting]                 = React.useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Fetch history on mount and profile change
@@ -296,6 +310,25 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       }
     } finally {
       setBookmarking((prev) => {
+        const next = new Set(prev);
+        next.delete(entry.id);
+        return next;
+      });
+    }
+  }
+  
+  async function handleDelete(entry: HistoryEntry) {
+    setDeleting((prev) => new Set([...prev, entry.id]));
+    try {
+      const res = await fetch(`/api/recommendations/${entry.id}`, {
+        method: 'DELETE',
+      });
+      if (res.ok) {
+        setHistoryItems((prev) => prev.filter((e) => e.id !== entry.id));
+        toast({ title: 'Recommendation removed' });
+      }
+    } finally {
+      setDeleting((prev) => {
         const next = new Set(prev);
         next.delete(entry.id);
         return next;
@@ -393,31 +426,76 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
                       </div>
                     )}
 
-                    {/* Bookmark button — top right */}
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleBookmark(entry); }}
-                      disabled={isBookmarking}
-                      className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full hover:bg-primary/80 transition-colors z-10 opacity-0 group-hover:opacity-100"
-                      title="Add to Planned"
+                  {/* Top-Left: Delete Action */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(entry); }}
+                    disabled={deleting.has(entry.id)}
+                    className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full hover:bg-destructive/80 transition-colors z-10 opacity-0 group-hover:opacity-100"
+                    title="Dismiss recommendation"
+                  >
+                    {deleting.has(entry.id) ? (
+                      <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+                    ) : (
+                      <Trash2 className="w-3.5 h-3.5 text-white" />
+                    )}
+                  </button>
+
+                  {/* Bookmark button — top right */}
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleBookmark(entry); }}
+                    disabled={isBookmarking}
+                    className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full hover:bg-primary/80 transition-colors z-10 opacity-0 group-hover:opacity-100"
+                    title="Add to Planned"
+                  >
+                    {isBookmarking ? (
+                      <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+                    ) : (
+                      <Bookmark className="w-3.5 h-3.5 text-white" />
+                    )}
+                  </button>
+
+                  {/* Bottom-Left: Content Type Icon */}
+                  <div className="absolute bottom-2 left-2 z-10 flex gap-1 items-center">
+                    <Badge
+                      variant="secondary"
+                      className="h-5 w-5 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-md border border-white/20 shadow-lg"
+                      title={item.contentType.replace('_', ' ')}
                     >
-                      {isBookmarking ? (
-                        <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
-                      ) : (
-                        <Bookmark className="w-3.5 h-3.5 text-white" />
-                      )}
-                    </button>
+                      {CONTENT_ICONS[item.contentType] || <PlayCircle className="w-2.5 h-2.5" />}
+                    </Badge>
+                  </div>
+                </div>
+
+                {/* Info */}
+                <div className="p-3 flex flex-col gap-2 flex-1">
+                  <div className="min-h-[2.5rem]">
+                    <p className="font-bold text-sm leading-tight line-clamp-2">{item.title}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{item.year}</p>
                   </div>
 
-                  {/* Info */}
-                  <div className="p-3 flex flex-col gap-1 flex-1">
-                    <p className="font-semibold text-sm leading-tight line-clamp-1">{item.title}</p>
-                    <p className="text-xs text-muted-foreground">{item.year}</p>
-                    <StreamingButton
-                      tmdbId={item.tmdbId}
-                      contentType={item.contentType as ContentType}
-                      title={item.title}
-                    />
+                  <div 
+                    className="mt-auto pt-2 border-t border-border flex items-center justify-between hover:text-primary transition-colors"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onSelect({
+                        id:          item.id,
+                        tmdbId:      item.tmdbId ?? undefined,
+                        malId:       item.malId ?? undefined,
+                        title:       item.title,
+                        year:        item.year,
+                        posterUrl:   item.posterUrl,
+                        tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                        overview:    null,
+                        contentType: item.contentType as ContentType,
+                      });
+                    }}
+                  >
+                    <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 opacity-80">
+                      Watched? <span className="text-primary">Rate</span>
+                    </span>
+                    <Star className="w-3 h-3 text-primary" />
                   </div>
+                </div>
                 </motion.div>
               );
             })}
