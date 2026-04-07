@@ -414,39 +414,41 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
           )}
           
           <AnimatePresence>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6">
               {historyItems.map((entry) => {
                 const item = entry.content;
                 const isBookmarking = bookmarking.has(entry.id);
                 return (
-                  <MovieCard
-                    key={entry.id}
-                    id={item.id}
-                    title={item.title}
-                    year={item.year}
-                    posterUrl={item.posterUrl}
-                    contentType={item.contentType as ContentType}
-                    tmdbRating={item.tmdbRating != null ? Number(item.tmdbRating) : null}
-                    ageCertification={item.ageCertification}
-                    runtimeMins={item.runtimeMins}
-                    episodeRuntime={item.episodeRuntime}
-                    variant="RECOMMENDED"
-                    onDelete={() => handleDelete(entry)}
-                    isSecondaryLoading={isBookmarking}
-                    onSecondaryAction={() => handleBookmark(entry)}
-                    recommendationReason={entry.recommendationReason}
-                    onViewDetails={() => onSelect({
-                      id:          item.id,
-                      tmdbId:      item.tmdbId ?? undefined,
-                      malId:       item.malId ?? undefined,
-                      title:       item.title,
-                      year:        item.year,
-                      posterUrl:   item.posterUrl,
-                      tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
-                      overview:    null,
-                      contentType: item.contentType as ContentType,
-                    })}
-                  />
+                  <div key={entry.id} className="md:col-span-2">
+                    <MovieCard
+                      id={item.id}
+                      title={item.title}
+                      year={item.year}
+                      posterUrl={item.posterUrl}
+                      contentType={item.contentType as ContentType}
+                      tmdbRating={item.tmdbRating != null ? Number(item.tmdbRating) : null}
+                      ageCertification={item.ageCertification}
+                      runtimeMins={item.runtimeMins}
+                      episodeRuntime={item.episodeRuntime}
+                      variant="RECOMMENDED"
+                      layout="horizontal"
+                      onDelete={() => handleDelete(entry)}
+                      isSecondaryLoading={isBookmarking}
+                      onSecondaryAction={() => handleBookmark(entry)}
+                      recommendationReason={entry.recommendationReason}
+                      onViewDetails={() => onSelect({
+                        id:          item.id,
+                        tmdbId:      item.tmdbId ?? undefined,
+                        malId:       item.malId ?? undefined,
+                        title:       item.title,
+                        year:        item.year,
+                        posterUrl:   item.posterUrl,
+                        tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                        overview:    null,
+                        contentType: item.contentType as ContentType,
+                      })}
+                    />
+                  </div>
                 );
               })}
             </div>

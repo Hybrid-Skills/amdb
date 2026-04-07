@@ -41,6 +41,7 @@ export interface MovieCardProps {
   
   // Tab variants
   variant?: 'WATCHED' | 'PLANNED' | 'RECOMMENDED';
+  layout?: 'vertical' | 'horizontal';
   
   // Actions
   onEdit?: () => void;
@@ -90,11 +91,13 @@ export function MovieCard({
   episodeRuntime,
   runtimeMins,
   variant = 'WATCHED',
+  layout = 'vertical',
   onEdit,
   onDelete,
   onSecondaryAction,
   isSecondaryLoading,
   recommendationReason,
+  onViewDetails,
 }: MovieCardProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
@@ -108,25 +111,35 @@ export function MovieCard({
     router.push(url);
   };
 
+  const isHorizontal = layout === 'horizontal';
+
   return (
     <motion.div
-      whileHover={{ scale: 1.05 }}
+      whileHover={{ scale: 1.02 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className="relative z-0 hover:z-20 h-full"
+      className={cn("relative z-0 hover:z-20 h-full", isHorizontal && "col-span-1 md:col-span-2")}
     >
       <div
-        className="relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group flex flex-col"
+        className={cn(
+          "relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group flex",
+          isHorizontal ? "flex-row" : "flex-col"
+        )}
         onClick={handleCardClick}
       >
-        {/* ── Poster Area ── */}
-        <div className="relative aspect-[2/3] w-full overflow-hidden shrink-0">
+        {/* ── Poster/Banner Section ── */}
+        <div 
+          className={cn(
+            "relative overflow-hidden shrink-0",
+            isHorizontal ? "w-[120px] sm:w-[150px] aspect-[2/3]" : "aspect-[2/3] w-full"
+          )}
+        >
           {posterUrl ? (
             <TmdbImage
               src={posterUrl}
               alt={title}
               fill
-              className="object-cover transition-transform duration-500 group-hover:scale-110"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
               sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 250px"
             />
           ) : (
@@ -135,7 +148,7 @@ export function MovieCard({
             </div>
           )}
 
-          {/* Top-Right: Delete Action */}
+          {/* Delete Action (Pinned to poster Banner) */}
           {onDelete && (
             <button
               onClick={(e) => {
@@ -149,56 +162,37 @@ export function MovieCard({
             </button>
           )}
 
-          {/* Top-Left: Variant Specific Actions (Bookmark for REC) */}
-          <div className="absolute top-2 left-2 flex items-center gap-1.5 z-30">
-            {variant === 'RECOMMENDED' && onSecondaryAction && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onSecondaryAction();
-                }}
-                disabled={isSecondaryLoading}
-                className="w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                title="Add to Planned"
-              >
-                {isSecondaryLoading ? (
-                  <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
-                ) : (
-                  <Bookmark className="w-3.5 h-3.5 text-white/60" />
-                )}
-              </button>
-            )}
-          </div>
-
-          {/* Bottom badges (Left-aligned info) */}
-          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 flex gap-1 flex-wrap items-end overflow-hidden">
-            <Badge
-              variant="secondary"
-              className="h-4 w-4 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-sm border border-white/20 transition-transform active:scale-95 translate-y-[0.5px]"
-              title={contentType.replace('_', ' ')}
-            >
-              {CONTENT_ICONS[contentType]}
-            </Badge>
-            {certLabel && (
-              <Badge
-                variant="destructive"
-                className="h-4 text-[9px] px-1 font-bold rounded-sm border-0"
-              >
-                {certLabel}
-              </Badge>
-            )}
-            {runtimeLabel && (
+          {/* Bottom badges (Left-aligned info) - Only in vertical for density */}
+          {!isHorizontal && (
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 flex gap-1 flex-wrap items-end overflow-hidden">
               <Badge
                 variant="secondary"
-                className="h-4 text-[9px] px-1 bg-black/60 text-white/90 font-medium rounded-sm border border-white/20"
+                className="h-4 w-4 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-sm border border-white/20 transition-transform active:scale-95 translate-y-[0.5px]"
+                title={contentType.replace('_', ' ')}
               >
-                <Clock className="w-2.5 h-2.5 mr-0.5 inline-block" />
-                {runtimeLabel}
+                {CONTENT_ICONS[contentType]}
               </Badge>
-            )}
-          </div>
+              {certLabel && (
+                <Badge
+                  variant="destructive"
+                  className="h-4 text-[9px] px-1 font-bold rounded-sm border-0"
+                >
+                  {certLabel}
+                </Badge>
+              )}
+              {runtimeLabel && (
+                <Badge
+                  variant="secondary"
+                  className="h-4 text-[9px] px-1 bg-black/60 text-white/90 font-medium rounded-sm border border-white/20"
+                >
+                  <Clock className="w-2.5 h-2.5 mr-0.5 inline-block" />
+                  {runtimeLabel}
+                </Badge>
+              )}
+            </div>
+          )}
 
-          {/* Bottom-Right (Poster): TMDB Rating */}
+          {/* TMDB Rating (Pinned to Poster) */}
           {variant !== 'WATCHED' && tmdbRating != null && Number(tmdbRating) > 0 && (
             <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-white/10 z-30 shadow-2xl">
               ★ {Number(tmdbRating).toFixed(1)}
@@ -206,63 +200,106 @@ export function MovieCard({
           )}
         </div>
 
-        {/* ── Info Area (Merged) ── */}
-        <div className="flex flex-col flex-1 min-h-0 bg-card">
-          <div className="p-3 pb-2 flex-1 min-w-0">
-            <p className="font-bold text-[13px] sm:text-sm leading-tight line-clamp-2">
-              {title}{' '}
+        {/* ── Info/Content Section ── */}
+        <div className="flex flex-col flex-1 min-h-0 bg-card overflow-hidden">
+          <div className={cn("flex-1 min-w-0 p-3", isHorizontal && "sm:p-4")}>
+            <div className="flex items-center justify-between gap-2 mb-1 flex-wrap sm:flex-nowrap">
+              <p className="font-extrabold text-[15px] sm:text-base leading-tight truncate">
+                {title}
+              </p>
               {year && (
-                <span className="font-normal text-muted-foreground ml-0.5 shrink-0 whitespace-nowrap">
-                  ({year})
+                <span className="font-bold text-muted-foreground text-sm shrink-0">
+                  {year}
                 </span>
               )}
-            </p>
-            {variant === 'RECOMMENDED' && recommendationReason && (
-              <p className="text-[11px] text-muted-foreground/80 italic leading-snug line-clamp-2 mt-1.5">
+            </div>
+
+            {/* Recommendation Reason */}
+            {recommendationReason && (
+              <p className={cn(
+                "text-[12px] text-muted-foreground/90 italic leading-snug mt-2",
+                isHorizontal ? "line-clamp-4" : "line-clamp-2"
+              )}>
                 {recommendationReason}
               </p>
             )}
+
+            {/* Horizontal Metatdata (Badges on right) */}
+            {isHorizontal && (
+               <div className="flex gap-2.5 mt-3 items-center opacity-80">
+                 <div className="flex items-center gap-1.5 uppercase font-black text-[10px] tracking-widest text-muted-foreground">
+                   {CONTENT_ICONS[contentType]}
+                   {contentType.replace('_', ' ')}
+                 </div>
+                 {runtimeLabel && (
+                    <div className="text-[10px] font-black text-muted-foreground">
+                      {runtimeLabel}
+                    </div>
+                 )}
+               </div>
+            )}
           </div>
 
-          {/* Bottom CTA Section (Flush against bottom) */}
-          <div 
-            className={cn(
-              "px-3 py-2.5 flex items-center justify-between transition-all active:scale-[0.98] group/cta shrink-0 rounded-b-xl",
-              variant === 'WATCHED' 
-                ? "bg-secondary/40 hover:bg-secondary/60 text-foreground" 
-                : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-            )}
-            onClick={(e) => {
-              e.stopPropagation();
-              if (variant === 'WATCHED') {
-                onEdit?.();
-              } else {
-                onSecondaryAction?.();
-              }
-            }}
-          >
-            {variant === 'WATCHED' ? (
-              <>
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
-                  <span className="text-[11px] sm:text-[12px] font-black truncate space-x-1 uppercase tracking-tight">
-                    <span className="text-foreground">{userRating}</span>
-                    <span className="font-bold opacity-70 ml-1">
-                      {RATING_LABELS[Math.round(userRating ?? 0)]}
+          {/* Bottom Action Area (Always flush) */}
+          {isHorizontal ? (
+            <div className="flex items-stretch border-t border-border shrink-0 min-h-[44px]">
+               <button 
+                 onClick={(e) => { e.stopPropagation(); onSecondaryAction?.(); }}
+                 disabled={isSecondaryLoading}
+                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary"
+               >
+                 {isSecondaryLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Bookmark className="w-3.5 h-3.5"/>}
+                 <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight">Add Planned</span>
+               </button>
+               <button 
+                 onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }} 
+                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
+               >
+                 <CheckCircle2 className="w-3.5 h-3.5"/>
+                 <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight">Mark Watched</span>
+               </button>
+            </div>
+          ) : (
+            /* Vertical Unified CTA (Already optimized) */
+            <div 
+              className={cn(
+                "px-3 py-2.5 flex items-center justify-between transition-all active:scale-[0.98] group/cta shrink-0 rounded-b-xl",
+                variant === 'WATCHED' 
+                  ? "bg-secondary/40 hover:bg-secondary/60 text-foreground" 
+                  : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
+              )}
+              onClick={(e) => {
+                e.stopPropagation();
+                if (variant === 'WATCHED') {
+                  onEdit?.();
+                } else {
+                  onSecondaryAction?.();
+                }
+              }}
+            >
+              {variant === 'WATCHED' ? (
+                <>
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
+                    <span className="text-[11px] sm:text-[12px] font-black truncate space-x-1 uppercase tracking-tight">
+                      <span className="text-foreground">{userRating}</span>
+                      <span className="font-bold opacity-70 ml-1">
+                        {RATING_LABELS[Math.round(userRating ?? 0)]}
+                      </span>
                     </span>
+                  </div>
+                  <Pencil className="w-3.5 h-3.5 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0 ml-2" />
+                </>
+              ) : (
+                <div className="flex items-center justify-between w-full">
+                  <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight whitespace-nowrap">
+                    Mark Watched
                   </span>
+                  <CheckCircle2 className="w-4 h-4 shrink-0" />
                 </div>
-                <Pencil className="w-3.5 h-3.5 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0 ml-2" />
-              </>
-            ) : (
-              <div className="flex items-center justify-between w-full">
-                <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight whitespace-nowrap">
-                  Mark Watched
-                </span>
-                <CheckCircle2 className="w-4 h-4 shrink-0" />
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
     </motion.div>
