@@ -11,30 +11,10 @@ import Image from 'next/image';
 import { tmdbImageLoader } from '@/lib/tmdb';
 
 const AI_MODELS = [
-  {
-    id: 'gemma-4-31b-it',
-    label: 'Gemma 4 31B',
-    sublabel: '15 RPM · 1,500 RPD',
-    premium: false,
-  },
-  {
-    id: 'gemini-2.5-flash',
-    label: 'Gemini 2.5 Flash',
-    sublabel: '5 RPM · 20 RPD',
-    premium: false,
-  },
-  {
-    id: 'gemini-3-flash',
-    label: 'Gemini 3 Flash',
-    sublabel: 'Best quality',
-    premium: true,
-  },
-  {
-    id: 'gemini-3.1-flash-lite',
-    label: 'Gemini 3.1 Flash Lite',
-    sublabel: 'Fastest',
-    premium: false,
-  },
+  { id: 'gemma-4-31b-it',              label: 'Gemma 4 31B',           premium: false },
+  { id: 'gemini-2.5-flash',            label: 'Gemini 2.5 Flash',      premium: false },
+  { id: 'gemini-3-flash-preview',      label: 'Gemini 3 Flash',        premium: true  },
+  { id: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite', premium: false },
 ] as const;
 
 type ModelId = (typeof AI_MODELS)[number]['id'];
@@ -192,20 +172,12 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
               </select>
               <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
             </div>
-            {/* Selected model info */}
-            {(() => {
-              const m = AI_MODELS.find((m) => m.id === selectedModel)!;
-              return (
-                <div className="flex items-center gap-2">
-                  <p className="text-[11px] text-muted-foreground/70">{m.sublabel}</p>
-                  {m.premium && (
-                    <Badge className="text-[9px] h-4 px-1.5 bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white font-bold">
-                      PREMIUM
-                    </Badge>
-                  )}
-                </div>
-              );
-            })()}
+            {/* Premium badge for selected model */}
+            {AI_MODELS.find((m) => m.id === selectedModel)?.premium && (
+              <Badge className="text-[9px] h-4 px-1.5 w-fit bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white font-bold">
+                PREMIUM
+              </Badge>
+            )}
           </div>
 
           <Button
