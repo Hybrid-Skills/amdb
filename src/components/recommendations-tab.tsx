@@ -62,6 +62,15 @@ interface HistoryEntry {
   };
 }
 
+interface PendingRecommendation {
+  tempId: string;
+  title: string;
+  year: number;
+  reason: string;
+  label: string;
+  contentType: ContentType | 'ANY';
+}
+
 interface RecommendationsTabProps {
   profileId: string;
   onSelect: (item: SearchResult) => void;
@@ -243,6 +252,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   const [generating, setGenerating]               = React.useState(false);
   const [generatingStatus, setGeneratingStatus]   = React.useState('');
   const [showGenerateModal, setShowGenerateModal] = React.useState(false);
+  const [pendingRecs, setPendingRecs]             = React.useState<PendingRecommendation[]>([]);
   const [bookmarking, setBookmarking]             = React.useState<Set<string>>(new Set());
   const [deleting, setDeleting]                   = React.useState<Set<string>>(new Set());
   const { toast } = useToast();
@@ -298,26 +308,34 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       const rawRecs = data.recommendations || [];
       if (rawRecs.length === 0) throw new Error('No recommendations generated');
 
-      // 3. Phase 3: Getting Details (Enrichment)
+      // 3. Instant Placeholder Creation
+      setPendingRecs(rawRecs.map((r: any, idx: number) => ({
+        tempId: `pending-${Date.now()}-${idx}`,
+        title: r.title,
+        year: r.year,
+        reason: r.reason,
+        label: r.label,
+        contentType: type
+      })));
+
+      // 4. Phase 3: Getting Details (Enrichment)
       setGeneratingStatus('Getting details');
       
-      // We process them one by one but in parallel. 
-      // As they finish, we update the list locally to show progress.
       const enrichmentPromises = rawRecs.map(async (raw: any) => {
         try {
           const enrichRes = await fetch('/api/recommendations/enrich', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profileId, title: raw.title, year: raw.year, reason: raw.reason }),
+            body: JSON.stringify({ profileId, title: raw.title, year: raw.year, reason: raw.reason, label: raw.label }),
           });
           const enrichedData = await enrichRes.json();
           if (enrichRes.ok) {
-            // Prepend new item to list immediately for visual pop-in
             setHistoryItems((prev) => {
-              // Avoid duplicates if user double clicks or overlaps
               if (prev.some(item => item.id === enrichedData.id)) return prev;
               return [enrichedData, ...prev];
             });
+            // Remove from pending once enriched
+            setPendingRecs((prev) => prev.filter(p => p.title !== raw.title));
           }
         } catch (e) {
           console.error('Enrichment failed for', raw.title, e);
@@ -379,17 +397,6 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
     }
   }
 
-  const skeletons = generating
-    ? Array.from({ length: 1 }).map((_, i) => (
-        <div key={`sk-${i}`} className="col-span-full flex flex-col items-center justify-center py-10 bg-accent/20 rounded-2xl border border-dashed border-primary/30 animate-pulse">
-           <Loader2 className="w-10 h-10 text-primary animate-spin mb-4" />
-           <p className="text-sm font-bold uppercase tracking-widest text-primary animate-bounce">
-             {generatingStatus}...
-           </p>
-        </div>
-      ))
-    : [];
-
   const isFiltered = filters.contentType !== 'ALL';
 
   return (
@@ -429,14 +436,28 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       {/* Card grid */}
       {(!historyLoading || historyPage > 1) && (historyItems.length > 0 || generating) && (
         <div className="space-y-6">
-          {generating && (
-            <div className="grid grid-cols-1 gap-4">
-               {skeletons}
-            </div>
-          )}
-          
-          <AnimatePresence>
+          <AnimatePresence mode="popLayout">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6">
+              {/* Pending Items */}
+              {pendingRecs.map((pending) => (
+                <div key={pending.tempId} className="md:col-span-2">
+                  <MovieCard
+                    id={pending.tempId}
+                    title={pending.title}
+                    year={pending.year}
+                    posterUrl={null}
+                    contentType={pending.contentType === 'ANY' ? 'MOVIE' : pending.contentType as ContentType}
+                    tmdbRating={null}
+                    variant="RECOMMENDED"
+                    layout="horizontal"
+                    recommendationReason={pending.reason}
+                    recommendationLabel={pending.label}
+                    isEnriching={true}
+                  />
+                </div>
+              ))}
+
+              {/* Real Items */}
               {historyItems.map((entry) => {
                 const item = entry.content;
                 const isBookmarking = bookmarking.has(entry.id);

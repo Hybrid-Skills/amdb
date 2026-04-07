@@ -50,6 +50,7 @@ export interface MovieCardProps {
   onSecondaryAction?: () => void; // Bookmark for REC, Rate for PLANNED/REC
   isSecondaryLoading?: boolean;
   onViewDetails?: () => void;
+  isEnriching?: boolean;
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -113,6 +114,7 @@ export function MovieCard({
   recommendationReason,
   recommendationLabel,
   onViewDetails,
+  isEnriching = false,
 }: MovieCardProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
@@ -149,7 +151,11 @@ export function MovieCard({
             isHorizontal ? "w-[120px] sm:w-[150px] aspect-[2/3]" : "aspect-[2/3] w-full"
           )}
         >
-          {posterUrl ? (
+          {isEnriching ? (
+            <div className="w-full h-full bg-muted animate-pulse flex items-center justify-center">
+              <Loader2 className="w-6 h-6 text-muted-foreground/20 animate-spin" />
+            </div>
+          ) : posterUrl ? (
             <TmdbImage
               src={posterUrl}
               alt={title}
@@ -264,23 +270,30 @@ export function MovieCard({
 
           {/* Bottom Action Area (Always flush) */}
           {isHorizontal ? (
-            <div className="flex items-stretch border-t border-border shrink-0 min-h-[44px]">
-               <button 
-                 onClick={(e) => { e.stopPropagation(); onSecondaryAction?.(); }}
-                 disabled={isSecondaryLoading}
-                 className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary min-w-0"
-               >
-                 {isSecondaryLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin"/> : <Bookmark className="w-4.5 h-4.5"/>}
-                 <span className="text-[10px] font-black uppercase tracking-tight whitespace-nowrap">Add to Planned</span>
-               </button>
-               <button 
-                 onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }} 
-                 className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all min-w-0"
-               >
-                 <CheckCircle2 className="w-4.5 h-4.5"/>
-                 <span className="text-[10px] font-black uppercase tracking-tight whitespace-nowrap">Mark Watched</span>
-               </button>
-            </div>
+            isEnriching ? (
+              <div className="flex items-center justify-center gap-2 px-2 py-2.5 bg-secondary/5 border-t border-border shrink-0 min-h-[44px] animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+                <span className="text-[10px] font-black uppercase tracking-tight text-muted-foreground">Fetching details...</span>
+              </div>
+            ) : (
+              <div className="flex items-stretch border-t border-border shrink-0 min-h-[44px]">
+                 <button 
+                   onClick={(e) => { e.stopPropagation(); onSecondaryAction?.(); }}
+                   disabled={isSecondaryLoading}
+                   className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary min-w-0"
+                 >
+                   {isSecondaryLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin"/> : <Bookmark className="w-4.5 h-4.5"/>}
+                   <span className="text-[10px] font-black uppercase tracking-tight whitespace-nowrap">Add to Planned</span>
+                 </button>
+                 <button 
+                   onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }} 
+                   className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all min-w-0"
+                 >
+                   <CheckCircle2 className="w-4.5 h-4.5"/>
+                   <span className="text-[10px] font-black uppercase tracking-tight whitespace-nowrap">Mark Watched</span>
+                 </button>
+              </div>
+            )
           ) : (
             /* Vertical Unified CTA (Already optimized) */
             <div 
