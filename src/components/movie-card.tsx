@@ -189,7 +189,6 @@ export function MovieCard({
               <Badge
                 variant="secondary"
                 className="h-4 w-4 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-sm border border-white/20 transition-transform active:scale-95 translate-y-[0.5px]"
-                title={contentType.replace('_', ' ')}
               >
                 {CONTENT_ICONS[contentType]}
               </Badge>
@@ -227,12 +226,12 @@ export function MovieCard({
             <div className="flex items-center justify-between gap-2 mb-1 flex-wrap sm:flex-nowrap">
               <p className="font-extrabold text-[15px] sm:text-base leading-tight truncate">
                 {title}
+                {year && (
+                  <span className="opacity-70 font-bold ml-1.5 text-[0.9em]">
+                    ({year})
+                  </span>
+                )}
               </p>
-              {year && (
-                <span className="font-bold text-muted-foreground text-sm shrink-0">
-                  {year}
-                </span>
-              )}
             </div>
 
             {/* Recommendation Reason */}
@@ -248,18 +247,17 @@ export function MovieCard({
             {/* Horizontal Metatdata (Badges on right) */}
             {isHorizontal && (
                <div className="flex flex-col gap-2 mt-auto">
-                 {recommendationLabel && (
-                   <div className="inline-flex items-center self-start px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-tight">
-                     {LABEL_MAP[recommendationLabel] || recommendationLabel.replace('_', ' ')}
-                   </div>
-                 )}
-                 <div className="flex gap-2.5 items-center opacity-80">
-                   <div className="flex items-center gap-1.5 uppercase font-black text-[10px] tracking-widest text-muted-foreground">
+                 <div className="flex items-center gap-2.5">
+                   {recommendationLabel && (
+                     <div className="inline-flex items-center px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-tight">
+                       {LABEL_MAP[recommendationLabel] || recommendationLabel.replace('_', ' ')}
+                     </div>
+                   )}
+                   <div className="flex items-center opacity-80">
                      {CONTENT_ICONS[contentType]}
-                     {contentType.replace('_', ' ')}
                    </div>
                    {runtimeLabel && (
-                      <div className="text-[10px] font-black text-muted-foreground">
+                      <div className="text-[10px] font-black text-muted-foreground opacity-80">
                         {runtimeLabel}
                       </div>
                    )}
