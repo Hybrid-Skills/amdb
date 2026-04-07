@@ -249,7 +249,7 @@ export function MovieCard({
                  className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary"
                >
                  {isSecondaryLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Bookmark className="w-3.5 h-3.5"/>}
-                 <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight">Add Planned</span>
+                 <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight">Add to Planned</span>
                </button>
                <button 
                  onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }} 
