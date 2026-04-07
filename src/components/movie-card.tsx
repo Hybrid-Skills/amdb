@@ -246,17 +246,17 @@ export function MovieCard({
                <button 
                  onClick={(e) => { e.stopPropagation(); onSecondaryAction?.(); }}
                  disabled={isSecondaryLoading}
-                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary"
+                 className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary min-w-0"
                >
-                 {isSecondaryLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Bookmark className="w-3.5 h-3.5"/>}
-                 <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight">Add to Planned</span>
+                 {isSecondaryLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin"/> : <Bookmark className="w-4.5 h-4.5"/>}
+                 <span className="text-[10px] font-black uppercase tracking-tight whitespace-nowrap">Add to Planned</span>
                </button>
                <button 
                  onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }} 
-                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all"
+                 className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all min-w-0"
                >
-                 <CheckCircle2 className="w-3.5 h-3.5"/>
-                 <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight">Mark Watched</span>
+                 <CheckCircle2 className="w-4.5 h-4.5"/>
+                 <span className="text-[10px] font-black uppercase tracking-tight whitespace-nowrap">Mark Watched</span>
                </button>
             </div>
           ) : (
@@ -280,22 +280,22 @@ export function MovieCard({
               {variant === 'WATCHED' ? (
                 <>
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
-                    <span className="text-[11px] sm:text-[12px] font-black truncate space-x-1 uppercase tracking-tight">
+                    <Star className="w-4.5 h-4.5 text-yellow-500 fill-yellow-500 shrink-0" />
+                    <span className="text-[10px] font-black truncate uppercase tracking-tight whitespace-nowrap">
                       <span className="text-foreground">{userRating}</span>
                       <span className="font-bold opacity-70 ml-1">
                         {RATING_LABELS[Math.round(userRating ?? 0)]}
                       </span>
                     </span>
                   </div>
-                  <Pencil className="w-3.5 h-3.5 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0 ml-2" />
+                  <Pencil className="w-4 h-4 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0 ml-2" />
                 </>
               ) : (
                 <div className="flex items-center justify-between w-full">
-                  <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight whitespace-nowrap">
+                  <span className="text-[10px] font-black uppercase tracking-tight whitespace-nowrap">
                     Mark Watched
                   </span>
-                  <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  <CheckCircle2 className="w-4.5 h-4.5 shrink-0" />
                 </div>
               )}
             </div>
