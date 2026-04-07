@@ -2,30 +2,26 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import Anthropic from '@anthropic-ai/sdk';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { searchJikan } from '@/lib/jikan';
 import type { ContentType } from '@prisma/client';
 
 export const maxDuration = 45;
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY || '',
-});
-
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return NextResponse.json({ error: 'Anthropic API key is missing' }, { status: 500 });
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: 'Gemini API key is missing' }, { status: 500 });
   }
 
   const { profileId, contentType, genres } = await req.json();
   if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
 
   try {
-    // Fetch all watched content for this profile — high-rated for taste signal, all for exclusion
+    // Fetch all watched content for this profile
     const allItems = await prisma.userContent.findMany({
       where: {
         profileId,
@@ -54,7 +50,6 @@ export async function POST(req: Request) {
       .slice(0, 10)
       .map((i) => `"${i.content.title}" (${i.content.year ?? '?'}) — ${i.userRating}/10`);
 
-    // All titles the user has already seen — Claude must not suggest these
     const allWatchedTitles = allItems.map((i) => `"${i.content.title}"`).join(', ');
 
     const typeLabel =
@@ -82,7 +77,7 @@ export async function POST(req: Request) {
         ? `IMPORTANT: Do NOT suggest any of these already-watched titles: ${allWatchedTitles}.`
         : '';
 
-    const systemPrompt = `You are an expert ${typeLabel} recommendation engine.
+    const prompt = `You are an expert ${typeLabel} recommendation engine.
 
 ${historyClause}
 ${avoidClause}
@@ -95,22 +90,29 @@ Suggest exactly 6 ${typeLabel} titles the user has NOT seen. For each, provide:
 - "reason": one sentence (max 20 words) explaining why this fits the user's taste
 
 Return ONLY a valid JSON array. No markdown, no explanation outside the JSON. Example:
-[{"title":"Parasite","year":2019,"reason":"Dark social thriller with the same tension and twist you loved in similar films."}]`;
+[{"title":"Parasite","year":2019,"reason":"Dark social thriller with the same tension and twist you loved in similar films."}]
 
-    const msg = await anthropic.messages.create({
-      model: 'claude-3-haiku-20240307',
-      max_tokens: 600,
-      temperature: 0.7,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: 'Give me the 6 recommendations as JSON.' }],
+Give me the 6 recommendations as JSON.`;
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-2.0-flash',
+      generationConfig: {
+        temperature: 0.7,
+        maxOutputTokens: 600,
+        responseMimeType: 'application/json', // forces valid JSON output — no parsing needed
+      },
     });
 
-    const contentText = msg.content[0].type === 'text' ? msg.content[0].text.trim() : '';
+    const result = await model.generateContent(prompt);
+    const contentText = result.response.text().trim();
+
+    // responseMimeType ensures valid JSON but strip any accidental markdown fences just in case
     const startIdx = contentText.indexOf('[');
     const endIdx = contentText.lastIndexOf(']');
 
     if (startIdx === -1 || endIdx === -1) {
-      throw new Error('Failed to parse recommendations from Claude response');
+      throw new Error('Failed to parse recommendations from Gemini response');
     }
 
     const recs = JSON.parse(contentText.substring(startIdx, endIdx + 1)) as {
