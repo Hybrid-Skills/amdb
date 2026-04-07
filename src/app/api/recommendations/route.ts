@@ -56,7 +56,7 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { profileId, contentType, genres, model: requestedModel } = await req.json();
+  const { profileId, contentType, genres, model: requestedModel, specialInstructions } = await req.json();
   if (!profileId || !process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: 'Missing credentials or profileId' }, { status: 400 });
   }
@@ -107,6 +107,7 @@ Highly rated: ${highRated.map((i) => i.content.title).join(', ')}.
 Avoid: ${lowerRated.map((i) => i.content.title).join(', ')}.
 Genres: ${genres?.join(', ') || 'Any'}.
 Already seen/excluded: ${exclusionList}.
+${specialInstructions ? `Special Instructions: ${specialInstructions}` : ''}
 Suggest exactly 6 ${typeLabel} titles the user has NOT seen. Return JSON array of objects with "title", "year" (number), and "reason" (string).`;
 
     // 2. Start AI generation

@@ -129,20 +129,21 @@ function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: Mode
 interface GenerateModalProps {
   open: boolean;
   onClose: () => void;
-  onGenerate: (type: ContentType | 'ANY', genres: string[], model: ModelId) => void;
+  onGenerate: (type: ContentType | 'ANY', genres: string[], model: ModelId, specialInstructions?: string) => void;
 }
 
 function GenerateModal({ open, onClose, onGenerate }: GenerateModalProps) {
   const [type, setType]       = React.useState<ContentType | 'ANY'>('MOVIE');
   const [genres, setGenres]   = React.useState<string[]>([]);
   const [model, setModel]     = React.useState<ModelId>('gemma-4-31b-it');
+  const [specialInstructions, setSpecialInstructions] = React.useState('');
 
   function toggleGenre(g: string) {
     setGenres((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
   }
 
   function handleGenerate() {
-    onGenerate(type, genres, model);
+    onGenerate(type, genres, model, specialInstructions);
   }
 
   return (
@@ -205,6 +206,20 @@ function GenerateModal({ open, onClose, onGenerate }: GenerateModalProps) {
           <ModelDropdown value={model} onChange={setModel} />
         </div>
 
+        {/* Special Instructions */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-muted-foreground">Special Instructions (Optional)</p>
+            <span className="text-[10px] text-muted-foreground">{specialInstructions.length}/200</span>
+          </div>
+          <textarea
+            value={specialInstructions}
+            onChange={(e) => setSpecialInstructions(e.target.value.slice(0, 200))}
+            placeholder='e.g. "Something under 2 hours", "90s classics"'
+            className="w-full h-20 bg-background border border-border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+          />
+        </div>
+
         <Button
           onClick={handleGenerate}
           className="w-full font-bold gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-0 text-white shadow-lg"
@@ -253,14 +268,14 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
     }
   }
 
-  async function handleGenerate(type: ContentType | 'ANY', genres: string[], model: ModelId) {
+  async function handleGenerate(type: ContentType | 'ANY', genres: string[], model: ModelId, specialInstructions?: string) {
     setShowGenerateModal(false);
     setGenerating(true);
     try {
       const res = await fetch('/api/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, contentType: type, genres, model }),
+        body: JSON.stringify({ profileId, contentType: type, genres, model, specialInstructions }),
       });
       const data = await res.json();
       if (!res.ok) {
