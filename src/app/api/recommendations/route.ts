@@ -109,7 +109,7 @@ Return ONLY a valid JSON array. No markdown, no explanation outside the JSON. Ex
 Give me the 6 recommendations as JSON.`;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({
+    const genModel = genAI.getGenerativeModel({
       model,
       generationConfig: {
         temperature: 0.7,
@@ -118,7 +118,7 @@ Give me the 6 recommendations as JSON.`;
       },
     });
 
-    const result = await model.generateContent(prompt);
+    const result = await genModel.generateContent(prompt);
     const contentText = result.response.text().trim();
 
     // responseMimeType ensures valid JSON but strip any accidental markdown fences just in case
