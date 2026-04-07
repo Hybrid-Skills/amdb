@@ -39,12 +39,20 @@ export async function POST(req: Request) {
       ? await tmdb.tvDetails(tmdbId) 
       : await tmdb.movieDetails(tmdbId);
 
-    // Extract Certification (US Priority)
+    // Extract Certification (IN Priority, US Fallback)
     let ageCertification = null;
     if (isTv) {
-      ageCertification = details.content_ratings?.results.find((r: any) => r.iso_3166_1 === 'US')?.rating || null;
+      const inRating = details.content_ratings?.results.find((r: any) => r.iso_3166_1 === 'IN')?.rating;
+      const usRating = details.content_ratings?.results.find((r: any) => r.iso_3166_1 === 'US')?.rating;
+      ageCertification = inRating || usRating || null;
     } else {
-      ageCertification = details.release_dates?.results.find((r: any) => r.iso_3166_1 === 'US')?.release_dates.find((rd: any) => rd.certification)?.certification || null;
+      const inRelease = details.release_dates?.results.find((r: any) => r.iso_3166_1 === 'IN');
+      const usRelease = details.release_dates?.results.find((r: any) => r.iso_3166_1 === 'US');
+      
+      const inCert = inRelease?.release_dates.find((rd: any) => rd.certification)?.certification;
+      const usCert = usRelease?.release_dates.find((rd: any) => rd.certification)?.certification;
+      
+      ageCertification = inCert || usCert || null;
     }
 
     // Extract Runtime
