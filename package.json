@@ -18,6 +18,8 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.82.0",
     "@auth/prisma-adapter": "^2.7.4",
+    "@neondatabase/serverless": "^1.0.2",
+    "@prisma/adapter-neon": "^5.22.0",
     "@prisma/client": "^5.22.0",
     "@radix-ui/react-avatar": "^1.1.1",
     "@radix-ui/react-dialog": "^1.1.2",
@@ -40,6 +42,7 @@
     "tailwind-merge": "^2.5.4",
     "tailwindcss-animate": "^1.0.7",
     "vaul": "^1.1.2",
+    "ws": "^8.20.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

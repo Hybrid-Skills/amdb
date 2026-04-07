@@ -12,9 +12,15 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
-      if (session.user) {
-        session.user.id = user.id;
+    // Persist user.id into the JWT on first sign-in
+    async jwt({ token, user }) {
+      if (user) token.id = user.id;
+      return token;
+    },
+    // Expose user.id on the session object (no DB lookup)
+    async session({ session, token }) {
+      if (session.user && token.id) {
+        session.user.id = token.id as string;
       }
       return session;
     },
@@ -35,6 +41,6 @@ export const authOptions: NextAuthOptions = {
     signIn: '/login',
   },
   session: {
-    strategy: 'database',
+    strategy: 'jwt',
   },
 };
