@@ -38,17 +38,26 @@ const recommendationSchema = {
 } as const;
 
 function extractJson(text: string) {
-  let cleaned = text.replace(/```json\s?([\s\S]*?)```/g, '$1').trim();
-  if (cleaned.includes('```')) cleaned = cleaned.replace(/```([\s\S]*?)```/g, '$1').trim();
+  // 1. Attempt to find the LAST markdown code block (preferred for AI responses)
+  const codeBlockRegex = /```(?:json)?\s*([\s\S]*?)\s*```/g;
+  const blocks = [...text.matchAll(codeBlockRegex)];
+  
+  if (blocks.length > 0) {
+    return blocks[blocks.length - 1][1].trim();
+  }
 
-  const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
-  const objectMatch = cleaned.match(/\{[\s\S]*\}/);
-  let jsonCandidate = arrayMatch ? arrayMatch[0] : (objectMatch ? objectMatch[0] : cleaned);
+  // 2. Fallback to finding the largest array structure if no code blocks are present
+  const arrayMatch = text.match(/\[[\s\S]*\]/);
+  if (arrayMatch) {
+    // If the match starts with something that isn't a bracket, try to trim it
+    const firstBracket = arrayMatch[0].indexOf('[');
+    const lastBracket = arrayMatch[0].lastIndexOf(']');
+    if (firstBracket !== -1 && lastBracket !== -1) {
+      return arrayMatch[0].substring(firstBracket, lastBracket + 1).trim();
+    }
+  }
 
-  jsonCandidate = jsonCandidate.replace(/\/\/.*/g, '').replace(/\/\*[\s\S]*?\*\//g, '');
-  jsonCandidate = jsonCandidate.replace(/,\s*\]/g, ']').replace(/,\s*\}/g, '}');
-
-  return jsonCandidate.trim();
+  return text.trim();
 }
 
 export async function POST(req: Request) {
@@ -105,6 +114,8 @@ Already seen/excluded: ${exclusionList}.
 ${specialInstructions ? `Special Instructions: ${specialInstructions}` : ''}
 
 Suggest exactly 6 ${typeLabel} titles the user has NOT seen. 
+IMPORTANT: Output ONLY the JSON array. Do not include any preamble, thoughts, reasoning, or markdown outside the JSON block.
+
 Return JSON array of objects with:
 - "title" (string)
 - "year" (number)
