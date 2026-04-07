@@ -10,14 +10,14 @@ import type { ContentType } from '@prisma/client';
 import Image from 'next/image';
 import { tmdbImageLoader } from '@/lib/tmdb';
 
-const AI_MODELS = [
-  { id: 'gemma-4-31b-it',              label: 'Gemma 4 31B',           premium: false },
-  { id: 'gemini-2.5-flash',            label: 'Gemini 2.5 Flash',      premium: false },
-  { id: 'gemini-3-flash-preview',      label: 'Gemini 3 Flash',        premium: true  },
-  { id: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite', premium: false },
-] as const;
+type ModelId = 'gemma-4-31b-it' | 'gemini-2.5-flash' | 'gemini-3-flash-preview' | 'gemini-3.1-flash-lite-preview';
 
-type ModelId = (typeof AI_MODELS)[number]['id'];
+const AI_MODELS: { id: ModelId; label: string; premium: boolean }[] = [
+  { id: 'gemma-4-31b-it',               label: 'Gemma 4 31B',           premium: false },
+  { id: 'gemini-2.5-flash',             label: 'Gemini 2.5 Flash',      premium: false },
+  { id: 'gemini-3-flash-preview',       label: 'Gemini 3 Flash',        premium: true  },
+  { id: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite', premium: false },
+];
 
 interface RecommendationsTabProps {
   profileId: string;
