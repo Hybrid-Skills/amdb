@@ -233,6 +233,11 @@ export function MovieCard({
                 </span>
               )}
             </p>
+            {variant === 'RECOMMENDED' && notes && (
+              <p className="text-[11px] text-muted-foreground/80 italic leading-snug line-clamp-2 mt-1.5">
+                {notes}
+              </p>
+            )}
           </div>
 
           {/* Bottom CTA Section (Flush against bottom) */}

@@ -29,6 +29,7 @@ export async function GET(req: Request) {
         id: true,
         listStatus: true,
         addedAt: true,
+        notes: true,
         content: {
           select: {
             id: true,

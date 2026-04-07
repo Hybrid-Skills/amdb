@@ -42,7 +42,7 @@ export async function POST(req: Request) {
         data: {
           id: generateShortId(),
           contentType: data.media_type === 'tv' ? 'TV_SHOW' : 'MOVIE',
-          title: data.title ?? data.name,
+          title: data.title ?? data.name ?? 'Untitled', 
           year: data.release_date
               ? new Date(data.release_date).getFullYear()
               : data.first_air_date
@@ -62,13 +62,13 @@ export async function POST(req: Request) {
         profileId_contentId: { profileId, contentId: content.id }
       },
       update: {
-        // If it was previously deleted or RECOMMENDED elsewhere, don't downgrade it if it's already PLANNED/WATCHED
-        // but for enrichment we just ensure it exists
+        notes: reason || null, // Store the AI-generated reason
       },
       create: {
         profileId,
         contentId: content.id,
         listStatus: 'RECOMMENDED',
+        notes: reason || null,
       }
     });
 
