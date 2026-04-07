@@ -4,7 +4,6 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
-import { searchJikan } from '@/lib/jikan';
 import { generateShortId } from '@/lib/id';
 import type { ContentType } from '@prisma/client';
 import fs from 'fs';
@@ -132,35 +131,37 @@ Suggest exactly 6 ${typeLabel} titles the user has NOT seen. Return JSON array o
     const recs: { title: string; year: number; reason: string }[] = JSON.parse(cleanedJson);
     const finalRecsList = Array.isArray(recs) ? recs : (recs as any).recommendations || [];
 
-    // 4. Optimized Parallel Enrichment (Limit anime to avoid Jikan rate limits)
-    let animeCount = 0;
+    // 4. Optimized Parallel Enrichment (TMDB only for speed and reliability)
     const enriched = await Promise.all(
       finalRecsList.map(async (rec: any) => {
         try {
-          if (contentType === 'ANIME' || (contentType === 'ANY' && animeCount < 2)) {
-            // Check Jikan for Anime
-            const res = await searchJikan(rec.title);
-            if (res.results[0]) {
-              if (contentType !== 'ANIME') animeCount++;
-              return { ...res.results[0], reason: rec.reason };
-            }
-          }
-          // Default to TMDB (Multi-search is safer for ANY)
           const search = await tmdb.searchMulti(rec.title);
-          const data = search.results[0];
+          const data = search.results.find(
+            (r: any) =>
+              (r.title ?? r.name)?.toLowerCase() === rec.title.toLowerCase() ||
+              Math.abs((r.release_date ? new Date(r.release_date).getFullYear() : (r.first_air_date ? new Date(r.first_air_date).getFullYear() : 0)) - rec.year) <= 1
+          ) || search.results[0];
+
           if (!data) return null;
+
           return {
             tmdbId: data.id,
             title: data.title ?? data.name ?? rec.title,
-            year: data.release_date ? new Date(data.release_date).getFullYear() : (data.first_air_date ? new Date(data.first_air_date).getFullYear() : rec.year),
+            year: data.release_date
+              ? new Date(data.release_date).getFullYear()
+              : data.first_air_date
+                ? new Date(data.first_air_date).getFullYear()
+                : rec.year,
             posterUrl: tmdbImageUrl(data.poster_path),
             tmdbRating: data.vote_average,
             overview: data.overview,
             contentType: data.media_type === 'tv' ? 'TV_SHOW' : 'MOVIE',
             reason: rec.reason,
           };
-        } catch { return null; }
-      })
+        } catch {
+          return null;
+        }
+      }),
     );
 
     const finalRecs = enriched.filter(Boolean) as any[];
