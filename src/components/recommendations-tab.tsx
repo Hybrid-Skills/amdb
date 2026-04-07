@@ -14,11 +14,11 @@ import { tmdbImageLoader } from '@/lib/tmdb';
 import { useToast } from '@/hooks/use-toast';
 
 const CONTENT_ICONS: Record<string, React.ReactNode> = {
-  MOVIE: <Film className="w-2.5 h-2.5 text-cyan-400" />,
-  TV_SHOW: <Tv className="w-2.5 h-2.5 text-blue-400" />,
+  MOVIE: <Film className="w-3 h-3 text-cyan-400" />,
+  TV_SHOW: <Tv className="w-3 h-3 text-blue-400" />,
   ANIME: (
     <span
-      className="text-[10px] font-black text-purple-400 leading-none select-none"
+      className="text-[11px] font-black text-purple-400 leading-none select-none"
       style={{ fontFamily: 'serif' }}
     >
       ア
@@ -234,7 +234,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   const [generating, setGenerating]               = React.useState(false);
   const [showGenerateModal, setShowGenerateModal] = React.useState(false);
   const [bookmarking, setBookmarking]             = React.useState<Set<string>>(new Set());
-  const [deleting, setDeleting]                 = React.useState<Set<string>>(new Set());
+  const [deleting, setDeleting]                   = React.useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   // Fetch history on mount and profile change
@@ -426,76 +426,76 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
                       </div>
                     )}
 
-                  {/* Top-Left: Delete Action */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(entry); }}
-                    disabled={deleting.has(entry.id)}
-                    className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full hover:bg-destructive/80 transition-colors z-10 opacity-0 group-hover:opacity-100"
-                    title="Dismiss recommendation"
-                  >
-                    {deleting.has(entry.id) ? (
-                      <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
-                    ) : (
-                      <Trash2 className="w-3.5 h-3.5 text-white" />
-                    )}
-                  </button>
-
-                  {/* Bookmark button — top right */}
-                  <button
-                    onClick={(e) => { e.stopPropagation(); handleBookmark(entry); }}
-                    disabled={isBookmarking}
-                    className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full hover:bg-primary/80 transition-colors z-10 opacity-0 group-hover:opacity-100"
-                    title="Add to Planned"
-                  >
-                    {isBookmarking ? (
-                      <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
-                    ) : (
-                      <Bookmark className="w-3.5 h-3.5 text-white" />
-                    )}
-                  </button>
-
-                  {/* Bottom-Left: Content Type Icon */}
-                  <div className="absolute bottom-2 left-2 z-10 flex gap-1 items-center">
-                    <Badge
-                      variant="secondary"
-                      className="h-5 w-5 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-md border border-white/20 shadow-lg"
-                      title={item.contentType.replace('_', ' ')}
+                    {/* Top-Left: Delete Action */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleDelete(entry); }}
+                      disabled={deleting.has(entry.id)}
+                      className="absolute top-2 left-2 w-8 h-8 flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/10 rounded-lg hover:bg-destructive/20 transition-all z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                      title="Dismiss recommendation"
                     >
-                      {CONTENT_ICONS[item.contentType] || <PlayCircle className="w-2.5 h-2.5" />}
-                    </Badge>
-                  </div>
-                </div>
+                      {deleting.has(entry.id) ? (
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      ) : (
+                        <Trash2 className="w-4 h-4 text-white/60" />
+                      )}
+                    </button>
 
-                {/* Info */}
-                <div className="p-3 flex flex-col gap-2 flex-1">
-                  <div className="min-h-[2.5rem]">
-                    <p className="font-bold text-sm leading-tight line-clamp-2">{item.title}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{item.year}</p>
+                    {/* Bookmark button — top right */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleBookmark(entry); }}
+                      disabled={isBookmarking}
+                      className="absolute top-2 right-2 w-8 h-8 flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/10 rounded-lg hover:bg-primary/20 transition-all z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                      title="Add to Planned"
+                    >
+                      {isBookmarking ? (
+                        <Loader2 className="w-4 h-4 text-white animate-spin" />
+                      ) : (
+                        <Bookmark className="w-4 h-4 text-white/60" />
+                      )}
+                    </button>
+
+                    {/* Bottom-Left: Content Type Icon */}
+                    <div className="absolute bottom-2 left-2 z-10 flex gap-1 items-center">
+                      <Badge
+                        variant="secondary"
+                        className="h-5 w-5 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-md border border-white/20 shadow-lg"
+                        title={item.contentType.replace('_', ' ')}
+                      >
+                        {CONTENT_ICONS[item.contentType] || <PlayCircle className="w-3 h-3" />}
+                      </Badge>
+                    </div>
                   </div>
 
-                  <div 
-                    className="mt-auto pt-2 border-t border-border flex items-center justify-between hover:text-primary transition-colors"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onSelect({
-                        id:          item.id,
-                        tmdbId:      item.tmdbId ?? undefined,
-                        malId:       item.malId ?? undefined,
-                        title:       item.title,
-                        year:        item.year,
-                        posterUrl:   item.posterUrl,
-                        tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
-                        overview:    null,
-                        contentType: item.contentType as ContentType,
-                      });
-                    }}
-                  >
-                    <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 opacity-80">
-                      Watched? <span className="text-primary">Rate</span>
-                    </span>
-                    <Star className="w-3 h-3 text-primary" />
+                  {/* Info */}
+                  <div className="p-3 flex flex-col gap-2 flex-1">
+                    <div className="min-h-[2.5rem]">
+                      <p className="font-bold text-sm leading-tight line-clamp-2">{item.title}</p>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">{item.year}</p>
+                    </div>
+
+                    <div 
+                      className="mt-auto pt-2 border-t border-border flex items-center justify-between hover:text-primary transition-colors"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelect({
+                          id:          item.id,
+                          tmdbId:      item.tmdbId ?? undefined,
+                          malId:       item.malId ?? undefined,
+                          title:       item.title,
+                          year:        item.year,
+                          posterUrl:   item.posterUrl,
+                          tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                          overview:    null,
+                          contentType: item.contentType as ContentType,
+                        });
+                      }}
+                    >
+                      <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 opacity-80">
+                        Watched? <span className="text-primary">Rate</span>
+                      </span>
+                      <Star className="w-3 h-3 text-primary" />
+                    </div>
                   </div>
-                </div>
                 </motion.div>
               );
             })}

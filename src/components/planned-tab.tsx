@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bookmark, X, Trash2, Film, Tv, PlayCircle, Star } from 'lucide-react';
+import { Bookmark, X, Trash2, Film, Tv, PlayCircle, Star, Loader2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
@@ -13,11 +13,11 @@ import Image from 'next/image';
 import { tmdbImageLoader } from '@/lib/tmdb';
 
 const CONTENT_ICONS: Record<string, React.ReactNode> = {
-  MOVIE: <Film className="w-2.5 h-2.5 text-cyan-400" />,
-  TV_SHOW: <Tv className="w-2.5 h-2.5 text-blue-400" />,
+  MOVIE: <Film className="w-3 h-3 text-cyan-400" />,
+  TV_SHOW: <Tv className="w-3 h-3 text-blue-400" />,
   ANIME: (
     <span
-      className="text-[10px] font-black text-purple-400 leading-none select-none"
+      className="text-[11px] font-black text-purple-400 leading-none select-none"
       style={{ fontFamily: 'serif' }}
     >
       ア
@@ -180,13 +180,13 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
                       handleRemove(entry.id);
                     }}
                     disabled={removing.has(entry.id)}
-                    className="absolute top-2 left-2 w-7 h-7 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full hover:bg-destructive/80 transition-colors z-10 opacity-0 group-hover:opacity-100"
+                    className="absolute top-2 left-2 w-8 h-8 flex items-center justify-center bg-black/40 backdrop-blur-md border border-white/10 rounded-lg hover:bg-destructive/20 transition-all z-10 opacity-100 md:opacity-0 md:group-hover:opacity-100"
                     title="Remove from planned"
                   >
                     {removing.has(entry.id) ? (
-                      <span className="w-3 h-3 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+                      <Loader2 className="w-4 h-4 text-white animate-spin" />
                     ) : (
-                      <Trash2 className="w-3.5 h-3.5 text-white" />
+                      <Trash2 className="w-4 h-4 text-white/60" />
                     )}
                   </button>
 
@@ -197,7 +197,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
                       className="h-5 w-5 p-0 flex items-center justify-center bg-black/60 text-white/90 font-bold rounded-md border border-white/20 shadow-lg"
                       title={item.contentType.replace('_', ' ')}
                     >
-                      {CONTENT_ICONS[item.contentType] || <PlayCircle className="w-2.5 h-2.5" />}
+                      {CONTENT_ICONS[item.contentType] || <PlayCircle className="w-3 h-3" />}
                     </Badge>
                   </div>
                 </div>
