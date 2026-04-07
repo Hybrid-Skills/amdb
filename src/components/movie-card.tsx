@@ -155,7 +155,7 @@ export function MovieCard({
                 e.stopPropagation();
                 onDelete();
               }}
-              className="absolute top-2 right-2 w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-red-500/20 group/del transition-all z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+              className="absolute top-2 left-2 w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-red-500/20 group/del transition-all z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100"
               title="Remove"
             >
               <Trash2 className="w-4 h-4 text-white/60 group-hover/del:text-red-500 transition-colors" />
