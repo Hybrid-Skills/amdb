@@ -53,7 +53,7 @@ export function DetailHero({ data }: HeroProps) {
 
       <div className="absolute bottom-0 left-0 right-0 px-5 pt-5 pb-0 md:px-10 md:pt-10 md:pb-2 flex gap-6 items-end z-10">
         {data.posterUrl && (
-          <div className="relative w-32 md:w-56 aspect-[2/3] shrink-0 rounded-2xl md:rounded-3xl shadow-2xl border border-white/5 overflow-hidden">
+          <div className="hidden md:block relative w-32 md:w-56 aspect-[2/3] shrink-0 rounded-2xl md:rounded-3xl shadow-2xl border border-white/5 overflow-hidden">
             <TmdbImage
               src={data.posterUrl}
               alt={data.title}
