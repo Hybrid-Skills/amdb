@@ -9,15 +9,7 @@ export const tmdbImageUrl = (path: string | null, size = 'w500') =>
  * Maps requested widths to the nearest TMDB size bucket.
  */
 export function tmdbImageLoader({ src, width, quality }: { src: string; width: number; quality?: number }) {
-  // src is already a full TMDB URL or a path. If it's a full URL, we extract the path.
-  const path = src.includes('image.tmdb.org') ? src.split('/t/p/')[1].split('/').slice(1).join('/') : src;
-  
-  // External non-TMDB URL — return as-is
-  if (!path || path.startsWith('http')) return src;
-  // Raw TMDB path like /abc123.jpg (logo_path, poster_path etc.) — build full URL
-  if (path.startsWith('/')) return `${TMDB_IMAGE_BASE}/${size}${path}`;
-
-  // TMDB Sizes: w92, w154, w185, w342, w500, w780, w1280, original
+  // Resolve size bucket first so it's available for all return paths
   let size = 'w500';
   if (width <= 92) size = 'w92';
   else if (width <= 154) size = 'w154';
@@ -27,6 +19,14 @@ export function tmdbImageLoader({ src, width, quality }: { src: string; width: n
   else if (width <= 780) size = 'w780';
   else if (width <= 1280) size = 'w1280';
   else size = 'original';
+
+  // src is already a full TMDB URL or a path. If it's a full URL, extract the bare path.
+  const path = src.includes('image.tmdb.org') ? src.split('/t/p/')[1].split('/').slice(1).join('/') : src;
+
+  // External non-TMDB URL — return as-is
+  if (!path || path.startsWith('http')) return src;
+  // Raw TMDB path like /abc123.jpg (logo_path, poster_path, etc.) — build full URL
+  if (path.startsWith('/')) return `${TMDB_IMAGE_BASE}/${size}${path}`;
 
   return `${TMDB_IMAGE_BASE}/${size}/${path}`;
 }
