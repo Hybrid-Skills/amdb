@@ -46,15 +46,12 @@ function extractJson(text: string) {
     return blocks[blocks.length - 1][1].trim();
   }
 
-  // 2. Fallback to finding the largest array structure if no code blocks are present
-  const arrayMatch = text.match(/\[[\s\S]*\]/);
-  if (arrayMatch) {
-    // If the match starts with something that isn't a bracket, try to trim it
-    const firstBracket = arrayMatch[0].indexOf('[');
-    const lastBracket = arrayMatch[0].lastIndexOf(']');
-    if (firstBracket !== -1 && lastBracket !== -1) {
-      return arrayMatch[0].substring(firstBracket, lastBracket + 1).trim();
-    }
+  // 2. Fallback: find the last JSON array of objects (starts with [{ or [ {)
+  // Use lastIndexOf to skip any label-list notation like [UNDERRATED, ...] in thinking text
+  const lastArrayStart = text.lastIndexOf('[');
+  const lastArrayEnd = text.lastIndexOf(']');
+  if (lastArrayStart !== -1 && lastArrayEnd > lastArrayStart) {
+    return text.substring(lastArrayStart, lastArrayEnd + 1).trim();
   }
 
   return text.trim();
@@ -106,33 +103,33 @@ export async function POST(req: Request) {
     const exclusionList = allProfileItems.map((i) => i.content.title).join(', ');
     const typeLabel = contentType === 'TV_SHOW' ? 'TV show or anime' : contentType === 'MOVIE' ? 'movie' : 'content';
 
-    const prompt = `You are a movie recommendation engine.
-Highly rated: ${highRated.map((i) => i.content.title).join(', ')}.
-Avoid: ${lowerRated.map((i) => i.content.title).join(', ')}.
+    const prompt = `You are a movie recommendation engine. Output ONLY valid JSON. No reasoning, no explanations, no markdown — just the raw JSON array.
+
+Highly rated by user: ${highRated.map((i) => i.content.title).join(', ')}.
+Disliked by user: ${lowerRated.map((i) => i.content.title).join(', ')}.
 Genres: ${genres?.join(', ') || 'Any'}.
-Already seen/excluded: ${exclusionList}.
-${specialInstructions ? `Special Instructions: ${specialInstructions}` : ''}
+Already seen / excluded: ${exclusionList}.
+${specialInstructions ? `Special instructions: ${specialInstructions}` : ''}
 
-Suggest exactly 6 ${typeLabel} titles the user has NOT seen. 
-IMPORTANT: Output ONLY the JSON array. Do not include any preamble, thoughts, reasoning, or markdown outside the JSON block.
+Task: Suggest exactly 6 ${typeLabel} titles the user has NOT seen.
 
-Return JSON array of objects with:
-- "title" (string)
-- "year" (number)
-- "reason" (string) - Keep each "reason" extremely concise (maximum 2 sentences).
-- "label" (string) - Choose at most ONE label from this list ONLY if strongly applicable. Use exactly these strings: [UNDERRATED, CRITICALLY_ACCLAIMED, AWARD_WINNING, FAN_FAVORITE, CULT_CLASSIC, VISUAL_SPECTACLE, IMMERSIVE_SOUND, TECHNICAL_MASTERY, DIRECTORIAL_DEBUT, GENRE_DEFINING].
-- IMPORTANT: Diversify labels. Use at most 2 titles per same label in this list.`;
+Return a JSON array of exactly 6 objects. Each object must have:
+- "title": string
+- "year": number
+- "reason": string (max 2 sentences, concise)
+- "label": string (pick ONE from: UNDERRATED, CRITICALLY_ACCLAIMED, AWARD_WINNING, FAN_FAVORITE, CULT_CLASSIC, VISUAL_SPECTACLE, IMMERSIVE_SOUND, TECHNICAL_MASTERY, DIRECTORIAL_DEBUT, GENRE_DEFINING — max 2 titles sharing the same label)
+
+Your entire response must be the JSON array. Start your response with [ and end with ].`;
 
     // 2. Start AI generation
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const isGemini = model.startsWith('gemini');
     const genModel = genAI.getGenerativeModel({
       model,
       generationConfig: {
-        temperature: isGemini ? 0.7 : 0.2, // Optimized for Gemma speed
-        maxOutputTokens: 1000, // Buffered from 600 to prevent truncation
-        responseMimeType: isGemini ? 'application/json' : undefined,
-        responseSchema: isGemini ? (recommendationSchema as any) : undefined,
+        temperature: 0.7,
+        maxOutputTokens: 1000,
+        responseMimeType: 'application/json',
+        responseSchema: recommendationSchema as any,
       },
     });
 
