@@ -55,6 +55,63 @@ const MOVIE_TV_GENRES = [
 
 type RecResult = SearchResult & { reason?: string };
 
+function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: ModelId) => void }) {
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const selected = AI_MODELS.find((m) => m.id === value)!;
+
+  // Close on outside click
+  React.useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative">
+      {/* Trigger */}
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="w-full flex items-center justify-between gap-2 bg-background border border-border rounded-lg px-3 py-2 text-sm font-medium text-foreground cursor-pointer hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
+      >
+        <span className="flex items-center gap-2">
+          {selected.label}
+          {selected.premium && (
+            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-500 to-orange-500 text-white leading-none">
+              PREMIUM
+            </span>
+          )}
+        </span>
+        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
+      </button>
+
+      {/* Dropdown list */}
+      {open && (
+        <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-lg shadow-xl overflow-hidden">
+          {AI_MODELS.map((m) => (
+            <button
+              key={m.id}
+              type="button"
+              onClick={() => { onChange(m.id); setOpen(false); }}
+              className={`w-full flex items-center justify-between px-3 py-2.5 text-sm text-left transition-colors hover:bg-accent ${m.id === value ? 'bg-accent/60 font-semibold' : 'font-medium'}`}
+            >
+              {m.label}
+              {m.premium && (
+                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-500 to-orange-500 text-white leading-none shrink-0">
+                  PREMIUM
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabProps) {
   const [loading, setLoading] = React.useState(false);
   const [recs, setRecs] = React.useState<RecResult[]>([]);
@@ -158,26 +215,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
           {/* AI Model selector */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">AI Model</p>
-            <div className="relative">
-              <select
-                value={selectedModel}
-                onChange={(e) => setSelectedModel(e.target.value as ModelId)}
-                className="w-full appearance-none bg-background border border-border rounded-lg px-3 py-2 pr-8 text-sm font-medium text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors hover:border-primary/50"
-              >
-                {AI_MODELS.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.label}{m.premium ? ' ★' : ''}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
-            </div>
-            {/* Premium badge for selected model */}
-            {AI_MODELS.find((m) => m.id === selectedModel)?.premium && (
-              <Badge className="text-[9px] h-4 px-1.5 w-fit bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white font-bold">
-                PREMIUM
-              </Badge>
-            )}
+            <ModelDropdown value={selectedModel} onChange={setSelectedModel} />
           </div>
 
           <Button
