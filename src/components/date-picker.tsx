@@ -19,6 +19,7 @@ interface DatePickerProps {
   onChange: (date: Date | null) => void;
   placeholder?: string;
   maxDate?: Date;
+  minYear?: number;
   className?: string;
 }
 
@@ -27,6 +28,7 @@ export function DatePicker({
   onChange,
   placeholder = 'Pick a date',
   maxDate,
+  minYear,
   className,
 }: DatePickerProps) {
   const [open, setOpen] = React.useState(false);
@@ -54,6 +56,7 @@ export function DatePicker({
             if (date) setOpen(false);
           }}
           maxDate={maxDate}
+          minYear={minYear}
         />
       </PopoverContent>
     </Popover>

@@ -106,7 +106,7 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
     if (f.watchStatus.length > 0) params.set('watchStatus', f.watchStatus.join(','));
     if (f.genres.length > 0) params.set('genres', f.genres.join(','));
 
-    const res = await fetch(`/api/list?${params}`);
+    const res = await fetch(`/api/list?${params}`, { cache: 'no-store' });
     if (res.ok) {
       const data = await res.json();
       setListItems(data.items);

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { X, PlayCircle } from 'lucide-react';
+import { X, PlayCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import Image from 'next/image';
 
 interface video {
@@ -18,19 +18,76 @@ interface VideosSectionProps {
 
 export function VideosSection({ videos }: VideosSectionProps) {
   const [activeVideoKey, setActiveVideoKey] = React.useState<string | null>(null);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
 
   if (!videos?.length) return null;
 
   const trailer = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
   const otherVideos = videos.filter((v) => v !== trailer).slice(0, 5);
+  const allVideos = [trailer, ...otherVideos].filter(Boolean) as video[];
+
+  function updateScrollState() {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 8);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 8);
+  }
+
+  function scroll(direction: 'left' | 'right') {
+    const el = scrollRef.current;
+    if (!el) return;
+    const amount = el.clientWidth * 0.75;
+    el.scrollBy({ left: direction === 'left' ? -amount : amount, behavior: 'smooth' });
+  }
+
+  // Initialise scroll state after mount
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener('scroll', updateScrollState, { passive: true });
+    const ro = new ResizeObserver(updateScrollState);
+    ro.observe(el);
+    return () => {
+      el.removeEventListener('scroll', updateScrollState);
+      ro.disconnect();
+    };
+  }, [allVideos.length]);
 
   return (
     <section>
-      <h2 className="text-xl font-bold tracking-tight mb-3 md:mb-4 flex items-center gap-2">
-        <span className="w-1 h-5 rounded-full bg-primary inline-block" />
-        Videos
-      </h2>
-      <div className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 -mx-4 px-4 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
+      <div className="flex items-center justify-between mb-3 md:mb-4">
+        <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+          <span className="w-1 h-5 rounded-full bg-primary inline-block" />
+          Videos
+        </h2>
+        {/* Desktop nav buttons */}
+        <div className="hidden md:flex items-center gap-1.5">
+          <button
+            onClick={() => scroll('left')}
+            disabled={!canScrollLeft}
+            className="w-8 h-8 rounded-full flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+            aria-label="Scroll left"
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => scroll('right')}
+            disabled={!canScrollRight}
+            className="w-8 h-8 rounded-full flex items-center justify-center border border-white/10 bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-25 disabled:cursor-not-allowed"
+            aria-label="Scroll right"
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 -mx-4 px-4 md:mx-0 md:px-0 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+      >
         {/* Trailer */}
         {trailer && (
           <div className="flex-shrink-0 w-[85vw] md:w-[600px] snap-center flex flex-col gap-2">
@@ -45,9 +102,6 @@ export function VideosSection({ videos }: VideosSectionProps) {
                 title={trailer.name}
               />
             </div>
-            <p className="text-xs text-white/40 mt-1 ml-1 hidden md:block">
-              Swipe right for more videos →
-            </p>
           </div>
         )}
 

@@ -1,12 +1,11 @@
-import { customAlphabet } from 'nanoid';
-// actually since I can't install nanoid, I'll use a vanilla implementation for now.
 import { randomBytes } from 'crypto';
 
-const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
+// Base62: digits + lowercase + uppercase = 62 symbols
+// 8 positions → 62^8 ≈ 218 trillion possible IDs (vs 36^8 = 2.8 trillion with base36)
+const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 
 /**
- * Generates a short, 8-character lowercase alphanumeric ID.
- * charset: 36 symbols, 8 positions = 36^8 = 2.8 trillion possible IDs.
+ * Generates a short, 8-character case-sensitive alphanumeric ID (base62).
  */
 export function generateShortId(size: number = 8): string {
   const bytes = randomBytes(size);

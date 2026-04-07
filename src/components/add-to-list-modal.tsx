@@ -133,6 +133,11 @@ export function AddToListModal({
   // For edit mode — whether the compact rating summary is in edit state
   const [editingRating, setEditingRating] = React.useState(startInEditMode || !isEditing);
 
+  // Track which external ID we've already fetched details for.
+  // This prevents the background ensure() call (which only updates item.id)
+  // from re-triggering the effect and reloading the rating component.
+  const fetchedForRef = React.useRef<number | null>(null);
+
   const isSerial = item?.contentType === 'TV_SHOW' || item?.contentType === 'ANIME';
   const today = new Date();
 
@@ -141,10 +146,17 @@ export function AddToListModal({
       setDetailedItem(null);
       setWatchProviders(null);
       setCheckingExistence(false);
+      fetchedForRef.current = null;
       return;
     }
-    const controller = new AbortController();
     const id = item.tmdbId ?? item.malId;
+
+    // Skip re-fetch when only item.id (amdbId) changed — ensure() runs in background
+    // and updates item.id after the modal is already open and data is loaded
+    if (fetchedForRef.current === id) return;
+    fetchedForRef.current = id;
+
+    const controller = new AbortController();
 
     // 1. Fetch Details — watch providers are included in this response
     //    (already fetched via append_to_response, no second round trip needed)
@@ -256,7 +268,7 @@ export function AddToListModal({
         {notes ? (
           <p className="text-xs text-white/50 truncate italic">"{notes}"</p>
         ) : (
-          <p className="text-xs text-white/30">No notes</p>
+          <p className="text-xs text-white/30">No review</p>
         )}
       </div>
       <Button
@@ -332,6 +344,7 @@ export function AddToListModal({
                 onChange={setWatchedDate}
                 placeholder="Pick"
                 maxDate={today}
+                minYear={displayItem.year ?? 1900}
                 className="flex-1 bg-black/50 border-white/10 text-white text-xs h-9 md:h-11"
               />
               <button
@@ -386,23 +399,23 @@ export function AddToListModal({
 
       <div className="md:flex items-start gap-3">
         <div className="flex items-baseline gap-1 shrink-0 pt-2.5 md:flex-col md:items-start md:gap-0">
-          <p className="text-sm font-medium text-white/80 leading-tight">Notes</p>
+          <p className="text-sm font-medium text-white/80 leading-tight">Review</p>
           <span className="text-white/40 text-xs leading-tight">(optional)</span>
         </div>
         <div className="flex-1 flex flex-col rounded-md border border-white/10 bg-black/50 focus-within:ring-1 focus-within:ring-ring overflow-hidden">
           <textarea
             value={notes}
-            onChange={(e) => setNotes(e.target.value.slice(0, 200))}
+            onChange={(e) => setNotes(e.target.value.slice(0, 500))}
             placeholder='e.g. "Ending was super confusing"'
-            maxLength={200}
+            maxLength={500}
             rows={2}
             className="w-full bg-transparent resize-none placeholder:text-white/30 text-white text-base md:text-sm px-3 pt-2 outline-none"
           />
           <div className="flex justify-end px-2.5 pb-1.5">
             <span
-              className={`text-[10px] tabular-nums ${notes.length >= 190 ? 'text-orange-400' : 'text-white/25'}`}
+              className={`text-[10px] tabular-nums ${notes.length >= 450 ? 'text-orange-400' : 'text-white/25'}`}
             >
-              {200 - notes.length}
+              {500 - notes.length}
             </span>
           </div>
         </div>
