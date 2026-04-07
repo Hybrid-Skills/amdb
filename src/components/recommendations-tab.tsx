@@ -11,6 +11,7 @@ import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
 import Image from 'next/image';
 import { tmdbImageLoader } from '@/lib/tmdb';
+import { useToast } from '@/hooks/use-toast';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -220,6 +221,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   const [generating, setGenerating]               = React.useState(false);
   const [showGenerateModal, setShowGenerateModal] = React.useState(false);
   const [bookmarking, setBookmarking]             = React.useState<Set<string>>(new Set());
+  const { toast } = useToast();
 
   // Fetch history on mount and profile change
   React.useEffect(() => {
@@ -256,8 +258,12 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       if (!res.ok) throw new Error(data.error);
       // Refresh history — new recs appear at top
       await fetchHistory(1);
-    } catch {
-      // silently fail — user can retry via FAB
+    } catch (err: any) {
+      toast({
+        title: 'Recommendation failed',
+        description: err.message || 'The AI was unable to generate suggestions at this time. Please try again.',
+        variant: 'destructive',
+      });
     } finally {
       setGenerating(false);
     }

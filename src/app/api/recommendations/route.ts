@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenerativeAI, SchemaType } from '@google/generative-ai';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { searchJikan } from '@/lib/jikan';
 import { generateShortId } from '@/lib/id';
@@ -22,6 +22,19 @@ type AllowedModel =
   | 'gemini-2.5-flash'
   | 'gemini-3-flash-preview'
   | 'gemini-3.1-flash-lite-preview';
+
+const recommendationSchema = {
+  type: SchemaType.ARRAY,
+  items: {
+    type: SchemaType.OBJECT,
+    properties: {
+      title: { type: SchemaType.STRING },
+      year: { type: SchemaType.NUMBER },
+      reason: { type: SchemaType.STRING },
+    },
+    required: ['title', 'year', 'reason'],
+  },
+} as const;
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -47,8 +60,6 @@ export async function POST(req: Request) {
 
   try {
     // Single query: fetch ALL items for this profile across all states.
-    // - WATCHED items with ratings → personalise prompt
-    // - ALL items (any state) → exclusion list so we never re-recommend
     const allProfileItems = await prisma.userContent.findMany({
       where: {
         profileId,
@@ -129,26 +140,45 @@ Give me the 6 recommendations as JSON.`;
       model,
       generationConfig: {
         temperature: 0.7,
-        maxOutputTokens: 600,
+        maxOutputTokens: 800,
         responseMimeType: 'application/json',
+        responseSchema: recommendationSchema as any,
       },
     });
 
     const result = await genModel.generateContent(prompt);
-    const contentText = result.response.text().trim();
+    const resultResponse = await result.response;
+    const contentText = resultResponse.text().trim();
 
-    const startIdx = contentText.indexOf('[');
-    const endIdx = contentText.lastIndexOf(']');
+    let recs: { title: string; year: number; reason: string }[] = [];
 
-    if (startIdx === -1 || endIdx === -1) {
-      throw new Error('Failed to parse recommendations from Gemini response');
+    try {
+      // Direct parse (most common with strict JSON mode)
+      const parsed = JSON.parse(contentText);
+      recs = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
+    } catch {
+      // Lenient fallback for models that may add markdown or wrap in objects
+      const startIdx = contentText.indexOf('[');
+      const endIdx = contentText.lastIndexOf(']');
+
+      if (startIdx !== -1 && endIdx !== -1) {
+        try {
+          const jsonText = contentText.substring(startIdx, endIdx + 1);
+          const parsed = JSON.parse(jsonText);
+          recs = Array.isArray(parsed) ? parsed : parsed.recommendations || [];
+        } catch (e) {
+          console.error('Failed to parse extracted JSON:', e, 'Raw:', contentText);
+          throw new Error('Failed to parse recommendations');
+        }
+      } else {
+        console.error('No JSON array found in response:', contentText);
+        throw new Error('AI returned an invalid recommendation format');
+      }
     }
 
-    const recs = JSON.parse(contentText.substring(startIdx, endIdx + 1)) as {
-      title: string;
-      year: number;
-      reason: string;
-    }[];
+    if (!recs || recs.length === 0) {
+      throw new Error('No recommendations generated');
+    }
 
     // Enrich with poster/rating data from TMDB or Jikan
     const enriched = await Promise.all(
@@ -273,7 +303,6 @@ Give me the 6 recommendations as JSON.`;
           );
 
         // Upsert into UserContent with listStatus=RECOMMENDED.
-        // skipDuplicates=true ensures we never downgrade PLANNED/WATCHED → RECOMMENDED.
         if (validPairs.length > 0) {
           await prisma.userContent.createMany({
             data: validPairs.map(({ contentId }) => ({
