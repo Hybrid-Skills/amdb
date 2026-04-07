@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Star, Tv, Film, Clock, Pencil, Trash2, ExternalLink, RefreshCw, Plus } from 'lucide-react';
+import { Star, Tv, Film, Clock, Pencil, Trash2, Bookmark, PlayCircle, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { buildContentUrl } from '@/lib/slug';
@@ -19,7 +19,7 @@ export interface MovieCardProps {
   backdropUrl?: string | null;
   tagline?: string | null;
   genres?: unknown;
-  userRating: number;
+  userRating?: number | null;
   tmdbRating: number | null;
   contentType: ContentType;
   watchStatus?: string | null;
@@ -37,8 +37,15 @@ export interface MovieCardProps {
   imdbRating?: string | null;
   tmdbId?: number;
   malId?: number;
+  
+  // Tab variants
+  variant?: 'WATCHED' | 'PLANNED' | 'RECOMMENDED';
+  
+  // Actions
   onEdit?: () => void;
   onDelete?: () => void;
+  onSecondaryAction?: () => void; // Bookmark for REC, Rate for PLANNED/REC
+  isSecondaryLoading?: boolean;
   onViewDetails?: () => void;
 }
 
@@ -55,33 +62,24 @@ const CONTENT_ICONS: Record<ContentType, React.ReactNode> = {
   ),
 };
 
-function parseJson<T>(val: unknown, fallback: T): T {
-  if (Array.isArray(val)) return val as T;
-  if (typeof val === 'string') {
-    try {
-      return JSON.parse(val) as T;
-    } catch {
-      return fallback;
-    }
-  }
-  return fallback;
-}
-
 export function MovieCard({
   id,
   title,
   year,
   posterUrl,
   userRating,
+  tmdbRating,
   contentType,
   notes,
   adult,
   ageCertification,
-  languages,
   episodeRuntime,
   runtimeMins,
+  variant = 'WATCHED',
   onEdit,
   onDelete,
+  onSecondaryAction,
+  isSecondaryLoading,
 }: MovieCardProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
@@ -122,53 +120,67 @@ export function MovieCard({
             </div>
           )}
 
-          {/* Top-Left: Delete Action */}
+          {/* Top-Left: Delete Action (Always available if onDelete provided) */}
           {onDelete && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete();
               }}
-              className="absolute top-2 left-2 w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-red-500/20 group/del transition-colors z-30"
-              title="Remove from list"
+              className="absolute top-2 left-2 w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-red-500/20 group/del transition-all z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100"
+              title="Remove"
             >
               <Trash2 className="w-4 h-4 text-white/60 group-hover/del:text-red-500 transition-colors" />
             </button>
           )}
 
-          {/* Top-Right: Clickable Actions */}
+          {/* Top-Right: Variant Specific Actions */}
           <div className="absolute top-2 right-2 flex items-center gap-1.5 z-30">
-            {onEdit && (
+            {variant === 'WATCHED' && userRating != null && (
+              <div className="h-8 px-2 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center gap-1.5 shadow-xl transition-all select-none">
+                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                <span
+                  className={cn(
+                    'text-[12px] font-black leading-none',
+                    userRating >= 7
+                      ? 'text-green-500'
+                      : userRating <= 4
+                        ? 'text-red-500'
+                        : 'text-orange-500',
+                  )}
+                >
+                  {userRating}
+                </span>
+              </div>
+            )}
+
+            {variant === 'RECOMMENDED' && onSecondaryAction && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onEdit();
+                  onSecondaryAction();
                 }}
-                className="w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors shadow-lg"
-                title="Edit entry"
+                disabled={isSecondaryLoading}
+                className="w-8 h-8 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center hover:bg-white/10 transition-all shadow-lg opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                title="Add to Planned"
               >
-                <Pencil className="w-3.5 h-3.5 text-white/60" />
+                {isSecondaryLoading ? (
+                  <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+                ) : (
+                  <Bookmark className="w-3.5 h-3.5 text-white/60" />
+                )}
               </button>
             )}
-
-            <div className="h-8 px-2 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center gap-1.5 shadow-xl transition-all select-none">
-              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-              <span
-                className={cn(
-                  'text-[12px] font-black leading-none',
-                  userRating >= 7
-                    ? 'text-green-500'
-                    : userRating <= 4
-                      ? 'text-red-500'
-                      : 'text-orange-500',
-                )}
-              >
-                {userRating}
-              </span>
-            </div>
           </div>
 
-          {/* Bottom badges */}
+          {/* Bottom-Right (Poster): TMDB Rating for non-watched */}
+          {variant !== 'WATCHED' && tmdbRating != null && Number(tmdbRating) > 0 && (
+            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-white/10">
+              ★ {Number(tmdbRating).toFixed(1)}
+            </div>
+          )}
+
+          {/* Bottom badges (Left-aligned info) */}
           <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent p-2 pt-6 flex gap-1 flex-wrap items-end overflow-hidden">
             <Badge
               variant="secondary"
@@ -198,7 +210,7 @@ export function MovieCard({
         </div>
 
         {/* ── Info Area ── */}
-        <div className="p-3 flex flex-col gap-1.5">
+        <div className="p-3 flex flex-col gap-1.5 flex-1">
           <div className="flex-1 min-w-0">
             <p className="font-bold text-sm leading-snug line-clamp-2">
               {title}{' '}
@@ -210,11 +222,34 @@ export function MovieCard({
             </p>
           </div>
 
-          {isHovered && notes && (
-            <p className="text-[10px] text-muted-foreground italic line-clamp-1 opacity-60">
-              "{notes}"
-            </p>
-          )}
+          {/* Bottom CTA Row */}
+          <div 
+            className="mt-auto pt-2 border-t border-border flex items-center justify-between hover:text-primary transition-colors h-6"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (variant === 'WATCHED') {
+                onEdit?.();
+              } else {
+                onSecondaryAction?.();
+              }
+            }}
+          >
+            {variant === 'WATCHED' ? (
+              <>
+                <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 opacity-80">
+                  Edit <span className="text-primary">Rating</span>
+                </span>
+                <Pencil className="w-3 h-3 text-primary" />
+              </>
+            ) : (
+              <>
+                <span className="text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5 opacity-80">
+                  Watched? <span className="text-primary">Rate</span>
+                </span>
+                <Star className="w-3 h-3 text-primary" />
+              </>
+            )}
+          </div>
         </div>
       </div>
     </motion.div>
