@@ -6,23 +6,15 @@ import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from './ui/drawer';
 import { Button } from './ui/button';
+import { 
+  Star, Loader2, Bookmark, CheckCircle2, History, Pencil, Trash2, 
+  Calendar, Clock, Film, Tv, Activity, DollarSign, Clapperboard, Users, PlayCircle,
+  ExternalLink, Info, Search, Heart, Award, Trophy, Eye, Waves, Cpu, Zap, X, Maximize2,
+  Check
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { Textarea } from './ui/textarea';
 import { Badge } from './ui/badge';
-import {
-  Loader2,
-  X,
-  Users,
-  Clapperboard,
-  Calendar,
-  DollarSign,
-  Activity,
-  Pencil,
-  Check,
-  ExternalLink,
-  Play,
-  Clock,
-  Bookmark,
-} from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { RatingPicker } from './rating-picker';
 import { DatePicker } from './date-picker';
@@ -30,7 +22,6 @@ import type { ContentType } from '@prisma/client';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import Link from 'next/link';
 import { buildContentUrl } from '@/lib/slug';
-import { PlayCircle, Maximize2 } from 'lucide-react';
 import { WatchProviders } from './ui/watch-providers';
 import { RatingBadges } from './ui/rating-badges';
 import Image from 'next/image';
@@ -860,43 +851,37 @@ export function AddToListModal({
 
       {/* ── Sticky CTA bar ─────────────────────────────── */}
       {editingRating && (
-        <div className="shrink-0 border-t border-white/10 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center gap-2 justify-end flex-wrap">
-          <Button
-            variant="ghost"
-            onClick={onClose}
-            disabled={submitting || planningToWatch}
-            className="hover:bg-white/10 hover:text-white"
-          >
-            Cancel
-          </Button>
+        <div className="shrink-0 border-t border-white/10 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center gap-3 justify-center">
           {!isEditing && (
-            <Button
+            <button
               onClick={handlePlanToWatch}
               disabled={planningToWatch || submitting}
-              variant="outline"
-              className="border-white/20 hover:bg-white/10 hover:text-white gap-2"
+              className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white transition-all disabled:opacity-50"
             >
               {planningToWatch ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin text-white/40" />
               ) : (
                 <Bookmark className="w-4 h-4" />
               )}
-              Plan to Watch
-            </Button>
+              <span className="text-sm font-bold uppercase tracking-tight">Plan</span>
+            </button>
           )}
-          <Button
+          <button
             onClick={handleSubmit}
             disabled={!rating || submitting || planningToWatch}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold min-w-[120px]"
+            className={cn(
+              "flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all disabled:opacity-50",
+              isEditing && "max-w-md mx-auto" // Center and cap width if it's the only button
+            )}
           >
             {submitting ? (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : isEditing ? (
-              'Update List'
             ) : (
-              'Add to List'
+              <span className="text-sm font-bold uppercase tracking-tight">
+                {isEditing ? 'Update List' : 'Add to List'}
+              </span>
             )}
-          </Button>
+          </button>
         </div>
       )}
     </div>
