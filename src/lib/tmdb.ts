@@ -12,8 +12,10 @@ export function tmdbImageLoader({ src, width, quality }: { src: string; width: n
   // src is already a full TMDB URL or a path. If it's a full URL, we extract the path.
   const path = src.includes('image.tmdb.org') ? src.split('/t/p/')[1].split('/').slice(1).join('/') : src;
   
-  // If no path, or it's a local/external asset not on TMDB, bail out
-  if (!path || path.startsWith('http') || path.startsWith('/')) return src;
+  // External non-TMDB URL — return as-is
+  if (!path || path.startsWith('http')) return src;
+  // Raw TMDB path like /abc123.jpg (logo_path, poster_path etc.) — build full URL
+  if (path.startsWith('/')) return `${TMDB_IMAGE_BASE}/${size}${path}`;
 
   // TMDB Sizes: w92, w154, w185, w342, w500, w780, w1280, original
   let size = 'w500';
