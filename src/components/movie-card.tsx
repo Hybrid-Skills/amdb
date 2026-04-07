@@ -49,6 +49,19 @@ export interface MovieCardProps {
   onViewDetails?: () => void;
 }
 
+const RATING_LABELS: Record<number, string> = {
+  1: 'Unwatchable',
+  2: 'Terrible',
+  3: 'Bad',
+  4: 'Below average',
+  5: 'Average',
+  6: 'Decent',
+  7: 'Good',
+  8: 'Great',
+  9: 'Excellent',
+  10: 'Masterpiece',
+};
+
 const CONTENT_ICONS: Record<ContentType, React.ReactNode> = {
   MOVIE: <Film className="w-3 h-3 text-cyan-400" />,
   TV_SHOW: <Tv className="w-3 h-3 text-blue-400" />,
@@ -98,14 +111,14 @@ export function MovieCard({
       whileHover={{ scale: 1.05 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className="relative z-0 hover:z-20"
+      className="relative z-0 hover:z-20 h-full"
     >
       <div
         className="relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group flex flex-col"
         onClick={handleCardClick}
       >
         {/* ── Poster Area ── */}
-        <div className="relative aspect-[2/3] w-full overflow-hidden">
+        <div className="relative aspect-[2/3] w-full overflow-hidden shrink-0">
           {posterUrl ? (
             <TmdbImage
               src={posterUrl}
@@ -120,7 +133,7 @@ export function MovieCard({
             </div>
           )}
 
-          {/* Top-Left: Delete Action (Always available if onDelete provided) */}
+          {/* Top-Left: Delete Action */}
           {onDelete && (
             <button
               onClick={(e) => {
@@ -201,7 +214,7 @@ export function MovieCard({
             )}
           </div>
 
-          {/* Bottom-Right (Poster): TMDB Rating for non-watched */}
+          {/* Bottom-Right (Poster): TMDB Rating */}
           {variant !== 'WATCHED' && tmdbRating != null && Number(tmdbRating) > 0 && (
             <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-[10px] font-bold px-1.5 py-0.5 rounded border border-white/10 z-30 shadow-2xl">
               ★ {Number(tmdbRating).toFixed(1)}
@@ -209,23 +222,23 @@ export function MovieCard({
           )}
         </div>
 
-        {/* ── Info Area ── */}
-        <div className="p-3 flex flex-col gap-2.5 flex-1">
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm leading-snug line-clamp-2">
+        {/* ── Info Area (Merged) ── */}
+        <div className="flex flex-col flex-1 min-h-0 bg-card">
+          <div className="p-3 pb-2 flex-1 min-w-0">
+            <p className="font-bold text-[13px] sm:text-sm leading-tight line-clamp-2">
               {title}{' '}
               {year && (
-                <span className="font-normal text-muted-foreground ml-1 shrink-0 whitespace-nowrap">
+                <span className="font-normal text-muted-foreground ml-0.5 shrink-0 whitespace-nowrap">
                   ({year})
                 </span>
               )}
             </p>
           </div>
 
-          {/* Bottom CTA Row (Redesigned) */}
+          {/* Bottom CTA Section (Flush against bottom) */}
           <div 
             className={cn(
-              "mt-auto px-2.5 py-2 rounded-lg flex items-center justify-between transition-all active:scale-[0.98] group/cta",
+              "px-3 py-2.5 flex items-center justify-between transition-all active:scale-[0.98] group/cta shrink-0 rounded-b-xl",
               variant === 'WATCHED' 
                 ? "bg-secondary/40 hover:bg-secondary/60 text-foreground" 
                 : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
@@ -241,19 +254,24 @@ export function MovieCard({
           >
             {variant === 'WATCHED' ? (
               <>
-                <div className="flex items-center gap-1.5">
-                  <Star className="w-3.5 h-3.5 text-yellow-400 fill-yellow-400" />
-                  <span className="text-[12px] font-black">
-                    {userRating} <span className="font-bold opacity-60 ml-0.5">Rating</span>
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
+                  <span className="text-[11px] sm:text-[12px] font-black truncate space-x-1 uppercase tracking-tight">
+                    <span className="text-foreground">{userRating}</span>
+                    <span className="font-bold opacity-70 ml-1">
+                      {RATING_LABELS[Math.round(userRating ?? 0)]}
+                    </span>
                   </span>
                 </div>
-                <Pencil className="w-3.5 h-3.5 opacity-40 group-hover/cta:opacity-100 transition-opacity" />
+                <Pencil className="w-3.5 h-3.5 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0 ml-2" />
               </>
             ) : (
-              <>
-                <span className="text-[12px] font-black uppercase tracking-tight">Mark Watched</span>
-                <CheckCircle2 className="w-4 h-4" />
-              </>
+              <div className="flex items-center justify-between w-full">
+                <span className="text-[11px] sm:text-[12px] font-black uppercase tracking-tight whitespace-nowrap">
+                  Mark Watched
+                </span>
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+              </div>
             )}
           </div>
         </div>
