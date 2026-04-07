@@ -340,10 +340,13 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
           }
         } catch (e) {
           console.error('Enrichment failed for', raw.title, e);
+          // Remove the stuck pending card so it doesn't hang forever
+          setPendingRecs((prev) => prev.filter(p => p.title !== raw.title));
         }
       });
 
       await Promise.all(enrichmentPromises);
+      setPendingRecs([]); // clear any remaining pending cards
       toast({ title: 'Suggestions ready!' });
 
     } catch (err: any) {

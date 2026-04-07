@@ -16,22 +16,33 @@ export async function POST(req: Request) {
   }
 
   try {
-    // 1. Search TMDB with Title [+ Year fallback]
-    const search = await tmdb.searchMulti(title);
-    
-    // Attempt exact match or year proximity match
-    const data = search.results.find(
-      (r: any) =>
-        (r.title ?? r.name)?.toLowerCase() === title.toLowerCase() ||
-        Math.abs((r.release_date ? new Date(r.release_date).getFullYear() : (r.first_air_date ? new Date(r.first_air_date).getFullYear() : 0)) - (year || 0)) <= 1
-    ) || search.results[0];
+    // 1. Search TMDB using typed endpoints (movie + tv) in parallel with year hint
+    // This avoids searchMulti ambiguity (which also returns people) and enables year filtering
+    const [movieSearch, tvSearch] = await Promise.all([
+      tmdb.searchMovies(title, 1, year || undefined),
+      tmdb.searchTv(title, 1, year || undefined),
+    ]);
+
+    const allResults = [
+      ...movieSearch.results.map((r: any) => ({ ...r, media_type: 'movie' })),
+      ...tvSearch.results.map((r: any) => ({ ...r, media_type: 'tv' })),
+    ];
+
+    // Prefer exact title match, then year proximity, then first result
+    const data = allResults.find(
+      (r: any) => (r.title ?? r.name)?.toLowerCase() === title.toLowerCase()
+    ) || allResults.find(
+      (r: any) => Math.abs(
+        (r.release_date ? new Date(r.release_date).getFullYear() : (r.first_air_date ? new Date(r.first_air_date).getFullYear() : 0)) - (year || 0)
+      ) <= 1
+    ) || allResults[0];
 
     if (!data) {
       return NextResponse.json({ error: 'Content not found' }, { status: 404 });
     }
 
     const tmdbId = data.id;
-    const isTv = data.media_type === 'tv' || !!data.first_air_date;
+    const isTv = data.media_type === 'tv';
     const contentType: ContentType = isTv ? ContentType.TV_SHOW : ContentType.MOVIE;
 
     // 2. Fetch Full Details for Certification and Runtime

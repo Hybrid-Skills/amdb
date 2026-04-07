@@ -116,16 +116,18 @@ export const tmdb = {
       include_adult: 'false',
     }),
 
-  searchMovies: (query: string, page = 1) =>
+  searchMovies: (query: string, page = 1, year?: number) =>
     tmdbFetch<TmdbSearchResponse>('/search/movie', {
       query,
       page: String(page),
+      ...(year ? { primary_release_year: String(year) } : {}),
     }),
 
-  searchTv: (query: string, page = 1) =>
+  searchTv: (query: string, page = 1, year?: number) =>
     tmdbFetch<TmdbSearchResponse>('/search/tv', {
       query,
       page: String(page),
+      ...(year ? { first_air_date_year: String(year) } : {}),
     }),
 
   movieDetails: (id: number) =>
