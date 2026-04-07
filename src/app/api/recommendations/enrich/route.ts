@@ -62,13 +62,13 @@ export async function POST(req: Request) {
         profileId_contentId: { profileId, contentId: content.id }
       },
       update: {
-        notes: reason || null, // Store the AI-generated reason
+        recommendationReason: reason || null, // Updated for dedicated field
       },
       create: {
         profileId,
         contentId: content.id,
         listStatus: 'RECOMMENDED',
-        notes: reason || null,
+        recommendationReason: reason || null,
       }
     });
 

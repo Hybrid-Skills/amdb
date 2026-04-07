@@ -37,6 +37,7 @@ export interface MovieCardProps {
   imdbRating?: string | null;
   tmdbId?: number;
   malId?: number;
+  recommendationReason?: string | null;
   
   // Tab variants
   variant?: 'WATCHED' | 'PLANNED' | 'RECOMMENDED';
@@ -93,6 +94,7 @@ export function MovieCard({
   onDelete,
   onSecondaryAction,
   isSecondaryLoading,
+  recommendationReason,
 }: MovieCardProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
@@ -233,9 +235,9 @@ export function MovieCard({
                 </span>
               )}
             </p>
-            {variant === 'RECOMMENDED' && notes && (
+            {variant === 'RECOMMENDED' && recommendationReason && (
               <p className="text-[11px] text-muted-foreground/80 italic leading-snug line-clamp-2 mt-1.5">
-                {notes}
+                {recommendationReason}
               </p>
             )}
           </div>

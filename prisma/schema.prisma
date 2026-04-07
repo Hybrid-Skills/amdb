@@ -129,9 +129,10 @@ model UserContent {
   profileId    String
   contentId    String
   listStatus   ListStatus  @default(WATCHED)
-  userRating   Int?
-  notes        String?
-  watchedDate  DateTime?   @db.Date
+  userRating           Int?
+  notes                String?
+  recommendationReason String?
+  watchedDate          DateTime?   @db.Date
   watchStatus  WatchStatus?
   startDate    DateTime?   @db.Date
   endDate      DateTime?   @db.Date

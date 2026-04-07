@@ -43,6 +43,7 @@ interface HistoryEntry {
   id: string;
   contentType: string;
   createdAt: string;
+  recommendationReason?: string | null;
   content: {
     id: string;
     title: string;
@@ -55,7 +56,6 @@ interface HistoryEntry {
     ageCertification: string | null;
     runtimeMins: number | null;
     episodeRuntime: number | null;
-    reason?: string; // AI generated reason
   };
 }
 
@@ -434,7 +434,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
                     onDelete={() => handleDelete(entry)}
                     isSecondaryLoading={isBookmarking}
                     onSecondaryAction={() => handleBookmark(entry)}
-                    notes={item.reason} // Use the AI reason as notes
+                    recommendationReason={entry.recommendationReason}
                     onViewDetails={() => onSelect({
                       id:          item.id,
                       tmdbId:      item.tmdbId ?? undefined,
