@@ -7,6 +7,7 @@ import { getJikanDetails, searchJikan } from '@/lib/jikan';
 import { generateShortId } from '@/lib/id';
 import { z } from 'zod';
 import type { ContentType, Prisma, WatchStatus } from '@prisma/client';
+import { buildGenreNames } from '@/lib/genres';
 
 type WatchStatusValue = WatchStatus;
 
@@ -214,10 +215,7 @@ export async function POST(req: Request) {
           overview: raw.overview,
           tagline: raw.tagline ?? null,
           genres: raw.genres ?? [],
-          genreNames:
-            raw.genres && raw.genres.length > 0
-              ? `|${raw.genres.map((g: any) => g.name).join('|')}|`
-              : null,
+          genreNames: buildGenreNames(raw.genres),
           runtimeMins: raw.runtime ?? null,
           status: raw.status ?? null,
           tmdbId: raw.id,
