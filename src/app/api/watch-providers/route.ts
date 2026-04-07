@@ -12,22 +12,26 @@ export async function GET(req: Request) {
 
   try {
     const tmdbId = parseInt(id);
-    let details;
+
+    // Use dedicated lightweight endpoints instead of fetching the full details payload
+    let results: Record<string, any>;
     if (type === 'MOVIE') {
-      details = await tmdb.movieDetails(tmdbId);
+      const data = await tmdb.movieWatchProviders(tmdbId);
+      results = data.results ?? {};
     } else if (type === 'TV_SHOW' || type === 'ANIME') {
-      details = await tmdb.tvDetails(tmdbId);
+      const data = await tmdb.tvWatchProviders(tmdbId);
+      results = data.results ?? {};
     } else {
       return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
     }
 
-    // Extract watch providers: Prefer IN (consistent with lib/content-detail), fallback to US
-    const watchProviders =
-      (details as any)['watch/providers']?.results?.IN ||
-      (details as any)['watch/providers']?.results?.US ||
-      null;
+    // Prefer IN (India), fallback to US
+    const watchProviders = results.IN ?? results.US ?? null;
 
-    return NextResponse.json({ watchProviders });
+    return NextResponse.json(
+      { watchProviders },
+      { headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' } },
+    );
   } catch (error) {
     console.error('Watch providers error:', error);
     return NextResponse.json({ error: 'Failed to fetch watch providers' }, { status: 500 });

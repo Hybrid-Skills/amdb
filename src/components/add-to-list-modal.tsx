@@ -441,7 +441,7 @@ export function AddToListModal({
                 fill
                 priority
                 className="object-cover"
-                sizes="100vw"
+                sizes="(max-width: 768px) 100vw, 1280px"
               />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-indigo-950 to-black" />
@@ -482,6 +482,7 @@ export function AddToListModal({
                   src={displayItem.posterUrl}
                   alt="Poster"
                   fill
+                  priority
                   className="object-cover"
                   sizes="(max-width: 640px) 96px, 128px"
                 />

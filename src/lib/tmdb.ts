@@ -138,6 +138,13 @@ export const tmdb = {
       append_to_response: 'credits,videos,similar,content_ratings,watch/providers,external_ids',
     }),
 
+  // Dedicated lightweight endpoints — avoids fetching full details just for providers
+  movieWatchProviders: (id: number) =>
+    tmdbFetch<{ results: Record<string, any> }>(`/movie/${id}/watch/providers`),
+
+  tvWatchProviders: (id: number) =>
+    tmdbFetch<{ results: Record<string, any> }>(`/tv/${id}/watch/providers`),
+
   genres: () => tmdbFetch<{ genres: { id: number; name: string }[] }>('/genre/movie/list'),
 
   discover: (params: Record<string, string>) =>
