@@ -81,6 +81,12 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
       cast,
       videos: raw.videos,
       similar: raw.similar,
+      // watch/providers is already fetched via append_to_response — include it here
+      // so the modal doesn't need a second round trip to /api/watch-providers
+      watchProviders:
+        (raw as any)['watch/providers']?.results?.IN ??
+        (raw as any)['watch/providers']?.results?.US ??
+        null,
     };
 
     // ── Enrichments ─────────────────────────────────────

@@ -146,27 +146,23 @@ export function AddToListModal({
     const controller = new AbortController();
     const id = item.tmdbId ?? item.malId;
 
-    // 1. Fetch Details
+    // 1. Fetch Details — watch providers are included in this response
+    //    (already fetched via append_to_response, no second round trip needed)
     setLoadingDetails(true);
+    setProvidersLoading(true);
     fetch(`/api/content/${id}?type=${item.contentType}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
-        if (!data.error) setDetailedItem(data);
+        if (!data.error) {
+          setDetailedItem(data);
+          setWatchProviders(data.watchProviders ?? null);
+        }
       })
       .catch(() => {})
-      .finally(() => setLoadingDetails(false));
-
-    // 2. Fetch Providers
-    if (item.tmdbId) {
-      setProvidersLoading(true);
-      fetch(`/api/watch-providers?id=${item.tmdbId}&type=${item.contentType}`, {
-        signal: controller.signal,
-      })
-        .then((r) => r.json())
-        .then((data) => setWatchProviders(data.watchProviders))
-        .catch(() => setWatchProviders(null))
-        .finally(() => setProvidersLoading(false));
-    }
+      .finally(() => {
+        setLoadingDetails(false);
+        setProvidersLoading(false);
+      });
 
     // 3. Check Existence (if not already known from parent)
     if (!initialRating) {
