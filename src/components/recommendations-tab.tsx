@@ -2,59 +2,43 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Sparkles, Filter, ChevronDown, History } from 'lucide-react';
+import { Loader2, Sparkles, ChevronDown, Bookmark, History } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
+import { StreamingButton } from './ui/streaming-button';
 import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
 import Image from 'next/image';
 import { tmdbImageLoader } from '@/lib/tmdb';
 
-type ModelId = 'gemma-4-31b-it' | 'gemini-2.5-flash' | 'gemini-3-flash-preview' | 'gemini-3.1-flash-lite-preview';
+// ─── Types ───────────────────────────────────────────────────────────────────
+
+type ModelId =
+  | 'gemma-4-31b-it'
+  | 'gemini-2.5-flash'
+  | 'gemini-3-flash-preview'
+  | 'gemini-3.1-flash-lite-preview';
 
 const AI_MODELS: { id: ModelId; label: string; premium: boolean }[] = [
-  { id: 'gemma-4-31b-it',               label: 'Gemma 4 31B',           premium: false },
-  { id: 'gemini-2.5-flash',             label: 'Gemini 2.5 Flash',      premium: false },
-  { id: 'gemini-3-flash-preview',       label: 'Gemini 3 Flash',        premium: true  },
+  { id: 'gemma-4-31b-it',                label: 'Gemma 4 31B',           premium: false },
+  { id: 'gemini-2.5-flash',              label: 'Gemini 2.5 Flash',      premium: false },
+  { id: 'gemini-3-flash-preview',        label: 'Gemini 3 Flash',        premium: true  },
   { id: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite', premium: false },
 ];
 
-interface RecommendationsTabProps {
-  profileId: string;
-  onSelect: (item: SearchResult) => void;
-}
-
 const CONTENT_TYPES: { value: ContentType | 'ANY'; label: string }[] = [
-  { value: 'ANY', label: 'Any' },
-  { value: 'MOVIE', label: 'Movie' },
+  { value: 'ANY',     label: 'Any' },
+  { value: 'MOVIE',   label: 'Movie' },
   { value: 'TV_SHOW', label: 'TV Show' },
-  { value: 'ANIME', label: 'Anime' },
+  { value: 'ANIME',   label: 'Anime' },
 ];
 
-const MOVIE_TV_GENRES = [
-  'Action',
-  'Adventure',
-  'Animation',
-  'Comedy',
-  'Crime',
-  'Documentary',
-  'Drama',
-  'Fantasy',
-  'Horror',
-  'Mystery',
-  'Romance',
-  'Sci-Fi',
-  'Thriller',
-  'Western',
-  'Isekai',
-  'Mecha',
-  'Slice of Life',
-  'Sports',
-  'Supernatural',
+const GENRES = [
+  'Action','Adventure','Animation','Comedy','Crime','Documentary','Drama',
+  'Fantasy','Horror','Mystery','Romance','Sci-Fi','Thriller','Western',
+  'Isekai','Mecha','Slice of Life','Sports','Supernatural',
 ];
-
-type RecResult = SearchResult & { reason?: string };
-type ViewMode = 'generate' | 'history';
 
 interface HistoryEntry {
   id: string;
@@ -65,19 +49,25 @@ interface HistoryEntry {
     title: string;
     year: number | null;
     posterUrl: string | null;
-    tmdbRating: string | null; // Prisma Decimal serialises as string in JSON
+    tmdbRating: string | null;
     tmdbId: number | null;
     malId: number | null;
     contentType: string;
   };
 }
 
+interface RecommendationsTabProps {
+  profileId: string;
+  onSelect: (item: SearchResult) => void;
+}
+
+// ─── ModelDropdown ────────────────────────────────────────────────────────────
+
 function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: ModelId) => void }) {
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
   const selected = AI_MODELS.find((m) => m.id === value)!;
 
-  // Close on outside click
   React.useEffect(() => {
     function handler(e: MouseEvent) {
       if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
@@ -88,7 +78,6 @@ function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: Mode
 
   return (
     <div ref={ref} className="relative">
-      {/* Trigger */}
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -104,8 +93,6 @@ function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: Mode
         </span>
         <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
       </button>
-
-      {/* Dropdown list */}
       {open && (
         <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-lg shadow-xl overflow-hidden">
           {AI_MODELS.map((m) => (
@@ -129,61 +116,116 @@ function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: Mode
   );
 }
 
-export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabProps) {
-  // Generate view state
-  const [loading, setLoading] = React.useState(false);
-  const [recs, setRecs] = React.useState<RecResult[]>([]);
-  const [type, setType] = React.useState<ContentType | 'ANY' | 'ANIME'>('MOVIE');
-  const [selectedGenres, setSelectedGenres] = React.useState<string[]>([]);
-  const [selectedModel, setSelectedModel] = React.useState<ModelId>('gemma-4-31b-it');
-  const [error, setError] = React.useState('');
+// ─── GenerateModal ────────────────────────────────────────────────────────────
 
-  // History view state
-  const [view, setView] = React.useState<ViewMode>('generate');
-  const [historyItems, setHistoryItems] = React.useState<HistoryEntry[]>([]);
-  const [historyPage, setHistoryPage] = React.useState(1);
-  const [historyTotal, setHistoryTotal] = React.useState(0);
-  const [historyTotalPages, setHistoryTotalPages] = React.useState(0);
-  const [historyLoading, setHistoryLoading] = React.useState(false);
+interface GenerateModalProps {
+  open: boolean;
+  onClose: () => void;
+  onGenerate: (type: ContentType | 'ANY', genres: string[], model: ModelId) => void;
+}
 
-  const genres = MOVIE_TV_GENRES;
-
-  // Clear selected genres when type changes to avoid stale genre filters
-  React.useEffect(() => {
-    setSelectedGenres([]);
-  }, [type]);
-
-  // Fetch history when switching to history view
-  React.useEffect(() => {
-    if (view === 'history') fetchHistory(1);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [view, profileId]);
+function GenerateModal({ open, onClose, onGenerate }: GenerateModalProps) {
+  const [type, setType]       = React.useState<ContentType | 'ANY'>('MOVIE');
+  const [genres, setGenres]   = React.useState<string[]>([]);
+  const [model, setModel]     = React.useState<ModelId>('gemma-4-31b-it');
 
   function toggleGenre(g: string) {
-    setSelectedGenres((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
+    setGenres((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
   }
 
-  async function generateRecs() {
-    setLoading(true);
-    setError('');
-    setRecs([]);
-
-    try {
-      const res = await fetch('/api/recommendations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, contentType: type, genres: selectedGenres, model: selectedModel }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setRecs(data.recommendations ?? []);
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Something went wrong');
-    } finally {
-      setLoading(false);
-    }
+  function handleGenerate() {
+    onGenerate(type, genres, model);
   }
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-sm bg-card border-border p-6 space-y-5">
+        <DialogTitle className="text-base font-bold">Generate Recommendations</DialogTitle>
+        <DialogDescription className="sr-only">
+          Choose content type, genres, and AI model, then generate personalised recommendations.
+        </DialogDescription>
+
+        {/* Content Type */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">Content Type</p>
+          <div className="flex flex-col gap-2">
+            {CONTENT_TYPES.map(({ value, label }) => (
+              <label key={value} className="flex items-center gap-2 text-sm cursor-pointer">
+                <input
+                  type="radio"
+                  name="genContentType"
+                  checked={type === value}
+                  onChange={() => { setType(value); setGenres([]); }}
+                  className="accent-primary"
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Genres */}
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-muted-foreground">Genres</p>
+            {genres.length > 0 && (
+              <button
+                onClick={() => setGenres([])}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Clear
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {GENRES.map((g) => (
+              <Badge
+                key={g}
+                variant={genres.includes(g) ? 'default' : 'outline'}
+                className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
+                onClick={() => toggleGenre(g)}
+              >
+                {g}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        {/* AI Model */}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">AI Model</p>
+          <ModelDropdown value={model} onChange={setModel} />
+        </div>
+
+        <Button
+          onClick={handleGenerate}
+          className="w-full font-bold gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-0 text-white shadow-lg"
+        >
+          <Sparkles className="w-4 h-4" />
+          Generate
+        </Button>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ─── RecommendationsTab ───────────────────────────────────────────────────────
+
+export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabProps) {
+  const [historyItems, setHistoryItems]     = React.useState<HistoryEntry[]>([]);
+  const [historyLoading, setHistoryLoading] = React.useState(true);
+  const [historyPage, setHistoryPage]       = React.useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = React.useState(0);
+
+  const [generating, setGenerating]               = React.useState(false);
+  const [showGenerateModal, setShowGenerateModal] = React.useState(false);
+  const [bookmarking, setBookmarking]             = React.useState<Set<string>>(new Set());
+
+  // Fetch history on mount and profile change
+  React.useEffect(() => {
+    fetchHistory(1);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profileId]);
 
   async function fetchHistory(page: number) {
     setHistoryLoading(true);
@@ -193,332 +235,221 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       if (!res.ok) throw new Error(data.error);
       setHistoryItems(data.items ?? []);
       setHistoryPage(data.page);
-      setHistoryTotal(data.total);
       setHistoryTotalPages(data.totalPages);
     } catch {
-      // non-critical — show empty state
+      // show empty state
     } finally {
       setHistoryLoading(false);
     }
   }
 
+  async function handleGenerate(type: ContentType | 'ANY', genres: string[], model: ModelId) {
+    setShowGenerateModal(false);
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/recommendations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId, contentType: type, genres, model }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      // Refresh history — new recs appear at top
+      await fetchHistory(1);
+    } catch {
+      // silently fail — user can retry via FAB
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function handleBookmark(entry: HistoryEntry) {
+    setBookmarking((prev) => new Set([...prev, entry.id]));
+    try {
+      const res = await fetch(`/api/recommendations/${entry.id}/move-to-watchlist`, {
+        method: 'POST',
+      });
+      if (res.ok) {
+        setHistoryItems((prev) => prev.filter((e) => e.id !== entry.id));
+      }
+    } finally {
+      setBookmarking((prev) => {
+        const next = new Set(prev);
+        next.delete(entry.id);
+        return next;
+      });
+    }
+  }
+
+  const skeletons = generating
+    ? Array.from({ length: 6 }).map((_, i) => (
+        <div key={`sk-${i}`} className="aspect-[2/3] rounded-xl bg-card border border-border animate-pulse" />
+      ))
+    : [];
+
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex flex-col md:flex-row gap-8 items-start">
-        {/* Filters Panel */}
-        <div className="w-full md:w-64 shrink-0 space-y-6 bg-card p-5 rounded-2xl border border-border">
-          <div className="flex items-center gap-2 font-semibold">
-            <Filter className="w-4 h-4" />
-            Filters
-          </div>
+    <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Empty state */}
+      {!historyLoading && !generating && historyItems.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground border-2 border-dashed border-border rounded-2xl text-center">
+          <History className="w-12 h-12 mb-4 opacity-20" />
+          <p className="text-lg font-medium mb-1 text-foreground">No recommendations yet</p>
+          <p className="text-sm opacity-80 max-w-sm">
+            Hit Generate to get personalised recommendations based on your ratings history.
+          </p>
+        </div>
+      )}
 
-          {/* Content type — single select */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">Content Type</p>
-            <div className="flex flex-col gap-2">
-              {CONTENT_TYPES.map(({ value, label }) => (
-                <label
-                  key={value}
-                  className="flex items-center gap-2 text-sm cursor-pointer hover:text-foreground transition-colors"
-                >
-                  <input
-                    type="radio"
-                    name="contentType"
-                    checked={type === value}
-                    onChange={() => setType(value)}
-                    className="accent-primary"
-                  />
-                  {label}
-                </label>
-              ))}
+      {/* Loading skeleton on first load */}
+      {historyLoading && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {Array.from({ length: 12 }).map((_, i) => (
+            <div key={i} className="rounded-xl bg-muted animate-pulse overflow-hidden">
+              <div className="aspect-[2/3] w-full" />
+              <div className="p-3 space-y-2">
+                <div className="h-3 bg-muted-foreground/20 rounded w-3/4" />
+                <div className="h-2.5 bg-muted-foreground/10 rounded w-1/2" />
+              </div>
             </div>
-          </div>
+          ))}
+        </div>
+      )}
 
-          {/* Genres — multi select, changes with content type */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <p className="text-sm font-medium text-muted-foreground">Genres</p>
-              {selectedGenres.length > 0 && (
-                <button
-                  onClick={() => setSelectedGenres([])}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+      {/* Card grid */}
+      {!historyLoading && (historyItems.length > 0 || generating) && (
+        <AnimatePresence>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {/* Skeleton cards for in-progress generation — shown at top */}
+            {skeletons}
+
+            {historyItems.map((entry, i) => {
+              const item = entry.content;
+              const isBookmarking = bookmarking.has(entry.id);
+              return (
+                <motion.div
+                  key={entry.id}
+                  initial={{ opacity: 0, scale: 0.94, y: 10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.9 }}
+                  transition={{ delay: i * 0.03, type: 'spring', stiffness: 300, damping: 26 }}
+                  className="group flex flex-col rounded-xl overflow-hidden bg-card border border-border cursor-pointer hover:border-primary/50 shadow-sm hover:shadow-xl transition-all"
+                  onClick={() =>
+                    onSelect({
+                      id:          item.id,
+                      tmdbId:      item.tmdbId ?? undefined,
+                      malId:       item.malId ?? undefined,
+                      title:       item.title,
+                      year:        item.year,
+                      posterUrl:   item.posterUrl,
+                      tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                      overview:    null,
+                      contentType: item.contentType as ContentType,
+                    })
+                  }
                 >
-                  Clear
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {genres.map((g) => (
-                <Badge
-                  key={g}
-                  variant={selectedGenres.includes(g) ? 'default' : 'outline'}
-                  className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-                  onClick={() => toggleGenre(g)}
-                >
-                  {g}
-                </Badge>
-              ))}
-            </div>
-          </div>
+                  {/* Poster */}
+                  <div className="relative aspect-[2/3] overflow-hidden">
+                    {item.posterUrl ? (
+                      <Image
+                        loader={tmdbImageLoader}
+                        src={item.posterUrl}
+                        alt={item.title}
+                        fill
+                        className="object-cover transition-transform duration-500 group-hover:scale-105"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 25vw, 200px"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm px-3 text-center">
+                        {item.title}
+                      </div>
+                    )}
 
-          {/* AI Model selector */}
-          <div className="space-y-2">
-            <p className="text-sm font-medium text-muted-foreground">AI Model</p>
-            <ModelDropdown value={selectedModel} onChange={setSelectedModel} />
-          </div>
+                    {/* TMDB rating — bottom right */}
+                    {item.tmdbRating != null && Number(item.tmdbRating) > 0 && (
+                      <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded">
+                        ★ {Number(item.tmdbRating).toFixed(1)}
+                      </div>
+                    )}
 
+                    {/* Bookmark button — top right */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleBookmark(entry); }}
+                      disabled={isBookmarking}
+                      className="absolute top-2 right-2 w-7 h-7 flex items-center justify-center bg-black/60 backdrop-blur-sm rounded-full hover:bg-primary/80 transition-colors z-10 opacity-0 group-hover:opacity-100"
+                      title="Add to Planned"
+                    >
+                      {isBookmarking ? (
+                        <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+                      ) : (
+                        <Bookmark className="w-3.5 h-3.5 text-white" />
+                      )}
+                    </button>
+                  </div>
+
+                  {/* Info */}
+                  <div className="p-3 flex flex-col gap-1 flex-1">
+                    <p className="font-semibold text-sm leading-tight line-clamp-1">{item.title}</p>
+                    <p className="text-xs text-muted-foreground">{item.year}</p>
+                    <StreamingButton
+                      tmdbId={item.tmdbId}
+                      contentType={item.contentType as ContentType}
+                      title={item.title}
+                    />
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        </AnimatePresence>
+      )}
+
+      {/* Pagination */}
+      {historyTotalPages > 1 && !historyLoading && (
+        <div className="flex items-center justify-center gap-3 pt-8">
           <Button
-            className="w-full font-bold gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-0 text-white shadow-lg"
-            onClick={generateRecs}
-            disabled={loading}
+            variant="outline"
+            size="sm"
+            disabled={historyPage === 1}
+            onClick={() => fetchHistory(historyPage - 1)}
           >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
-            )}
-            {loading ? 'Generating...' : 'Generate'}
+            Prev
+          </Button>
+          <span className="text-sm text-muted-foreground">
+            {historyPage} / {historyTotalPages}
+          </span>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={historyPage === historyTotalPages}
+            onClick={() => fetchHistory(historyPage + 1)}
+          >
+            Next
           </Button>
         </div>
+      )}
 
-        {/* Results */}
-        <div className="flex-1 w-full min-h-[400px]">
-          {/* View toggle */}
-          <div className="flex items-center gap-1 mb-5 bg-muted/40 rounded-full p-1 w-fit">
-            <button
-              onClick={() => setView('generate')}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all
-                ${view === 'generate'
-                  ? 'bg-background shadow text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              Generate
-            </button>
-            <button
-              onClick={() => setView('history')}
-              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all
-                ${view === 'history'
-                  ? 'bg-background shadow text-foreground'
-                  : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              <History className="w-3.5 h-3.5" />
-              History{historyTotal > 0 ? ` (${historyTotal})` : ''}
-            </button>
-          </div>
-
-          {/* ── Generate view ── */}
-          {view === 'generate' && (
-            <>
-              {error && (
-                <div className="bg-destructive/10 text-destructive p-4 rounded-xl text-center border border-destructive/20 text-sm">
-                  {error}
-                </div>
-              )}
-
-              {!loading && !error && recs.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center text-muted-foreground py-24 border-2 border-dashed border-border rounded-2xl">
-                  <Sparkles className="w-12 h-12 mb-4 opacity-20" />
-                  <p className="text-lg font-medium mb-1">Discover your next obsession</p>
-                  <p className="text-sm opacity-80 max-w-sm text-center">
-                    Set your filters and hit generate — recommendations are personalised to your ratings
-                    history.
-                  </p>
-                </div>
-              )}
-
-              {loading && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="aspect-[2/3] rounded-xl bg-card border border-border animate-pulse"
-                    />
-                  ))}
-                </div>
-              )}
-
-              {!loading && recs.length > 0 && (
-                <AnimatePresence>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
-                    {recs.map((item, i) => (
-                      <motion.div
-                        key={item.tmdbId ?? item.malId ?? i}
-                        initial={{ opacity: 0, scale: 0.92, y: 12 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        transition={{ delay: i * 0.08, type: 'spring', stiffness: 300, damping: 24 }}
-                        className="group flex flex-col rounded-xl overflow-hidden bg-card border border-border cursor-pointer hover:border-primary/50 shadow-sm hover:shadow-xl transition-all"
-                        onClick={() => onSelect(item)}
-                      >
-                        {/* Poster */}
-                        <div className="relative aspect-[2/3] overflow-hidden">
-                          {item.posterUrl ? (
-                            <Image
-                              loader={tmdbImageLoader}
-                              src={item.posterUrl}
-                              alt={item.title}
-                              fill
-                              className="object-cover transition-transform duration-500 group-hover:scale-105"
-                              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm px-3 text-center">
-                              {item.title}
-                            </div>
-                          )}
-                          {/* Rating badge */}
-                          {item.tmdbRating != null && item.tmdbRating > 0 && (
-                            <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded">
-                              ★ {Number(item.tmdbRating).toFixed(1)}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Info */}
-                        <div className="p-3 flex flex-col gap-1 flex-1">
-                          <p className="font-semibold text-sm leading-tight line-clamp-1">
-                            {item.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">{item.year}</p>
-                          {item.reason && (
-                            <p className="text-xs text-muted-foreground/80 leading-relaxed line-clamp-3 mt-0.5 italic">
-                              {item.reason}
-                            </p>
-                          )}
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </AnimatePresence>
-              )}
-            </>
+      {/* Sticky Generate FAB */}
+      <div className="fixed bottom-24 md:bottom-10 right-6 z-40">
+        <button
+          onClick={() => setShowGenerateModal(true)}
+          disabled={generating}
+          className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-70 text-white font-bold px-5 py-3 rounded-full shadow-2xl shadow-purple-500/30 transition-all hover:scale-105 active:scale-95"
+        >
+          {generating ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Sparkles className="w-4 h-4" />
           )}
-
-          {/* ── History view ── */}
-          {view === 'history' && (
-            <>
-              {/* Loading skeleton */}
-              {historyLoading && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="aspect-[2/3] rounded-xl bg-card border border-border animate-pulse"
-                    />
-                  ))}
-                </div>
-              )}
-
-              {/* Empty state */}
-              {!historyLoading && historyItems.length === 0 && (
-                <div className="h-full flex flex-col items-center justify-center text-muted-foreground py-24 border-2 border-dashed border-border rounded-2xl">
-                  <History className="w-12 h-12 mb-4 opacity-20" />
-                  <p className="text-lg font-medium mb-1">No history yet</p>
-                  <p className="text-sm opacity-80 max-w-sm text-center">
-                    Generate recommendations to start building your history.
-                  </p>
-                </div>
-              )}
-
-              {/* History cards */}
-              {!historyLoading && historyItems.length > 0 && (
-                <AnimatePresence>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-3 gap-4">
-                    {historyItems.map((entry, i) => {
-                      const item = entry.content;
-                      return (
-                        <motion.div
-                          key={entry.id}
-                          initial={{ opacity: 0, scale: 0.92, y: 12 }}
-                          animate={{ opacity: 1, scale: 1, y: 0 }}
-                          transition={{ delay: i * 0.04, type: 'spring', stiffness: 300, damping: 24 }}
-                          className="group flex flex-col rounded-xl overflow-hidden bg-card border border-border cursor-pointer hover:border-primary/50 shadow-sm hover:shadow-xl transition-all"
-                          onClick={() =>
-                            onSelect({
-                              tmdbId:     item.tmdbId ?? undefined,
-                              malId:      item.malId ?? undefined,
-                              title:      item.title,
-                              year:       item.year,
-                              posterUrl:  item.posterUrl,
-                              tmdbRating: item.tmdbRating != null ? Number(item.tmdbRating) : null,
-                              overview:   null,
-                              contentType: item.contentType as ContentType,
-                            })
-                          }
-                        >
-                          {/* Poster */}
-                          <div className="relative aspect-[2/3] overflow-hidden">
-                            {item.posterUrl ? (
-                              <Image
-                                loader={tmdbImageLoader}
-                                src={item.posterUrl}
-                                alt={item.title}
-                                fill
-                                className="object-cover transition-transform duration-500 group-hover:scale-105"
-                                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
-                              />
-                            ) : (
-                              <div className="w-full h-full flex items-center justify-center bg-muted text-muted-foreground text-sm px-3 text-center">
-                                {item.title}
-                              </div>
-                            )}
-                            {/* Rating badge */}
-                            {item.tmdbRating != null && Number(item.tmdbRating) > 0 && (
-                              <div className="absolute top-2 left-2 bg-black/70 backdrop-blur-sm text-yellow-400 text-xs font-bold px-1.5 py-0.5 rounded">
-                                ★ {Number(item.tmdbRating).toFixed(1)}
-                              </div>
-                            )}
-                            {/* Date badge */}
-                            <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-sm text-white/70 text-[10px] px-1.5 py-0.5 rounded">
-                              {new Date(entry.createdAt).toLocaleDateString(undefined, {
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </div>
-                          </div>
-
-                          {/* Info */}
-                          <div className="p-3 flex flex-col gap-1 flex-1">
-                            <p className="font-semibold text-sm leading-tight line-clamp-1">
-                              {item.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{item.year}</p>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
-                </AnimatePresence>
-              )}
-
-              {/* Pagination */}
-              {historyTotalPages > 1 && (
-                <div className="flex items-center justify-center gap-3 pt-6">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={historyPage === 1}
-                    onClick={() => fetchHistory(historyPage - 1)}
-                  >
-                    Prev
-                  </Button>
-                  <span className="text-sm text-muted-foreground">
-                    {historyPage} / {historyTotalPages}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={historyPage === historyTotalPages}
-                    onClick={() => fetchHistory(historyPage + 1)}
-                  >
-                    Next
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </div>
+          {generating ? 'Generating…' : 'Generate'}
+        </button>
       </div>
+
+      {/* Generate Modal */}
+      <GenerateModal
+        open={showGenerateModal}
+        onClose={() => setShowGenerateModal(false)}
+        onGenerate={handleGenerate}
+      />
     </div>
   );
 }

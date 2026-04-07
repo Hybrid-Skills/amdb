@@ -1,20 +1,21 @@
 'use client';
 
 import * as React from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Button } from './ui/button';
 import { ProfileDropdown } from './profile-dropdown';
 import { type Profile } from './profile-selector';
-import { RefreshCw } from 'lucide-react';
 import Image from 'next/image';
 import { SearchBar } from './search-bar';
 import { AddToListModal, type SearchResult } from './add-to-list-modal';
 import { MovieCard } from './movie-card';
 import { RecommendationsTab } from './recommendations-tab';
+import { PlannedTab } from './planned-tab';
 import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-bar';
 import { AnimatePresence, motion } from 'framer-motion';
-import { List, Sparkles } from 'lucide-react';
+import { List, Sparkles, Bookmark } from 'lucide-react';
 import { EmptyStateIllustration } from './ui/empty-state-illustration';
+
+type DashTab = 'watched' | 'planned' | 'recommendations';
 
 interface InitialListItem {
   id: string;
@@ -58,14 +59,13 @@ interface DashboardProps {
   initialListData: { items: InitialListItem[]; total: number; totalPages: number };
 }
 
-// ListItem is the same shape as InitialListItem (defined in DashboardProps above)
 type ListItem = InitialListItem;
 
 export function Dashboard({ initialProfiles, initialProfileId, initialListData }: DashboardProps) {
   const [profiles, setProfiles] = React.useState<Profile[]>(initialProfiles);
-  // Initialise from server-provided ID to avoid SSR/client hydration mismatch.
-  // localStorage restore happens in useEffect after hydration.
   const [activeProfileId, setActiveProfileId] = React.useState<string>(initialProfileId);
+  const [activeTab, setActiveTab] = React.useState<DashTab>('watched');
+
   const [selectedItem, setSelectedItem] = React.useState<SearchResult | null>(null);
   const [selectedItemMeta, setSelectedItemMeta] = React.useState<{
     rating?: number;
@@ -73,11 +73,11 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
     watchStatus?: string | null;
   }>({});
   const [modalForceEdit, setModalForceEdit] = React.useState(false);
+
   const [listItems, setListItems] = React.useState<ListItem[]>(
     initialListData.items as ListItem[],
   );
   const [listLoading, setListLoading] = React.useState(false);
-  const [refreshing, setRefreshing] = React.useState(false);
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(1);
   const [totalPages, setTotalPages] = React.useState(initialListData.totalPages);
@@ -117,7 +117,7 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
     setListLoading(false);
   }
 
-  // After hydration: restore the last active profile from localStorage (once only)
+  // Restore last active profile from localStorage after hydration
   React.useEffect(() => {
     const saved = localStorage.getItem('amdb_last_profile_id');
     if (saved && initialProfiles.some((p) => p.id === saved) && saved !== activeProfileId) {
@@ -126,7 +126,7 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch when profile or filters change — reset to page 1
+  // Re-fetch watched list on profile/filter change
   React.useEffect(() => {
     if (activeProfileId) {
       localStorage.setItem('amdb_last_profile_id', activeProfileId);
@@ -146,20 +146,11 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
     fetchProfiles();
   }
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    await fetchList(activeProfileId, page, filters);
-    setRefreshing(false);
-  }
-
   function handleSearchSelect(item: any) {
-    // Open modal immediately — never block on ensure
     setSelectedItemMeta({});
     setModalForceEdit(true);
     setSelectedItem(item);
 
-    // Run ensure in the background so the detail-page link in the modal
-    // becomes available once the DB record is created/confirmed
     if (!item.id && (item.tmdbId || item.malId)) {
       fetch('/api/content/ensure', {
         method: 'POST',
@@ -180,8 +171,14 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
     }
   }
 
+  const NAV_TABS: { value: DashTab; label: string; shortLabel: string; Icon: React.ElementType }[] = [
+    { value: 'watched',         label: 'Watched',         shortLabel: 'Watched', Icon: List },
+    { value: 'planned',         label: 'Planned',         shortLabel: 'Planned', Icon: Bookmark },
+    { value: 'recommendations', label: 'Recommendations', shortLabel: 'Recs',    Icon: Sparkles },
+  ];
+
   return (
-    <Tabs defaultValue="list" className="min-h-screen bg-background pb-16 md:pb-8">
+    <div className="min-h-screen bg-background pb-20 md:pb-8">
       {/* Header */}
       <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-black/60 backdrop-blur-xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 md:py-4">
@@ -200,12 +197,23 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
               <h1 className="text-xl font-black tracking-tighter text-white">AMDB</h1>
             </div>
 
-            {/* Tab Selector — centered in header on desktop only */}
+            {/* Tab selector — desktop only, centered */}
             <div className="hidden md:flex flex-1 justify-center">
-              <TabsList>
-                <TabsTrigger value="list">My List</TabsTrigger>
-                <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
-              </TabsList>
+              <div className="flex items-center bg-white/5 rounded-full p-1 gap-0.5">
+                {NAV_TABS.map(({ value, label, Icon }) => (
+                  <button
+                    key={value}
+                    onClick={() => setActiveTab(value)}
+                    className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all
+                      ${activeTab === value
+                        ? 'bg-white text-black shadow'
+                        : 'text-white/50 hover:text-white'}`}
+                  >
+                    <Icon className="w-3.5 h-3.5" />
+                    {label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Profile Dropdown */}
@@ -221,197 +229,202 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 md:pt-6 pb-24 md:pb-8">
         <div className="flex flex-col">
-          {/* Redundant Profile Switcher Removed */}
-
-          {/* Search bar — full width, centered */}
+          {/* Search bar */}
           <div className="mb-3">
             <SearchBar onSelect={handleSearchSelect} />
           </div>
 
-          <TabsContent value="list">
-            <div className="mb-3">
-              <ListFilterBar filters={filters} onChange={handleFiltersChange} total={total} />
-            </div>
-
-            {listLoading ? (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-                {Array.from({ length: 12 }).map((_, i) => (
-                  <div key={i} className="rounded-xl bg-muted animate-pulse overflow-hidden">
-                    <div className="aspect-[2/3] w-full" />
-                    <div className="p-3 space-y-2">
-                      <div className="h-3 bg-muted-foreground/20 rounded w-3/4" />
-                      <div className="h-2.5 bg-muted-foreground/10 rounded w-1/2" />
-                    </div>
-                  </div>
-                ))}
+          {/* ── Watched Tab ── */}
+          {activeTab === 'watched' && (
+            <>
+              <div className="mb-3">
+                <ListFilterBar filters={filters} onChange={handleFiltersChange} total={total} />
               </div>
-            ) : listItems.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: 'easeOut' }}
-                className="flex flex-col items-center justify-center py-20 text-center select-none"
-              >
-                <div className="relative mb-6">
-                  <EmptyStateIllustration className="w-36 h-36 md:w-28 md:h-28" />
-                </div>
-                {(() => {
-                  const hasActiveFilters =
-                    filters.contentType !== 'ALL' ||
-                    filters.watchStatus.length > 0 ||
-                    filters.genres.length > 0 ||
-                    filters.minRating > 1 ||
-                    filters.maxRating < 10;
-                  return hasActiveFilters ? (
-                    <>
-                      <h3 className="text-lg font-bold text-white mb-1">No matches found</h3>
-                      <p className="text-sm text-white/40 max-w-xs">
-                        Try adjusting or clearing your filters to see more results.
-                      </p>
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="text-lg font-bold text-white mb-1">Your list is empty</h3>
-                      <p className="text-sm text-white/40 max-w-xs">
-                        Search for a movie, show, or anime above and add it to start building your
-                        collection.
-                      </p>
-                      <div className="mt-4 flex items-center gap-2 text-xs text-purple-400/70 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2">
-                        <span>↑</span>
-                        <span>Use the search bar to add your first title</span>
+
+              {listLoading ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                  {Array.from({ length: 12 }).map((_, i) => (
+                    <div key={i} className="rounded-xl bg-muted animate-pulse overflow-hidden">
+                      <div className="aspect-[2/3] w-full" />
+                      <div className="p-3 space-y-2">
+                        <div className="h-3 bg-muted-foreground/20 rounded w-3/4" />
+                        <div className="h-2.5 bg-muted-foreground/10 rounded w-1/2" />
                       </div>
-                    </>
-                  );
-                })()}
-              </motion.div>
-            ) : (
-              <>
-                <motion.div
-                  layout
-                  layoutRoot
-                  className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
-                >
-                  {listItems.map((item) => (
-                    <MovieCard
-                      key={item.id}
-                      id={item.content.id}
-                      title={item.content.title}
-                      year={item.content.year}
-                      posterUrl={item.content.posterUrl}
-                      backdropUrl={item.content.backdropUrl}
-                      tagline={item.content.tagline}
-                      genres={item.content.genres}
-                      userRating={item.userRating}
-                      tmdbRating={item.content.tmdbRating ? Number(item.content.tmdbRating) : null}
-                      contentType={item.content.contentType as 'MOVIE' | 'TV_SHOW' | 'ANIME'}
-                      adult={item.content.adult}
-                      revenue={item.content.revenue}
-                      languages={item.content.languages}
-                      seasons={item.content.seasons}
-                      episodes={item.content.episodes}
-                      networks={item.content.networks}
-                      episodeRuntime={item.content.episodeRuntime}
-                      runtimeMins={item.content.runtimeMins}
-                      omdbRatings={item.content.omdbRatings}
-                      imdbRating={item.content.imdbRating}
-                      ageCertification={item.content.ageCertification}
-                      watchStatus={item.watchStatus}
-                      notes={item.notes}
-                      onEdit={() => {
-                        setSelectedItemMeta({
-                          rating: item.userRating,
-                          notes: item.notes,
-                          watchStatus: item.watchStatus,
-                        });
-                        setModalForceEdit(true);
-                        setSelectedItem({
-                          id: item.content.id,
-                          tmdbId: (item.content as any).tmdbId,
-                          malId: (item.content as any).malId,
-                          title: item.content.title,
-                          year: item.content.year,
-                          posterUrl: item.content.posterUrl,
-                          tmdbRating: item.content.tmdbRating,
-                          overview: null,
-                          contentType: item.content.contentType as any,
-                        });
-                      }}
-                      onViewDetails={() => {
-                        setSelectedItemMeta({
-                          rating: item.userRating,
-                          notes: item.notes,
-                          watchStatus: item.watchStatus,
-                        });
-                        setModalForceEdit(false);
-                        setSelectedItem({
-                          id: item.content.id,
-                          tmdbId: (item.content as any).tmdbId,
-                          malId: (item.content as any).malId,
-                          title: item.content.title,
-                          year: item.content.year,
-                          posterUrl: item.content.posterUrl,
-                          tmdbRating: item.content.tmdbRating,
-                          overview: null,
-                          contentType: item.content.contentType as any,
-                        });
-                      }}
-                      onDelete={() => setDeleteConfirmId(item.id)}
-                      tmdbId={(item.content as any).tmdbId as number | undefined}
-                      malId={(item.content as any).malId as number | undefined}
-                    />
+                    </div>
                   ))}
-                </motion.div>
-
-                {totalPages > 1 && (
-                  <div className="flex justify-center gap-2 mt-8">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page === 1}
-                      onClick={() => fetchList(activeProfileId, page - 1, filters)}
-                    >
-                      Previous
-                    </Button>
-                    <span className="flex items-center text-sm text-muted-foreground px-2">
-                      {page} / {totalPages}
-                    </span>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={page === totalPages}
-                      onClick={() => fetchList(activeProfileId, page + 1, filters)}
-                    >
-                      Next
-                    </Button>
+                </div>
+              ) : listItems.length === 0 ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 16 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, ease: 'easeOut' }}
+                  className="flex flex-col items-center justify-center py-20 text-center select-none"
+                >
+                  <div className="relative mb-6">
+                    <EmptyStateIllustration className="w-36 h-36 md:w-28 md:h-28" />
                   </div>
-                )}
-              </>
-            )}
-          </TabsContent>
+                  {(() => {
+                    const hasActiveFilters =
+                      filters.contentType !== 'ALL' ||
+                      filters.watchStatus.length > 0 ||
+                      filters.genres.length > 0 ||
+                      filters.minRating > 1 ||
+                      filters.maxRating < 10;
+                    return hasActiveFilters ? (
+                      <>
+                        <h3 className="text-lg font-bold text-white mb-1">No matches found</h3>
+                        <p className="text-sm text-white/40 max-w-xs">
+                          Try adjusting or clearing your filters to see more results.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <h3 className="text-lg font-bold text-white mb-1">Your list is empty</h3>
+                        <p className="text-sm text-white/40 max-w-xs">
+                          Search for a movie, show, or anime above and add it to start building your
+                          collection.
+                        </p>
+                        <div className="mt-4 flex items-center gap-2 text-xs text-purple-400/70 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2">
+                          <span>↑</span>
+                          <span>Use the search bar to add your first title</span>
+                        </div>
+                      </>
+                    );
+                  })()}
+                </motion.div>
+              ) : (
+                <>
+                  <motion.div
+                    layout
+                    layoutRoot
+                    className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4"
+                  >
+                    {listItems.map((item) => (
+                      <MovieCard
+                        key={item.id}
+                        id={item.content.id}
+                        title={item.content.title}
+                        year={item.content.year}
+                        posterUrl={item.content.posterUrl}
+                        backdropUrl={item.content.backdropUrl}
+                        tagline={item.content.tagline}
+                        genres={item.content.genres}
+                        userRating={item.userRating}
+                        tmdbRating={item.content.tmdbRating ? Number(item.content.tmdbRating) : null}
+                        contentType={item.content.contentType as 'MOVIE' | 'TV_SHOW' | 'ANIME'}
+                        adult={item.content.adult}
+                        revenue={item.content.revenue}
+                        languages={item.content.languages}
+                        seasons={item.content.seasons}
+                        episodes={item.content.episodes}
+                        networks={item.content.networks}
+                        episodeRuntime={item.content.episodeRuntime}
+                        runtimeMins={item.content.runtimeMins}
+                        omdbRatings={item.content.omdbRatings}
+                        imdbRating={item.content.imdbRating}
+                        ageCertification={item.content.ageCertification}
+                        watchStatus={item.watchStatus}
+                        notes={item.notes}
+                        onEdit={() => {
+                          setSelectedItemMeta({
+                            rating: item.userRating,
+                            notes: item.notes,
+                            watchStatus: item.watchStatus,
+                          });
+                          setModalForceEdit(true);
+                          setSelectedItem({
+                            id: item.content.id,
+                            tmdbId: (item.content as any).tmdbId,
+                            malId: (item.content as any).malId,
+                            title: item.content.title,
+                            year: item.content.year,
+                            posterUrl: item.content.posterUrl,
+                            tmdbRating: item.content.tmdbRating,
+                            overview: null,
+                            contentType: item.content.contentType as any,
+                          });
+                        }}
+                        onViewDetails={() => {
+                          setSelectedItemMeta({
+                            rating: item.userRating,
+                            notes: item.notes,
+                            watchStatus: item.watchStatus,
+                          });
+                          setModalForceEdit(false);
+                          setSelectedItem({
+                            id: item.content.id,
+                            tmdbId: (item.content as any).tmdbId,
+                            malId: (item.content as any).malId,
+                            title: item.content.title,
+                            year: item.content.year,
+                            posterUrl: item.content.posterUrl,
+                            tmdbRating: item.content.tmdbRating,
+                            overview: null,
+                            contentType: item.content.contentType as any,
+                          });
+                        }}
+                        onDelete={() => setDeleteConfirmId(item.id)}
+                        tmdbId={(item.content as any).tmdbId as number | undefined}
+                        malId={(item.content as any).malId as number | undefined}
+                      />
+                    ))}
+                  </motion.div>
 
-          <TabsContent value="recommendations">
+                  {totalPages > 1 && (
+                    <div className="flex justify-center gap-2 mt-8">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page === 1}
+                        onClick={() => fetchList(activeProfileId, page - 1, filters)}
+                      >
+                        Previous
+                      </Button>
+                      <span className="flex items-center text-sm text-muted-foreground px-2">
+                        {page} / {totalPages}
+                      </span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        disabled={page === totalPages}
+                        onClick={() => fetchList(activeProfileId, page + 1, filters)}
+                      >
+                        Next
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {/* ── Planned Tab ── */}
+          {activeTab === 'planned' && (
+            <PlannedTab profileId={activeProfileId} onSelect={handleSearchSelect} />
+          )}
+
+          {/* ── Recommendations Tab ── */}
+          {activeTab === 'recommendations' && (
             <RecommendationsTab profileId={activeProfileId} onSelect={handleSearchSelect} />
-          </TabsContent>
+          )}
+        </div>
+      </div>
 
-          <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 p-3 pb-6 bg-gradient-to-t from-black via-black to-transparent pointer-events-none">
-            <div className="max-w-[280px] mx-auto bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1 shadow-2xl shadow-black/50 pointer-events-auto">
-              <TabsList className="grid grid-cols-2 w-full bg-transparent h-10">
-                <TabsTrigger
-                  value="list"
-                  className="rounded-full data-[state=active]:bg-white data-[state=active]:text-black transition-all flex items-center justify-center gap-2 text-xs font-bold"
-                >
-                  <List className="w-3.5 h-3.5" />
-                  <span>List</span>
-                </TabsTrigger>
-                <TabsTrigger
-                  value="recommendations"
-                  className="rounded-full data-[state=active]:bg-white data-[state=active]:text-black transition-all flex items-center justify-center gap-2 text-xs font-bold"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                  <span>Recs</span>
-                </TabsTrigger>
-              </TabsList>
-            </div>
+      {/* Mobile bottom nav */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 p-3 pb-6 bg-gradient-to-t from-black via-black to-transparent pointer-events-none">
+        <div className="max-w-[320px] mx-auto bg-zinc-900/90 backdrop-blur-2xl border border-white/10 rounded-full p-1 shadow-2xl shadow-black/50 pointer-events-auto">
+          <div className="grid grid-cols-3 w-full gap-0.5">
+            {NAV_TABS.map(({ value, shortLabel, Icon }) => (
+              <button
+                key={value}
+                onClick={() => setActiveTab(value)}
+                className={`rounded-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold transition-all
+                  ${activeTab === value ? 'bg-white text-black' : 'text-white/50'}`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                <span>{shortLabel}</span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
@@ -431,7 +444,7 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
         onSuccess={() => fetchList(activeProfileId, 1, filters)}
       />
 
-      {/* ── Delete item confirmation ─────────────────── */}
+      {/* Delete confirmation */}
       <AnimatePresence>
         {deleteConfirmId && (
           <motion.div
@@ -469,6 +482,6 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
           </motion.div>
         )}
       </AnimatePresence>
-    </Tabs>
+    </div>
   );
 }

@@ -71,7 +71,24 @@ export async function POST(req: Request) {
       .slice(0, 10)
       .map((i) => `"${i.content.title}" (${i.content.year ?? '?'}) — ${i.userRating}/10`);
 
-    const allWatchedTitles = allItems.map((i) => `"${i.content.title}"`).join(', ');
+    // Also fetch planned and previously recommended titles to exclude from prompt
+    const [plannedItems, pastRecs] = await Promise.all([
+      prisma.userWatchlist.findMany({
+        where: { profileId },
+        include: { content: { select: { title: true } } },
+      }),
+      prisma.userRecommendation.findMany({
+        where: { profileId },
+        include: { content: { select: { title: true } } },
+        take: 100,
+      }),
+    ]);
+
+    const allExcludedTitles = [
+      ...allItems.map((i) => `"${i.content.title}"`),
+      ...plannedItems.map((i) => `"${i.content.title}"`),
+      ...pastRecs.map((i) => `"${i.content.title}"`),
+    ].join(', ');
 
     const typeLabel =
       contentType === 'TV_SHOW'
@@ -94,8 +111,8 @@ export async function POST(req: Request) {
         : '';
 
     const exclusionClause =
-      allWatchedTitles.length > 0
-        ? `IMPORTANT: Do NOT suggest any of these already-watched titles: ${allWatchedTitles}.`
+      allExcludedTitles.length > 0
+        ? `IMPORTANT: Do NOT suggest any of these titles (already watched, planned, or previously recommended): ${allExcludedTitles}.`
         : '';
 
     const prompt = `You are an expert ${typeLabel} recommendation engine.

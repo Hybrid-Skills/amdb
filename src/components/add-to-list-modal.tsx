@@ -21,6 +21,7 @@ import {
   ExternalLink,
   Play,
   Clock,
+  Bookmark,
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { RatingPicker } from './rating-picker';
@@ -72,7 +73,7 @@ interface AddToListModalProps {
   item: SearchResult | null;
   profileId: string;
   onClose: () => void;
-  onSuccess: () => void;
+  onSuccess?: () => void;
   initialWatchStatus?: string | null;
   initialNotes?: string | null;
   initialRating?: number | null;
@@ -123,6 +124,7 @@ export function AddToListModal({
   const [endDate, setEndDate] = React.useState<Date | null>(null);
   const [episodeCount, setEpisodeCount] = React.useState<string>('');
   const [submitting, setSubmitting] = React.useState(false);
+  const [planningToWatch, setPlanningToWatch] = React.useState(false);
   const [activeRatingLabel, setActiveRatingLabel] = React.useState<string | null>(null);
   const [activeRatingValue, setActiveRatingValue] = React.useState<number | null>(null);
   const [detailedItem, setDetailedItem] = React.useState<any | null>(null);
@@ -222,12 +224,51 @@ export function AddToListModal({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
-      onSuccess();
+      onSuccess?.();
       onClose();
     } catch (err) {
       console.error(err);
     } finally {
       setSubmitting(false);
+    }
+  }
+
+  async function handlePlanToWatch() {
+    if (!item) return;
+    setPlanningToWatch(true);
+    try {
+      // Ensure the Content record exists first
+      let contentId = item.id;
+      if (!contentId && (item.tmdbId || item.malId)) {
+        const ensureRes = await fetch('/api/content/ensure', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            tmdbId: item.tmdbId,
+            malId:  item.malId,
+            contentType: item.contentType,
+          }),
+        });
+        if (ensureRes.ok) {
+          const ensureData = await ensureRes.json();
+          contentId = ensureData.amdbId;
+        }
+      }
+      if (!contentId) return;
+
+      const res = await fetch('/api/watchlist', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profileId, contentId, contentType: item.contentType }),
+      });
+      if (res.ok) {
+        onClose();
+        onSuccess?.();
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setPlanningToWatch(false);
     }
   }
 
@@ -819,18 +860,33 @@ export function AddToListModal({
 
       {/* ── Sticky CTA bar ─────────────────────────────── */}
       {editingRating && (
-        <div className="shrink-0 border-t border-white/10 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center gap-3 justify-end">
+        <div className="shrink-0 border-t border-white/10 bg-black/80 backdrop-blur-md px-4 py-3 flex items-center gap-2 justify-end flex-wrap">
           <Button
             variant="ghost"
             onClick={onClose}
-            disabled={submitting}
+            disabled={submitting || planningToWatch}
             className="hover:bg-white/10 hover:text-white"
           >
             Cancel
           </Button>
+          {!isEditing && (
+            <Button
+              onClick={handlePlanToWatch}
+              disabled={planningToWatch || submitting}
+              variant="outline"
+              className="border-white/20 hover:bg-white/10 hover:text-white gap-2"
+            >
+              {planningToWatch ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Bookmark className="w-4 h-4" />
+              )}
+              Plan to Watch
+            </Button>
+          )}
           <Button
             onClick={handleSubmit}
-            disabled={!rating || submitting}
+            disabled={!rating || submitting || planningToWatch}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold min-w-[120px]"
           >
             {submitting ? (

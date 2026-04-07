@@ -46,6 +46,7 @@ model User {
   profiles            Profile[]
   sessions            Session[]
   userRecommendations UserRecommendation[]
+  userWatchlist       UserWatchlist[]
 }
 
 model VerificationToken {
@@ -67,6 +68,7 @@ model Profile {
   user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
   userContent         UserContent[]
   userRecommendations UserRecommendation[]
+  userWatchlist       UserWatchlist[]
 
   @@index([userId])
 }
@@ -105,6 +107,7 @@ model Content {
   enrichments         ContentEnrichment[]
   userContent         UserContent[]
   userRecommendations UserRecommendation[]
+  userWatchlist       UserWatchlist[]
 
   @@index([contentType])
   @@index([tmdbId])
@@ -162,6 +165,23 @@ model UserRecommendation {
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
   content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
 
+  @@index([profileId, createdAt(sort: Desc)])
+  @@index([userId])
+}
+
+model UserWatchlist {
+  id          String   @id @default(cuid())
+  userId      String
+  profileId   String
+  contentType String
+  contentId   String
+  createdAt   DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  content Content @relation(fields: [contentId], references: [id], onDelete: Cascade)
+
+  @@unique([profileId, contentId])
   @@index([profileId, createdAt(sort: Desc)])
   @@index([userId])
 }
