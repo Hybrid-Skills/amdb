@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Star, Tv, Film, Clock, Pencil, Trash2, Bookmark, CheckCircle2, Loader2 } from 'lucide-react';
+import { Star, Tv, Film, Clock, Pencil, Trash2, Bookmark, CheckCircle2, Loader2, Award, Trophy, Heart, History, Eye, Waves, Cpu, Clapperboard, Zap, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { buildContentUrl } from '@/lib/slug';
@@ -79,17 +79,77 @@ const CONTENT_ICONS: Record<ContentType, React.ReactNode> = {
   ),
 };
 
-const LABEL_MAP: Record<string, string> = {
-  UNDERRATED: 'Underrated',
-  CRITICALLY_ACCLAIMED: 'Critically Acclaimed',
-  AWARD_WINNING: 'Award Winning',
-  FAN_FAVORITE: 'Fan Favorite',
-  CULT_CLASSIC: 'Cult Classic',
-  VISUAL_SPECTACLE: 'Visual Spectacle',
-  IMMERSIVE_SOUND: 'Immersive Sound',
-  TECHNICAL_MASTERY: 'Technical Mastery',
-  DIRECTORIAL_DEBUT: 'Directorial Debut',
-  GENRE_DEFINING: 'Genre Defining',
+const LABEL_CONFIG: Record<string, { label: string, icon: React.ReactNode, color: string, bg: string, border: string }> = {
+  UNDERRATED: { 
+    label: 'Underrated', 
+    icon: <Search className="w-3 h-3" />, 
+    color: 'text-cyan-400', 
+    bg: 'bg-cyan-500/10', 
+    border: 'border-cyan-500/20' 
+  },
+  CRITICALLY_ACCLAIMED: { 
+    label: 'Critically Acclaimed', 
+    icon: <Award className="w-3 h-3" />, 
+    color: 'text-amber-400', 
+    bg: 'bg-amber-500/10', 
+    border: 'border-amber-500/20' 
+  },
+  AWARD_WINNING: { 
+    label: 'Award Winning', 
+    icon: <Trophy className="w-3 h-3" />, 
+    color: 'text-yellow-400', 
+    bg: 'bg-yellow-500/10', 
+    border: 'border-yellow-500/20' 
+  },
+  FAN_FAVORITE: { 
+    label: 'Fan Favorite', 
+    icon: <Heart className="w-3 h-3" />, 
+    color: 'text-rose-400', 
+    bg: 'bg-rose-500/10', 
+    border: 'border-rose-500/20' 
+  },
+  CULT_CLASSIC: { 
+    label: 'Cult Classic', 
+    icon: <History className="w-3 h-3" />, 
+    color: 'text-violet-400', 
+    bg: 'bg-violet-500/10', 
+    border: 'border-violet-500/20' 
+  },
+  VISUAL_SPECTACLE: { 
+    label: 'Visual Spectacle', 
+    icon: <Eye className="w-3 h-3" />, 
+    color: 'text-blue-400', 
+    bg: 'bg-blue-500/10', 
+    border: 'border-blue-500/20' 
+  },
+  IMMERSIVE_SOUND: { 
+    label: 'Immersive Sound', 
+    icon: <Waves className="w-3 h-3" />, 
+    color: 'text-emerald-400', 
+    bg: 'bg-emerald-500/10', 
+    border: 'border-emerald-500/20' 
+  },
+  TECHNICAL_MASTERY: { 
+    label: 'Technical Mastery', 
+    icon: <Cpu className="w-3 h-3" />, 
+    color: 'text-slate-400', 
+    bg: 'bg-slate-500/10', 
+    border: 'border-slate-500/20' 
+  },
+  DIRECTORIAL_DEBUT: { 
+    label: 'Directorial Debut', 
+    icon: <Clapperboard className="w-3 h-3" />, 
+    color: 'text-teal-400', 
+    bg: 'bg-teal-500/10', 
+    border: 'border-teal-500/20' 
+  },
+  GENRE_DEFINING: { 
+    label: 'Genre Defining', 
+    icon: <Zap className="w-3 h-3" />, 
+    color: 'text-orange-400', 
+    bg: 'bg-orange-500/10', 
+    border: 'border-orange-500/20' 
+  },
 };
 
 export function MovieCard({
@@ -234,35 +294,39 @@ export function MovieCard({
               </p>
             </div>
 
+            {/* Repositioned Metadata Row (Between Title and Reason) */}
+            {isHorizontal && (
+               <div className="flex items-center gap-2.5 my-2">
+                 {recommendationLabel && LABEL_CONFIG[recommendationLabel] && (
+                   <div className={cn(
+                     "inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-black uppercase tracking-tight shadow-sm",
+                     LABEL_CONFIG[recommendationLabel].bg,
+                     LABEL_CONFIG[recommendationLabel].color,
+                     LABEL_CONFIG[recommendationLabel].border
+                   )}>
+                     {LABEL_CONFIG[recommendationLabel].icon}
+                     {LABEL_CONFIG[recommendationLabel].label}
+                   </div>
+                 )}
+                 <div className="flex items-center opacity-80 backdrop-blur-sm bg-secondary/20 p-1 rounded">
+                   {CONTENT_ICONS[contentType]}
+                 </div>
+                 {runtimeLabel && (
+                    <div className="text-[10px] font-black text-muted-foreground opacity-80 ml-auto">
+                      {runtimeLabel}
+                    </div>
+                 )}
+               </div>
+            )}
+
             {/* Recommendation Reason */}
             {recommendationReason && (
               <p className={cn(
-                "text-[12px] text-muted-foreground/90 italic leading-snug mt-2",
-                isHorizontal ? "line-clamp-4" : "line-clamp-2"
+                "text-[12px] text-muted-foreground/90 italic leading-snug",
+                isHorizontal ? "line-clamp-3" : "line-clamp-2"
               )}>
                 {recommendationReason}
               </p>
-            )}
-
-            {/* Horizontal Metatdata (Badges on right) */}
-            {isHorizontal && (
-               <div className="flex flex-col gap-2 mt-auto">
-                 <div className="flex items-center gap-2.5">
-                   {recommendationLabel && (
-                     <div className="inline-flex items-center px-2 py-0.5 rounded bg-primary/10 border border-primary/20 text-primary text-[10px] font-black uppercase tracking-tight">
-                       {LABEL_MAP[recommendationLabel] || recommendationLabel.replace('_', ' ')}
-                     </div>
-                   )}
-                   <div className="flex items-center opacity-80">
-                     {CONTENT_ICONS[contentType]}
-                   </div>
-                   {runtimeLabel && (
-                      <div className="text-[10px] font-black text-muted-foreground opacity-80">
-                        {runtimeLabel}
-                      </div>
-                   )}
-                 </div>
-               </div>
             )}
           </div>
 
