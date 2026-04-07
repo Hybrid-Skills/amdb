@@ -322,7 +322,7 @@ export function MovieCard({
             {recommendationReason && (
               <p className={cn(
                 "text-[12px] text-muted-foreground/90 italic leading-snug",
-                isHorizontal ? "line-clamp-3" : "line-clamp-2"
+                isHorizontal ? "line-clamp-4" : "line-clamp-2"
               )}>
                 {recommendationReason}
               </p>
