@@ -284,7 +284,7 @@ export function MovieCard({
         <div className="flex flex-col flex-1 min-h-0 bg-card overflow-hidden">
           <div className={cn("flex-1 min-w-0 p-3", isHorizontal && "sm:p-4")}>
             <div className="flex items-center justify-between gap-2 mb-1 flex-wrap sm:flex-nowrap">
-              <p className="font-extrabold text-[15px] sm:text-base leading-tight truncate">
+              <p className="font-extrabold text-[15px] sm:text-base leading-tight line-clamp-2">
                 {title}
                 {year && (
                   <span className="opacity-70 font-bold ml-1.5 text-[0.9em]">
