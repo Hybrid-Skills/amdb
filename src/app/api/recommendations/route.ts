@@ -9,6 +9,15 @@ import type { ContentType } from '@prisma/client';
 
 export const maxDuration = 45;
 
+const ALLOWED_MODELS = [
+  'gemma-4-31b-it',
+  'gemini-2.5-flash',
+  'gemini-3-flash',
+  'gemini-3.1-flash-lite',
+] as const;
+
+type AllowedModel = (typeof ALLOWED_MODELS)[number];
+
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -17,8 +26,13 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Gemini API key is missing' }, { status: 500 });
   }
 
-  const { profileId, contentType, genres } = await req.json();
+  const { profileId, contentType, genres, model: requestedModel } = await req.json();
   if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
+
+  // Validate model against whitelist — fall back to default if invalid/missing
+  const model: AllowedModel = ALLOWED_MODELS.includes(requestedModel)
+    ? requestedModel
+    : 'gemma-4-31b-it';
 
   try {
     // Fetch all watched content for this profile
@@ -96,7 +110,7 @@ Give me the 6 recommendations as JSON.`;
 
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     const model = genAI.getGenerativeModel({
-      model: 'gemma-4-31b-it',
+      model,
       generationConfig: {
         temperature: 0.7,
         maxOutputTokens: 600,

@@ -2,13 +2,42 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Loader2, Sparkles, Filter } from 'lucide-react';
+import { Loader2, Sparkles, Filter, ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
 import Image from 'next/image';
 import { tmdbImageLoader } from '@/lib/tmdb';
+
+const AI_MODELS = [
+  {
+    id: 'gemma-4-31b-it',
+    label: 'Gemma 4 31B',
+    sublabel: '15 RPM · 1,500 RPD',
+    premium: false,
+  },
+  {
+    id: 'gemini-2.5-flash',
+    label: 'Gemini 2.5 Flash',
+    sublabel: '5 RPM · 20 RPD',
+    premium: false,
+  },
+  {
+    id: 'gemini-3-flash',
+    label: 'Gemini 3 Flash',
+    sublabel: 'Best quality',
+    premium: true,
+  },
+  {
+    id: 'gemini-3.1-flash-lite',
+    label: 'Gemini 3.1 Flash Lite',
+    sublabel: 'Fastest',
+    premium: false,
+  },
+] as const;
+
+type ModelId = (typeof AI_MODELS)[number]['id'];
 
 interface RecommendationsTabProps {
   profileId: string;
@@ -51,6 +80,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
   const [recs, setRecs] = React.useState<RecResult[]>([]);
   const [type, setType] = React.useState<ContentType | 'ANY' | 'ANIME'>('MOVIE');
   const [selectedGenres, setSelectedGenres] = React.useState<string[]>([]);
+  const [selectedModel, setSelectedModel] = React.useState<ModelId>('gemma-4-31b-it');
   const [error, setError] = React.useState('');
 
   const genres = MOVIE_TV_GENRES;
@@ -73,7 +103,7 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
       const res = await fetch('/api/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, contentType: type, genres: selectedGenres }),
+        body: JSON.stringify({ profileId, contentType: type, genres: selectedGenres, model: selectedModel }),
       });
 
       const data = await res.json();
@@ -143,6 +173,39 @@ export function RecommendationsTab({ profileId, onSelect }: RecommendationsTabPr
                 </Badge>
               ))}
             </div>
+          </div>
+
+          {/* AI Model selector */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">AI Model</p>
+            <div className="relative">
+              <select
+                value={selectedModel}
+                onChange={(e) => setSelectedModel(e.target.value as ModelId)}
+                className="w-full appearance-none bg-background border border-border rounded-lg px-3 py-2 pr-8 text-sm font-medium text-foreground cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors hover:border-primary/50"
+              >
+                {AI_MODELS.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.label}{m.premium ? ' ★' : ''}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground pointer-events-none" />
+            </div>
+            {/* Selected model info */}
+            {(() => {
+              const m = AI_MODELS.find((m) => m.id === selectedModel)!;
+              return (
+                <div className="flex items-center gap-2">
+                  <p className="text-[11px] text-muted-foreground/70">{m.sublabel}</p>
+                  {m.premium && (
+                    <Badge className="text-[9px] h-4 px-1.5 bg-gradient-to-r from-amber-500 to-orange-500 border-0 text-white font-bold">
+                      PREMIUM
+                    </Badge>
+                  )}
+                </div>
+              );
+            })()}
           </div>
 
           <Button
