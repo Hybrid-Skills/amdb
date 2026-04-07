@@ -88,7 +88,7 @@ export async function POST(req: Request) {
         content: { select: { title: true, year: true, contentType: true, genres: true } },
       },
       orderBy: { userRating: 'desc' },
-      take: 200,
+      take: 50, // Pruned from 200 for Gemma speed
     });
 
     const watchedItems = allProfileItems.filter((i) => i.listStatus === 'WATCHED');
@@ -118,8 +118,8 @@ Return JSON array of objects with:
     const genModel = genAI.getGenerativeModel({
       model,
       generationConfig: {
-        temperature: isGemini ? 0.7 : 0.8,
-        maxOutputTokens: 800,
+        temperature: isGemini ? 0.7 : 0.2, // Optimized for Gemma speed
+        maxOutputTokens: 600, // Pruned to stay within time
         responseMimeType: isGemini ? 'application/json' : undefined,
         responseSchema: isGemini ? (recommendationSchema as any) : undefined,
       },
