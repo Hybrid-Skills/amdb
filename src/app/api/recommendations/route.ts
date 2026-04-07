@@ -108,7 +108,7 @@ Suggest exactly 6 ${typeLabel} titles the user has NOT seen.
 Return JSON array of objects with:
 - "title" (string)
 - "year" (number)
-- "reason" (string)
+- "reason" (string) - Keep each "reason" extremely concise (maximum 2 sentences).
 - "label" (string) - Choose at most ONE label from this list ONLY if strongly applicable. Use exactly these strings: [UNDERRATED, CRITICALLY_ACCLAIMED, AWARD_WINNING, FAN_FAVORITE, CULT_CLASSIC, VISUAL_SPECTACLE, IMMERSIVE_SOUND, TECHNICAL_MASTERY, DIRECTORIAL_DEBUT, GENRE_DEFINING].
 - IMPORTANT: Diversify labels. Use at most 2 titles per same label in this list.`;
 
@@ -119,7 +119,7 @@ Return JSON array of objects with:
       model,
       generationConfig: {
         temperature: isGemini ? 0.7 : 0.2, // Optimized for Gemma speed
-        maxOutputTokens: 600, // Pruned to stay within time
+        maxOutputTokens: 1000, // Buffered from 600 to prevent truncation
         responseMimeType: isGemini ? 'application/json' : undefined,
         responseSchema: isGemini ? (recommendationSchema as any) : undefined,
       },
