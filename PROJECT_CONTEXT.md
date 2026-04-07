@@ -1,6 +1,6 @@
 # AMDB (Advanced Media Database) - Project Status
 
-**Last Updated:** Phase 7 Completion (Performance & Asset Optimization)
+**Last Updated:** Phase 8 Completion (Deep Asset & Filter Optimization)
 
 ## 📌 Project Overview
 AMDB is a premium, high-performance web application to track, rate, and discover Movies, TV Shows, and Anime. It uses a unified multi-API architecture stitching together TMDB, OMDB, and Jikan (MyAnimeList), presenting content in a dense glassmorphic UI with Claude-3 AI-powered recommendations.
@@ -42,8 +42,11 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 
 ### 4. Dashboard & Performance (Phase 7 & 8)
 - **Sub-1s Load Times:** Achieved through aggressive database indexing and Prisma `relationJoins`.
+- **Genre Denormalization:** Implemented `genreNames` indexed field for high-speed string searching (replacing slow JSON scanning).
+- **Flexible Filtering:** Switched multi-genre filtering to `OR` logic (matches any selected) for better discovery.
 - **Atomic Queries:** Omit default filters (1–10 rating, "All" types) from database queries on initial load to maximize performance.
-- **100% Next.js Image Coverage:** Successfully replaced every `<img>` tag in the system with optimized `<Image />` components and a custom TMDB loader.
+- **100% Next.js Image Coverage:** Successfully replaced every `<img>` tag with optimized `<Image />` components using a custom `TmdbImage` boundary-safe client wrapper.
+- **Advanced Asset Capping:** Backdrops capped at `w1280` (~200KB) and branding assets (favicon/logo) optimized (~430KB -> <10KB).
 - **Mobile UX Stability:** Explicit viewport locking (`maximumScale: 1`) and 16px minimum font sizes on mobile to prevent browser auto-zoom.
 
 ### 5. AI Recommendations
@@ -59,7 +62,8 @@ AMDB is a premium, high-performance web application to track, rate, and discover
 - **Unified `Content` table** with scalar metadata for fast sorting/filtering. Primary Key is a custom 8-character alphanumeric ID (`src/lib/id.ts`).
 - **Relation Joins:** Uses `relationLoadStrategy: 'join'` for the list API to minimize network round-trips.
 - **Composite Indexes:** Optimized for `(profileId, addedAt)`, `(profileId, userRating)`, and `(profileId, watchStatus)`.
-- **Caching Strategy:** `/api/list` implements `stale-while-revalidate` headers for near-instant client side filtering.
+- **Denormalized Filtering:** `genreNames` field allows `contains` queries on a B-tree index for instant list filtering.
+- **Caching Strategy:** `/api/list` and `/api/content/[tmdbId]` implement `stale-while-revalidate` headers for near-instant client side filtering and modal opens.
 
 ### UI Interaction Logic
 - **Responsive Images:** Uses `<Image />` with `tmdbImageLoader`. Sizes are tailored for a 6-column desktop grid vs 2-column mobile grid.

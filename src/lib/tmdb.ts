@@ -12,9 +12,10 @@ export function tmdbImageLoader({ src, width, quality }: { src: string; width: n
   // src is already a full TMDB URL or a path. If it's a full URL, we extract the path.
   const path = src.includes('image.tmdb.org') ? src.split('/t/p/')[1].split('/').slice(1).join('/') : src;
   
-  if (!path || path.startsWith('http')) return src;
+  // If no path, or it's a local/external asset not on TMDB, bail out
+  if (!path || path.startsWith('http') || path.startsWith('/')) return src;
 
-  // TMDB Poster Sizes: w92, w154, w185, w342, w500, w780, original
+  // TMDB Sizes: w92, w154, w185, w342, w500, w780, w1280, original
   let size = 'w500';
   if (width <= 92) size = 'w92';
   else if (width <= 154) size = 'w154';
@@ -22,6 +23,7 @@ export function tmdbImageLoader({ src, width, quality }: { src: string; width: n
   else if (width <= 342) size = 'w342';
   else if (width <= 500) size = 'w500';
   else if (width <= 780) size = 'w780';
+  else if (width <= 1280) size = 'w1280';
   else size = 'original';
 
   return `${TMDB_IMAGE_BASE}/${size}/${path}`;

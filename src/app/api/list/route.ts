@@ -71,7 +71,7 @@ export async function GET(req: Request) {
       }),
       ...(genres &&
         genres !== '' && {
-          AND: genres.split(',').map((g) => ({
+          OR: genres.split(',').map((g) => ({
             genreNames: { contains: `|${g.trim()}|` },
           })),
         } as any),
