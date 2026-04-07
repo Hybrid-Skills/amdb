@@ -9,14 +9,14 @@ import type { ContentType } from '@prisma/client';
 
 export const maxDuration = 45;
 
-const ALLOWED_MODELS = [
+const ALLOWED_MODELS = new Set([
   'gemma-4-31b-it',
   'gemini-2.5-flash',
   'gemini-3-flash-preview',
   'gemini-3.1-flash-lite-preview',
-] as const;
+]);
 
-type AllowedModel = (typeof ALLOWED_MODELS)[number];
+type AllowedModel = 'gemma-4-31b-it' | 'gemini-2.5-flash' | 'gemini-3-flash-preview' | 'gemini-3.1-flash-lite-preview';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -30,8 +30,8 @@ export async function POST(req: Request) {
   if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
 
   // Validate model against whitelist — fall back to default if invalid/missing
-  const model: AllowedModel = ALLOWED_MODELS.includes(requestedModel)
-    ? requestedModel
+  const model: AllowedModel = ALLOWED_MODELS.has(requestedModel)
+    ? (requestedModel as AllowedModel)
     : 'gemma-4-31b-it';
 
   try {
