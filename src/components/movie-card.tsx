@@ -151,24 +151,6 @@ export function MovieCard({
 
           {/* Top-Right: Variant Specific Actions */}
           <div className="absolute top-2 right-2 flex items-center gap-1.5 z-30">
-            {variant === 'WATCHED' && userRating != null && (
-              <div className="h-8 px-2 rounded-lg bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center gap-1.5 shadow-xl transition-all select-none">
-                <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
-                <span
-                  className={cn(
-                    'text-[12px] font-black leading-none',
-                    userRating >= 7
-                      ? 'text-green-500'
-                      : userRating <= 4
-                        ? 'text-red-500'
-                        : 'text-orange-500',
-                  )}
-                >
-                  {userRating}
-                </span>
-              </div>
-            )}
-
             {variant === 'RECOMMENDED' && onSecondaryAction && (
               <button
                 onClick={(e) => {
