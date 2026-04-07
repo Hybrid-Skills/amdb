@@ -294,12 +294,12 @@ export function MovieCard({
               </p>
             </div>
 
-            {/* Repositioned Metadata Row (Between Title and Reason) */}
+            {/* Correct Metadata Row Position (Between Title and Reason) */}
             {isHorizontal && (
-               <div className="flex items-center gap-2.5 my-2">
+               <div className="flex items-center gap-2.5 my-2 flex-nowrap overflow-hidden">
                  {recommendationLabel && LABEL_CONFIG[recommendationLabel] && (
                    <div className={cn(
-                     "inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-black uppercase tracking-tight shadow-sm",
+                     "inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-tight shadow-sm whitespace-nowrap shrink-0",
                      LABEL_CONFIG[recommendationLabel].bg,
                      LABEL_CONFIG[recommendationLabel].color,
                      LABEL_CONFIG[recommendationLabel].border
@@ -308,11 +308,11 @@ export function MovieCard({
                      {LABEL_CONFIG[recommendationLabel].label}
                    </div>
                  )}
-                 <div className="flex items-center opacity-80 backdrop-blur-sm bg-secondary/20 p-1 rounded">
+                 <div className="flex items-center opacity-80 backdrop-blur-sm bg-secondary/20 p-1 rounded shrink-0">
                    {CONTENT_ICONS[contentType]}
                  </div>
                  {runtimeLabel && (
-                    <div className="text-[10px] font-black text-muted-foreground opacity-80 ml-auto">
+                    <div className="text-[10px] font-black text-muted-foreground opacity-80 ml-auto whitespace-nowrap shrink-0">
                       {runtimeLabel}
                     </div>
                  )}
