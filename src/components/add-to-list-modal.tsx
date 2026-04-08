@@ -128,28 +128,21 @@ export function AddToListModal({
 
   const isEditing = isRecordExisting; // true = existing list entry
 
-  // Track which external ID we've already fetched details for.
-  // This prevents the background ensure() call (which only updates item.id)
-  // from re-triggering the effect and reloading the rating component.
-  const fetchedForRef = React.useRef<number | null>(null);
 
   const isSerial = item?.contentType === 'TV_SHOW' || item?.contentType === 'ANIME';
   const today = new Date();
 
-  // Effect 1: Fetch content details. Uses item object as dep but guards against
-  // re-fetching when only item.id changes (ensure() adds amdbId after open).
+  // Effect 1: Fetch content details.
+  // Depends on primitive IDs + contentType so it is NOT re-triggered when
+  // ensure() adds item.id (amdbId) to the item object reference.
   React.useEffect(() => {
     if (!item) {
       setDetailedItem(null);
       setWatchProviders(null);
-      fetchedForRef.current = null;
       return;
     }
     const id = item.tmdbId ?? item.malId;
-
-    // Skip re-fetch when only item.id (amdbId) changed
-    if (fetchedForRef.current === id) return;
-    fetchedForRef.current = id;
+    if (!id) return;
 
     const controller = new AbortController();
 
@@ -170,7 +163,7 @@ export function AddToListModal({
       });
 
     return () => controller.abort();
-  }, [item]);
+  }, [item?.tmdbId, item?.malId, item?.contentType]);
 
   // Effect 2: Check if item already exists in watched list.
   // Depends only on primitive IDs so it is NOT cancelled when ensure() adds item.id.
