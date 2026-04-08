@@ -28,8 +28,7 @@ const AI_MODELS: { id: ModelId; label: string; premium: boolean }[] = [
   { id: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite', premium: false },
 ];
 
-const CONTENT_TYPES: { value: ContentType | 'ANY'; label: string }[] = [
-  { value: 'ANY',     label: 'Any' },
+const CONTENT_TYPES: { value: ContentType; label: string }[] = [
   { value: 'MOVIE',   label: 'Movie' },
   { value: 'TV_SHOW', label: 'TV Show' },
   { value: 'ANIME',   label: 'Anime' },
@@ -137,104 +136,114 @@ function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: Mode
 interface GenerateModalProps {
   open: boolean;
   onClose: () => void;
-  onGenerate: (type: ContentType | 'ANY', genres: string[], model: ModelId, specialInstructions?: string) => void;
+  onGenerate: (types: ContentType[], genres: string[], model: ModelId, specialInstructions?: string) => void;
 }
 
 function GenerateModal({ open, onClose, onGenerate }: GenerateModalProps) {
-  const [type, setType]       = React.useState<ContentType | 'ANY'>('MOVIE');
+  const [types, setTypes]     = React.useState<ContentType[]>([]);
   const [genres, setGenres]   = React.useState<string[]>([]);
   const [model, setModel]     = React.useState<ModelId>('gemma-4-31b-it');
   const [specialInstructions, setSpecialInstructions] = React.useState('');
+
+  function toggleType(t: ContentType) {
+    setTypes((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+  }
 
   function toggleGenre(g: string) {
     setGenres((prev) => (prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g]));
   }
 
   function handleGenerate() {
-    onGenerate(type, genres, model, specialInstructions);
+    onGenerate(types, genres, model, specialInstructions);
   }
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-sm bg-card border-border p-6 space-y-5">
-        <DialogTitle className="text-base font-bold">Generate Recommendations</DialogTitle>
-        <DialogDescription className="sr-only">
-          Choose content type, genres, and AI model, then generate personalised recommendations.
-        </DialogDescription>
+      <DialogContent className="max-w-sm bg-card border-border p-0 flex flex-col max-h-[90vh]">
+        <div className="p-5 pb-0 shrink-0">
+          <DialogTitle className="text-base font-bold">Generate Recommendations</DialogTitle>
+          <DialogDescription className="sr-only">
+            Choose content type, genres, and AI model, then generate personalised recommendations.
+          </DialogDescription>
+        </div>
 
-        {/* Content Type */}
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">Content Type</p>
-          <div className="flex flex-col gap-2">
-            {CONTENT_TYPES.map(({ value, label }) => (
-              <label key={value} className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="genContentType"
-                  checked={type === value}
-                  onChange={() => { setType(value); setGenres([]); }}
-                  className="accent-primary"
-                />
-                {label}
-              </label>
-            ))}
+        <div className="overflow-y-auto flex-1 p-5 space-y-5">
+          {/* Content Type — multi-select badges in one line */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">
+              Content Type <span className="text-xs text-muted-foreground/60">(any if none selected)</span>
+            </p>
+            <div className="flex gap-2">
+              {CONTENT_TYPES.map(({ value, label }) => (
+                <Badge
+                  key={value}
+                  variant={types.includes(value) ? 'default' : 'outline'}
+                  className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
+                  onClick={() => toggleType(value)}
+                >
+                  {label}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* Genres */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Genres</p>
+              {genres.length > 0 && (
+                <button
+                  onClick={() => setGenres([])}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {GENRES.map((g) => (
+                <Badge
+                  key={g}
+                  variant={genres.includes(g) ? 'default' : 'outline'}
+                  className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
+                  onClick={() => toggleGenre(g)}
+                >
+                  {g}
+                </Badge>
+              ))}
+            </div>
+          </div>
+
+          {/* AI Model */}
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground">AI Model</p>
+            <ModelDropdown value={model} onChange={setModel} />
+          </div>
+
+          {/* Special Instructions */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium text-muted-foreground">Special Instructions <span className="text-xs text-muted-foreground/60">(optional)</span></p>
+              <span className="text-[10px] text-muted-foreground">{specialInstructions.length}/200</span>
+            </div>
+            <textarea
+              value={specialInstructions}
+              onChange={(e) => setSpecialInstructions(e.target.value.slice(0, 200))}
+              placeholder='e.g. "Something under 2 hours", "90s classics"'
+              className="w-full h-16 bg-background border border-border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
+            />
           </div>
         </div>
 
-        {/* Genres */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted-foreground">Genres</p>
-            {genres.length > 0 && (
-              <button
-                onClick={() => setGenres([])}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Clear
-              </button>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {GENRES.map((g) => (
-              <Badge
-                key={g}
-                variant={genres.includes(g) ? 'default' : 'outline'}
-                className="cursor-pointer hover:opacity-80 transition-opacity text-xs"
-                onClick={() => toggleGenre(g)}
-              >
-                {g}
-              </Badge>
-            ))}
-          </div>
+        <div className="p-5 pt-0 shrink-0">
+          <Button
+            onClick={handleGenerate}
+            className="w-full font-bold gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-0 text-white shadow-lg"
+          >
+            <Sparkles className="w-4 h-4" />
+            Generate
+          </Button>
         </div>
-
-        {/* AI Model */}
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">AI Model</p>
-          <ModelDropdown value={model} onChange={setModel} />
-        </div>
-
-        {/* Special Instructions */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-sm font-medium text-muted-foreground">Special Instructions (Optional)</p>
-            <span className="text-[10px] text-muted-foreground">{specialInstructions.length}/200</span>
-          </div>
-          <textarea
-            value={specialInstructions}
-            onChange={(e) => setSpecialInstructions(e.target.value.slice(0, 200))}
-            placeholder='e.g. "Something under 2 hours", "90s classics"'
-            className="w-full h-20 bg-background border border-border rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all resize-none"
-          />
-        </div>
-
-        <Button
-          onClick={handleGenerate}
-          className="w-full font-bold gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-0 text-white shadow-lg"
-        >
-          <Sparkles className="w-4 h-4" />
-          Generate
-        </Button>
       </DialogContent>
     </Dialog>
   );
@@ -288,17 +297,17 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, filters, refreshTrigger]);
 
-  async function handleGenerate(type: ContentType | 'ANY', genres: string[], model: ModelId, specialInstructions?: string) {
+  async function handleGenerate(types: ContentType[], genres: string[], model: ModelId, specialInstructions?: string) {
     setShowGenerateModal(false);
     setGenerating(true);
-    
+
     try {
       // 1. Phase 1: Fetching Data
       setGeneratingStatus('Fetching data');
       const res = await fetch('/api/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, contentType: type, genres, model, specialInstructions }),
+        body: JSON.stringify({ profileId, contentTypes: types, genres, model, specialInstructions }),
       });
       
       // 2. Phase 2: Getting Recommendations
@@ -316,7 +325,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
         year: r.year,
         reason: r.reason,
         label: r.label,
-        contentType: type
+        contentType: types[0] ?? 'MOVIE',
       })));
 
       // 4. Phase 3: Getting Details (Enrichment)

@@ -61,7 +61,7 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { profileId, contentType, genres, model: requestedModel, specialInstructions } = await req.json();
+  const { profileId, contentTypes, genres, model: requestedModel, specialInstructions } = await req.json();
   if (!profileId || !process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: 'Missing credentials or profileId' }, { status: 400 });
   }
@@ -75,33 +75,35 @@ export async function POST(req: Request) {
     ? (requestedModel as AllowedModel)
     : 'gemma-4-31b-it';
 
+  // contentTypes: ContentType[] — empty array means no filter (any type)
+  const selectedTypes: ContentType[] = Array.isArray(contentTypes) && contentTypes.length > 0
+    ? contentTypes as ContentType[]
+    : [];
+
   let contentText = '';
   try {
     // 1. Fetch personalization data + Exclusion list
     const allProfileItems = await prisma.userContent.findMany({
       where: {
         profileId,
-        content: {
-          contentType:
-            contentType === 'ANY'
-              ? undefined
-              : contentType === 'TV_SHOW'
-                ? { in: ['TV_SHOW' as const, 'ANIME' as const] }
-                : (contentType as ContentType),
-        },
+        content: selectedTypes.length > 0
+          ? { contentType: { in: selectedTypes } }
+          : undefined,
       },
       include: {
         content: { select: { title: true, year: true, contentType: true, genres: true } },
       },
       orderBy: { userRating: 'desc' },
-      take: 50, // Pruned from 200 for Gemma speed
+      take: 50,
     });
 
     const watchedItems = allProfileItems.filter((i) => i.listStatus === 'WATCHED');
     const highRated = watchedItems.filter((i) => (i.userRating ?? 0) >= 7).slice(0, 15);
     const lowerRated = watchedItems.filter((i) => i.userRating != null && i.userRating < 7).slice(0, 5);
     const exclusionList = allProfileItems.map((i) => i.content.title).join(', ');
-    const typeLabel = contentType === 'TV_SHOW' ? 'TV show or anime' : contentType === 'MOVIE' ? 'movie' : 'content';
+    const typeLabel = selectedTypes.length === 0
+      ? 'movie, TV show, or anime'
+      : selectedTypes.map((t) => t === 'TV_SHOW' ? 'TV show' : t === 'MOVIE' ? 'movie' : 'anime').join(' or ');
 
     const prompt = `You are a movie recommendation engine. Output ONLY valid JSON. No reasoning, no explanations, no markdown — just the raw JSON array.
 
