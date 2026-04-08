@@ -266,6 +266,8 @@ function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
 // ─── RecommendationsTab ───────────────────────────────────────────────────────
 
 export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: RecommendationsTabProps) {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const isLargeDesktop = useMediaQuery('(min-width: 1024px)');
   const [historyItems, setHistoryItems]     = React.useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = React.useState(true);
   const [historyPage, setHistoryPage]       = React.useState(1);
@@ -474,7 +476,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
           <AnimatePresence mode="popLayout">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6">
               {/* Initial Skeletons while generating metadata */}
-              {generating && pendingRecs.length === 0 && Array.from({ length: 6 }).map((_, i) => (
+              {generating && pendingRecs.length === 0 && Array.from({ length: isLargeDesktop ? 3 : 1 }).map((_, i) => (
                 <div key={`skeleton-${i}`} className="md:col-span-2">
                   <div className="flex h-32 md:h-40 w-full animate-pulse gap-4 overflow-hidden rounded-xl border border-border bg-card p-3 md:p-4">
                     <div className="aspect-[2/3] h-full shrink-0 rounded-lg bg-muted" />
