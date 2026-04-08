@@ -576,37 +576,32 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
       {/* Recommend FAB */}
       <div className="fixed bottom-24 md:bottom-10 right-6 z-40">
         <motion.button
-          layout
           onClick={() => setShowGenerateModal(true)}
           disabled={generating}
-          initial={false}
           animate={{ 
             width: isFABCollapsed ? 56 : 'auto',
-            borderRadius: isFABCollapsed ? 28 : 30
+            paddingLeft: isFABCollapsed ? 0 : 20,
+            paddingRight: isFABCollapsed ? 0 : 20,
           }}
-          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          className="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-70 text-white font-bold h-14 overflow-hidden shadow-2xl shadow-purple-500/30 transition-shadow hover:scale-105 active:scale-95"
-          style={{ paddingLeft: isFABCollapsed ? 0 : 20, paddingRight: isFABCollapsed ? 0 : 20 }}
+          transition={{ duration: 0.3, ease: "easeInOut" }}
+          className="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-70 text-white font-bold h-14 rounded-full shadow-2xl shadow-purple-500/30 transition-shadow hover:scale-105 active:scale-95 overflow-hidden"
         >
-          <div className="flex items-center gap-2 px-2">
+          <div className="flex items-center gap-2 px-3">
             {generating ? (
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <Sparkles className="w-5 h-5 shrink-0" />
             )}
-            <AnimatePresence mode="popLayout" initial={false}>
-              {!isFABCollapsed && (
-                <motion.span
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
-                  className="whitespace-nowrap"
-                >
-                  {generating ? generatingStatus + '...' : 'Recommend'}
-                </motion.span>
-              )}
-            </AnimatePresence>
+            {!isFABCollapsed && (
+              <motion.span
+                initial={{ opacity: 0, width: 0 }}
+                animate={{ opacity: 1, width: 'auto' }}
+                exit={{ opacity: 0, width: 0 }}
+                className="whitespace-nowrap overflow-hidden"
+              >
+                {generating ? generatingStatus + '...' : 'Recommend'}
+              </motion.span>
+            )}
           </div>
         </motion.button>
       </div>
