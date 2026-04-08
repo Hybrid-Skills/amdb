@@ -8,6 +8,7 @@ import { Badge } from './ui/badge';
 import { cn } from '@/lib/utils';
 import type { ContentType } from '@prisma/client';
 import { GlassPanel } from './ui/glass-panel';
+import { GENRE_LIST } from '@/lib/genres';
 
 export type SortBy = 'addedAt' | 'userRating' | 'tmdbRating' | 'title' | 'year';
 
@@ -53,22 +54,7 @@ const WATCH_STATUSES = [
   { value: 'DROPPED', label: 'Dropped' },
 ];
 
-const GENRES = [
-  'Action',
-  'Adventure',
-  'Animation',
-  'Comedy',
-  'Crime',
-  'Documentary',
-  'Drama',
-  'Fantasy',
-  'Horror',
-  'Mystery',
-  'Romance',
-  'Sci-Fi',
-  'Thriller',
-  'Western',
-];
+const GENRES = GENRE_LIST;
 
 interface ListFilterBarProps {
   filters: ListFilters;

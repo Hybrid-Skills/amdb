@@ -17,7 +17,7 @@ import { EmptyStateIllustration } from './ui/empty-state-illustration';
 
 type DashTab = 'watched' | 'planned' | 'recommendations';
 
-interface InitialListItem {
+interface ListItem {
   id: string;
   userRating: number;
   notes: string | null;
@@ -53,17 +53,12 @@ interface InitialListItem {
 }
 
 interface DashboardProps {
-  initialProfiles: Profile[];
   userName: string;
-  initialProfileId: string;
-  initialListData: { items: InitialListItem[]; total: number; totalPages: number };
 }
 
-type ListItem = InitialListItem;
-
-export function Dashboard({ initialProfiles, initialProfileId, initialListData }: DashboardProps) {
-  const [profiles, setProfiles] = React.useState<Profile[]>(initialProfiles);
-  const [activeProfileId, setActiveProfileId] = React.useState<string>(initialProfileId);
+export function Dashboard(_: DashboardProps) {
+  const [profiles, setProfiles] = React.useState<Profile[]>([]);
+  const [activeProfileId, setActiveProfileId] = React.useState<string>('');
   const [activeTab, setActiveTab] = React.useState<DashTab>('watched');
 
   const [selectedItem, setSelectedItem] = React.useState<SearchResult | null>(null);
@@ -75,14 +70,12 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
   const [modalForceEdit, setModalForceEdit] = React.useState(false);
   const [recommendationsRefreshTrigger, setRecommendationsRefreshTrigger] = React.useState(0);
 
-  const [listItems, setListItems] = React.useState<ListItem[]>(
-    initialListData.items as ListItem[],
-  );
-  const [listLoading, setListLoading] = React.useState(false);
+  const [listItems, setListItems] = React.useState<ListItem[]>([]);
+  const [listLoading, setListLoading] = React.useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(1);
-  const [totalPages, setTotalPages] = React.useState(initialListData.totalPages);
-  const [total, setTotal] = React.useState(initialListData.total);
+  const [totalPages, setTotalPages] = React.useState(0);
+  const [total, setTotal] = React.useState(0);
   const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
 
   async function fetchProfiles() {
@@ -118,21 +111,25 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
     setListLoading(false);
   }
 
-  // Restore last active profile from localStorage after hydration
+  // On mount: fetch profiles + resolve correct profile from localStorage
   React.useEffect(() => {
-    const saved = localStorage.getItem('amdb_last_profile_id');
-    if (saved && initialProfiles.some((p) => p.id === saved) && saved !== activeProfileId) {
-      setActiveProfileId(saved);
-    }
+    fetch('/api/profiles')
+      .then((r) => r.json())
+      .then((data: Profile[]) => {
+        setProfiles(data);
+        const saved = localStorage.getItem('amdb_last_profile_id');
+        const resolved = data.find((p) => p.id === saved) ?? data.find((p) => p.isDefault) ?? data[0];
+        if (resolved) setActiveProfileId(resolved.id);
+      })
+      .catch(() => setListLoading(false));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Re-fetch watched list on profile/filter change
+  // Fetch list whenever profile or filters change
   React.useEffect(() => {
-    if (activeProfileId) {
-      localStorage.setItem('amdb_last_profile_id', activeProfileId);
-      fetchList(activeProfileId, 1, filters);
-    }
+    if (!activeProfileId) return;
+    localStorage.setItem('amdb_last_profile_id', activeProfileId);
+    fetchList(activeProfileId, 1, filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProfileId, filters]);
 
@@ -220,7 +217,7 @@ export function Dashboard({ initialProfiles, initialProfileId, initialListData }
             {/* Profile Dropdown */}
             <div className="flex items-center gap-2 shrink-0">
               <ProfileDropdown
-                initialProfiles={initialProfiles}
+                initialProfiles={profiles}
                 onProfileSwitch={(p) => setActiveProfileId(p.id)}
               />
             </div>
