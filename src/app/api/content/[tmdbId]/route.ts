@@ -88,6 +88,41 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
 
     const [raw, storedContent] = await Promise.all([tmdbPromise, prismaPromise]);
 
+    // Backfill any null fields on old DB records using fresh TMDB data.
+    // Fire-and-forget so it doesn't delay the response.
+    if (storedContent) {
+      const patch: Record<string, any> = {};
+      if (!storedContent.backdropUrl && raw.backdrop_path)
+        patch.backdropUrl = tmdbImageUrl(raw.backdrop_path, 'w1280');
+      if (!storedContent.posterUrl && raw.poster_path)
+        patch.posterUrl = tmdbImageUrl(raw.poster_path);
+      if (!storedContent.overview && raw.overview)
+        patch.overview = raw.overview;
+      if (!storedContent.tagline && raw.tagline)
+        patch.tagline = raw.tagline;
+      if (!storedContent.runtimeMins && raw.runtime)
+        patch.runtimeMins = raw.runtime;
+      if (!storedContent.episodeRuntime && raw.episode_run_time?.[0])
+        patch.episodeRuntime = raw.episode_run_time[0];
+      if (!storedContent.tmdbRating && raw.vote_average)
+        patch.tmdbRating = Number(raw.vote_average.toFixed(1));
+      if (!storedContent.ageCertification) {
+        const cert = type === 'TV_SHOW' || type === 'ANIME'
+          ? (raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'IN')?.rating
+            ?? raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US')?.rating
+            ?? null)
+          : (raw.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'IN')
+              ?.release_dates?.find((d: any) => d.certification)?.certification
+            ?? raw.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US')
+              ?.release_dates?.find((d: any) => d.certification)?.certification
+            ?? null);
+        if (cert) patch.ageCertification = cert;
+      }
+      if (Object.keys(patch).length > 0) {
+        prisma.content.update({ where: { id: storedContent.id }, data: patch }).catch(() => {});
+      }
+    }
+
     const crewBase = raw.credits?.crew ?? [];
     const cast =
       raw.credits?.cast
