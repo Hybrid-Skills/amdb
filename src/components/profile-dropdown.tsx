@@ -68,8 +68,19 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
     }
   };
 
+  // Sync activeProfile when parent passes profiles after client fetch
   React.useEffect(() => {
-    // Skip the initial fetch if we already have server-provided data.
+    if (!initialProfiles?.length) return;
+    setProfiles(initialProfiles);
+    if (!activeProfile) {
+      const saved = typeof window !== 'undefined' ? localStorage.getItem('amdb_last_profile_id') : null;
+      const resolved = (saved && initialProfiles.find((p) => p.id === saved)) ?? initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0];
+      if (resolved) setActiveProfile(resolved);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialProfiles]);
+
+  React.useEffect(() => {
     // Only fetch when session first becomes authenticated without pre-loaded data.
     if (status === 'authenticated' && profiles.length === 0) refreshProfiles();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -125,7 +136,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
     setIsAdding(false);
   };
 
-  if (status !== 'authenticated' || !activeProfile) {
+  if (status === 'unauthenticated') {
     return (
       <button
         onClick={() => signIn()}
@@ -137,6 +148,16 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
         <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
         Sign In
       </button>
+    );
+  }
+
+  // Session loading or profiles not yet fetched — show skeleton avatar
+  if (!activeProfile) {
+    return (
+      <div className={cn('flex items-center gap-2 p-1 pr-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-xl', className)}>
+        <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
+        <div className="w-3.5 h-3.5" />
+      </div>
     );
   }
 
