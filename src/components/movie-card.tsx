@@ -336,14 +336,14 @@ export function MovieCard({
                    className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary min-w-0"
                  >
                    {isSecondaryLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin"/> : <Bookmark className="w-4.5 h-4.5"/>}
-                   <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Add to Planned</span>
+                   <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Plan</span>
                  </button>
                  <button 
                    onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }} 
                    className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all min-w-0"
                  >
-                   <CheckCircle2 className="w-4.5 h-4.5"/>
-                   <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Mark Watched</span>
+                   <Star className="w-4.5 h-4.5"/>
+                   <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Rate</span>
                  </button>
               </div>
             )
@@ -381,9 +381,9 @@ export function MovieCard({
               ) : (
                 <div className="flex items-center justify-between w-full">
                   <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">
-                    Mark Watched
+                    Rate
                   </span>
-                  <CheckCircle2 className="w-4.5 h-4.5 shrink-0" />
+                  <Star className="w-4.5 h-4.5 shrink-0" />
                 </div>
               )}
             </div>
