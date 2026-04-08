@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { AnimatePresence } from 'framer-motion';
 import { Sparkles, ChevronDown, History, Star, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
@@ -141,7 +141,7 @@ interface GenerateModalProps {
   onGenerate: (types: ContentType[], genres: string[], model: ModelId, specialInstructions?: string) => void;
 }
 
-function GenerateModal({ open, onClose, onGenerate }: GenerateModalProps) {
+function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [types, setTypes]     = React.useState<ContentType[]>([]);
   const [genres, setGenres]   = React.useState<string[]>([]);
@@ -166,9 +166,9 @@ function GenerateModal({ open, onClose, onGenerate }: GenerateModalProps) {
   const Inner = (
     <>
       <div className="p-5 pb-0 shrink-0">
-        <Title className="text-base font-bold">Generate Recommendations</Title>
+        <Title className="text-base font-bold">Recommend Content</Title>
         <Description className="sr-only">
-          Choose content type, genres, and AI model, then generate personalised recommendations.
+          Choose content type, genres, and AI model, then get personalised recommendations.
         </Description>
       </div>
 
@@ -248,21 +248,11 @@ function GenerateModal({ open, onClose, onGenerate }: GenerateModalProps) {
           className="w-full font-bold gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 border-0 text-white shadow-lg"
         >
           <Sparkles className="w-4 h-4" />
-          Generate
+          Recommend
         </Button>
       </div>
     </>
   );
-
-  if (isDesktop) {
-    return (
-      <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-sm bg-card border-border p-0 flex flex-col max-h-[90vh]">
-          {Inner}
-        </DialogContent>
-      </Dialog>
-    );
-  }
 
   return (
     <Drawer open={open} onOpenChange={(o) => !o && onClose()}>
@@ -287,9 +277,17 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
   const [generatingStatus, setGeneratingStatus]   = React.useState('');
   const [showGenerateModal, setShowGenerateModal] = React.useState(false);
   const [pendingRecs, setPendingRecs]             = React.useState<PendingRecommendation[]>([]);
+  const [isFABCollapsed, setIsFABCollapsed]       = React.useState(false);
   const [bookmarking, setBookmarking]             = React.useState<Set<string>>(new Set());
   const [deleting, setDeleting]                   = React.useState<Set<string>>(new Set());
   const { toast } = useToast();
+
+  const { scrollY } = useScroll();
+
+  useMotionValueEvent(scrollY, "change", (latest) => {
+    if (latest > 50 && !isFABCollapsed) setIsFABCollapsed(true);
+    else if (latest <= 50 && isFABCollapsed) setIsFABCollapsed(false);
+  });
 
   async function fetchHistory(page: number, f: ListFilters) {
     setHistoryLoading(true);
@@ -450,7 +448,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
           <p className="text-sm opacity-80 max-w-sm">
             {isFiltered
               ? 'Try adjusting your filters to see more results.'
-              : 'Hit Generate to get personalised recommendations based on your ratings history.'}
+              : 'Hit Recommend to get personalised recommendations based on your ratings history.'}
           </p>
         </div>
       )}
@@ -475,7 +473,20 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
         <div className="space-y-6">
           <AnimatePresence mode="popLayout">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6">
-              {/* Pending Items */}
+              {/* Initial Skeletons while generating metadata */}
+              {generating && pendingRecs.length === 0 && Array.from({ length: 6 }).map((_, i) => (
+                <div key={`skeleton-${i}`} className="md:col-span-2">
+                  <div className="flex h-32 md:h-40 w-full animate-pulse gap-4 overflow-hidden rounded-xl border border-border bg-card p-3 md:p-4">
+                    <div className="aspect-[2/3] h-full shrink-0 rounded-lg bg-muted" />
+                    <div className="flex flex-1 flex-col justify-center space-y-3">
+                      <div className="h-4 w-3/4 rounded bg-muted" />
+                      <div className="h-4 w-1/2 rounded bg-muted" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              {/* Pending Items (AI titles returned, fetching enrichment) */}
               {pendingRecs.map((pending) => (
                 <div key={pending.tempId} className="md:col-span-2">
                   <MovieCard
@@ -562,24 +573,46 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
         </div>
       )}
 
-      {/* Sticky Generate FAB */}
+      {/* Recommend FAB */}
       <div className="fixed bottom-24 md:bottom-10 right-6 z-40">
-        <button
+        <motion.button
+          layout
           onClick={() => setShowGenerateModal(true)}
           disabled={generating}
-          className="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-70 text-white font-bold px-5 py-3 rounded-full shadow-2xl shadow-purple-500/30 transition-all hover:scale-105 active:scale-95"
+          initial={false}
+          animate={{ 
+            width: isFABCollapsed ? 56 : 'auto',
+            borderRadius: isFABCollapsed ? 28 : 30
+          }}
+          transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+          className="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-70 text-white font-bold h-14 overflow-hidden shadow-2xl shadow-purple-500/30 transition-shadow hover:scale-105 active:scale-95"
+          style={{ paddingLeft: isFABCollapsed ? 0 : 20, paddingRight: isFABCollapsed ? 0 : 20 }}
         >
-          {generating ? (
-            <Star className="w-4 h-4 animate-spin" />
-          ) : (
-            <Sparkles className="w-4 h-4" />
-          )}
-          {generating ? generatingStatus + '...' : 'Generate'}
-        </button>
+          <div className="flex items-center gap-2 px-2">
+            {generating ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <Sparkles className="w-5 h-5 shrink-0" />
+            )}
+            <AnimatePresence mode="popLayout" initial={false}>
+              {!isFABCollapsed && (
+                <motion.span
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                  className="whitespace-nowrap"
+                >
+                  {generating ? generatingStatus + '...' : 'Recommend'}
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </div>
+        </motion.button>
       </div>
 
-      {/* Generate Modal */}
-      <GenerateModal
+      {/* Recommend Modal */}
+      <RecommendModal
         open={showGenerateModal}
         onClose={() => setShowGenerateModal(false)}
         onGenerate={handleGenerate}
