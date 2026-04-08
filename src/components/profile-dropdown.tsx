@@ -29,15 +29,14 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
   const { data: session, status } = useSession();
   const [profiles, setProfiles] = React.useState<Profile[]>(initialProfiles ?? []);
   const [activeProfile, setActiveProfile] = React.useState<Profile | null>(() => {
-    if (!initialProfiles?.length) return null;
-    // Try to restore last active profile from localStorage (client-only, falls back to default)
+    // Restore from localStorage immediately — no fetch needed for initial render
     if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('amdb_last_profile_id');
-      if (saved) {
-        const match = initialProfiles.find((p) => p.id === saved);
-        if (match) return match;
-      }
+      try {
+        const stored = localStorage.getItem('amdb_active_profile');
+        if (stored) return JSON.parse(stored) as Profile;
+      } catch {}
     }
+    if (!initialProfiles?.length) return null;
     return initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0] ?? null;
   });
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
@@ -63,19 +62,24 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
       setProfiles(data);
       const savedId = localStorage.getItem('amdb_last_profile_id');
       const p = data.find((x) => x.id === savedId) ?? data.find((x) => x.isDefault) ?? data[0];
-      setActiveProfile(p);
-      if (onProfileSwitch && p) onProfileSwitch(p);
+      if (p) {
+        setActiveProfile(p);
+        localStorage.setItem('amdb_active_profile', JSON.stringify({ id: p.id, name: p.name, avatarColor: p.avatarColor, isDefault: p.isDefault }));
+        if (onProfileSwitch) onProfileSwitch(p);
+      }
     }
   };
 
-  // Sync activeProfile when parent passes profiles after client fetch
+  // Sync profiles list when parent passes fetched profiles; update stored profile with fresh data
   React.useEffect(() => {
     if (!initialProfiles?.length) return;
     setProfiles(initialProfiles);
-    if (!activeProfile) {
-      const saved = typeof window !== 'undefined' ? localStorage.getItem('amdb_last_profile_id') : null;
-      const resolved = (saved && initialProfiles.find((p) => p.id === saved)) ?? initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0];
-      if (resolved) setActiveProfile(resolved);
+    // Refresh stored profile with latest server data (name/color may have changed)
+    const savedId = localStorage.getItem('amdb_last_profile_id');
+    const resolved = (savedId && initialProfiles.find((p) => p.id === savedId)) ?? initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0];
+    if (resolved) {
+      setActiveProfile(resolved);
+      localStorage.setItem('amdb_active_profile', JSON.stringify({ id: resolved.id, name: resolved.name, avatarColor: resolved.avatarColor, isDefault: resolved.isDefault }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProfiles]);
@@ -114,6 +118,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
   const handleSwitchProfile = (p: Profile) => {
     setActiveProfile(p);
     localStorage.setItem('amdb_last_profile_id', p.id);
+    localStorage.setItem('amdb_active_profile', JSON.stringify({ id: p.id, name: p.name, avatarColor: p.avatarColor, isDefault: p.isDefault }));
     setIsDropdownOpen(false);
     setDropdownView('menu');
     if (onProfileSwitch) onProfileSwitch(p);
