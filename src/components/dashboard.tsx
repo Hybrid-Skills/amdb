@@ -111,24 +111,46 @@ export function Dashboard(_: DashboardProps) {
     setListLoading(false);
   }
 
-  // On mount: fetch profiles + resolve correct profile from localStorage
+  // Track which profileId was already fetched on mount to avoid double-fetch
+  const prefetchedProfileId = React.useRef<string | null>(null);
+
+  // On mount: fire profiles + list in parallel using cookie profileId
   React.useEffect(() => {
+    const cookieProfileId = document.cookie
+      .split('; ')
+      .find((c) => c.startsWith('amdb_profile_id='))
+      ?.split('=')[1] ?? null;
+
+    // Fire both in parallel if cookie exists
+    const listPromise = cookieProfileId ? fetchList(cookieProfileId, 1, filters) : Promise.resolve();
+    if (cookieProfileId) prefetchedProfileId.current = cookieProfileId;
+
     fetch('/api/profiles')
-      .then((r) => r.json())
-      .then((data: Profile[]) => {
+      .then((r) => r.json() as Promise<Profile[]>)
+      .then((data) => {
         setProfiles(data);
-        const saved = localStorage.getItem('amdb_last_profile_id');
-        const resolved = data.find((p) => p.id === saved) ?? data.find((p) => p.isDefault) ?? data[0];
+        const resolved =
+          (cookieProfileId && data.find((p) => p.id === cookieProfileId)) ??
+          data.find((p) => p.isDefault) ??
+          data[0];
         if (resolved) setActiveProfileId(resolved.id);
       })
       .catch(() => setListLoading(false));
+
+    void listPromise;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch list whenever profile or filters change
+  // Fetch list on profile/filter change — skip if already fetched on mount for this profile
   React.useEffect(() => {
     if (!activeProfileId) return;
+    document.cookie = `amdb_profile_id=${activeProfileId}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     localStorage.setItem('amdb_last_profile_id', activeProfileId);
+    // Skip initial fetch if mount already handled this profileId with default filters
+    if (prefetchedProfileId.current === activeProfileId) {
+      prefetchedProfileId.current = null; // only skip once
+      return;
+    }
     fetchList(activeProfileId, 1, filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeProfileId, filters]);
