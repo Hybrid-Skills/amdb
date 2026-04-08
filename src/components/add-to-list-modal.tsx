@@ -147,6 +147,9 @@ export function AddToListModal({
     if (!id) return;
 
     const controller = new AbortController();
+    // Phase 2 sets this to true when it resolves so Phase 1 doesn't overwrite
+    // richer data with an older/incomplete DB record (race condition).
+    let phase2Done = false;
     setLoadingDetails(true);
     setProvidersLoading(true);
 
@@ -155,18 +158,19 @@ export function AddToListModal({
       fetch(`/api/content/${id}?type=${item.contentType}&quick=1`, { signal: controller.signal })
         .then((res) => res.json())
         .then((data) => {
-          if (!data.error) {
+          if (!data.error && !phase2Done) {
             setDetailedItem(data);
-            setLoadingDetails(false); // enough to render modal body
+            setLoadingDetails(false);
           }
         })
         .catch(() => {});
     }
 
-    // Phase 2: Full TMDB data — merges when ready
+    // Phase 2: Full TMDB data — always wins over Phase 1
     fetch(`/api/content/${id}?type=${item.contentType}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {
+        phase2Done = true;
         if (!data.error) {
           setDetailedItem(data);
           setWatchProviders(data.watchProviders ?? null);
