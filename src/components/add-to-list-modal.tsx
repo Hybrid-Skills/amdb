@@ -123,6 +123,8 @@ export function AddToListModal({
   const [providersLoading, setProvidersLoading] = React.useState(false);
   const [checkingExistence, setCheckingExistence] = React.useState(false);
   const [isRecordExisting, setIsRecordExisting] = React.useState(!!initialRating);
+  const [isPlanned, setIsPlanned] = React.useState(false);
+  const [plannedId, setPlannedId] = React.useState<string | null>(null);
   // For edit mode — whether the compact rating summary is in edit state
   const [editingRating, setEditingRating] = React.useState(startInEditMode || !!initialRating);
 
@@ -209,6 +211,10 @@ export function AddToListModal({
           setEditingRating(true);
           setIsRecordExisting(true);
         }
+        if (data.planned) {
+          setIsPlanned(true);
+          setPlannedId(data.plannedId);
+        }
       })
       .catch(() => {})
       .finally(() => { if (!cancelled) setCheckingExistence(false); });
@@ -284,6 +290,21 @@ export function AddToListModal({
       console.error(err);
     } finally {
       setPlanningToWatch(false);
+    }
+  }
+
+  async function handleRemoveFromPlan() {
+    if (!plannedId) return;
+    // Optimistic update — flip state immediately, modal stays open
+    setIsPlanned(false);
+    setPlannedId(null);
+    toast({ title: 'Removed from plan', duration: 1000 });
+    try {
+      await fetch(`/api/watchlist/${plannedId}`, { method: 'DELETE' });
+    } catch {
+      // Revert on failure
+      setIsPlanned(true);
+      setPlannedId(plannedId);
     }
   }
 
@@ -886,16 +907,23 @@ export function AddToListModal({
             <>
               {!isEditing && (
                 <button
-                  onClick={handlePlanToWatch}
+                  onClick={isPlanned ? handleRemoveFromPlan : handlePlanToWatch}
                   disabled={planningToWatch || submitting}
-                  className="flex-1 flex items-center justify-center gap-2 h-11 rounded-xl border border-white/20 bg-white/5 hover:bg-white/10 text-white transition-all disabled:opacity-50"
+                  className={cn(
+                    "flex-1 flex items-center justify-center gap-2 h-11 rounded-xl border transition-all disabled:opacity-50",
+                    isPlanned
+                      ? "border-primary/60 bg-primary/20 text-primary hover:bg-primary/10"
+                      : "border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                  )}
                 >
                   {planningToWatch ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white/40" />
                   ) : (
-                    <Bookmark className="w-4 h-4" />
+                    <Bookmark className={cn("w-4 h-4", isPlanned && "fill-current")} />
                   )}
-                  <span className="text-sm font-bold uppercase tracking-tight">Plan</span>
+                  <span className="text-sm font-bold uppercase tracking-tight">
+                    {isPlanned ? 'Planned' : 'Plan'}
+                  </span>
                 </button>
               )}
               <button

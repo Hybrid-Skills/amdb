@@ -22,11 +22,10 @@ export async function GET(req: Request) {
   });
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // check for existence
+  // Find any UserContent entry (any status) — unique per profileId+contentId
   const existing = await prisma.userContent.findFirst({
     where: {
       profileId,
-      listStatus: 'WATCHED',
       content: {
         OR: [
           ...(tmdbId ? [{ tmdbId: parseInt(tmdbId) }] : []),
@@ -34,16 +33,19 @@ export async function GET(req: Request) {
         ],
       },
     },
-    include: {
-      content: true,
-    },
+    include: { content: true },
   });
 
+  const isWatched = existing?.listStatus === 'WATCHED';
+  const isPlanned = existing?.listStatus === 'PLANNED';
+
   return NextResponse.json({
-    exists: !!existing,
-    userRating: existing?.userRating ?? null,
-    notes: existing?.notes ?? null,
-    watchStatus: existing?.watchStatus ?? null,
+    exists: isWatched,
+    planned: isPlanned,
+    plannedId: isPlanned ? existing!.id : null,
+    userRating: isWatched ? (existing?.userRating ?? null) : null,
+    notes: isWatched ? (existing?.notes ?? null) : null,
+    watchStatus: isWatched ? (existing?.watchStatus ?? null) : null,
     item: existing
       ? {
           ...existing.content,
