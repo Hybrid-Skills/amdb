@@ -40,31 +40,45 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
         : null;
 
       return NextResponse.json({
+        // Identity
         id: stored.id,
         tmdbId: stored.tmdbId,
         malId: stored.malId,
+        imdbId: stored.imdbId,
         contentType: stored.contentType,
+        // Core
         title: stored.title,
         originalTitle: stored.originalTitle,
         year: stored.year,
-        posterUrl: stored.posterUrl,
-        backdropUrl: stored.backdropUrl,
         overview: stored.overview,
         tagline: stored.tagline,
-        genres: stored.genres,
-        genreNames: stored.genreNames,
-        runtimeMins: stored.runtimeMins,
-        episodeRuntime: stored.episodeRuntime,
-        ageCertification: stored.ageCertification,
+        status: stored.status,
+        adult: stored.adult,
+        // Images
+        posterUrl: stored.posterUrl,
+        backdropUrl: stored.backdropUrl,
+        // Ratings
         tmdbRating: stored.tmdbRating,
         tmdbVoteCount: stored.tmdbVoteCount,
-        language: stored.language,
-        revenue: stored.revenue,
-        seasons: stored.seasons,
-        networks: stored.networks,
-        status: stored.status,
         omdbRatings,
         malScore,
+        // Genres (TMDB array format — modal reads g.name)
+        genres: stored.genres,
+        genreNames: stored.genreNames,
+        // Runtime — both DB name and TMDB array format the modal reads
+        runtimeMins: stored.runtimeMins,
+        episode_run_time: stored.episodeRuntime ? [stored.episodeRuntime] : [],
+        // TV metadata — use TMDB field names the modal reads
+        number_of_seasons: stored.seasons,
+        number_of_episodes: stored.episodes,
+        networks: stored.networks,
+        // Languages — stored as raw TMDB spoken_languages array (has english_name)
+        spoken_languages: stored.languages,
+        language: stored.language,
+        // Financials
+        revenue: stored.revenue,
+        // Certification
+        ageCertification: stored.ageCertification,
         _quick: true,
       }, {
         headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' },
