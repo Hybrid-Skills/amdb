@@ -13,9 +13,64 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
   const { tmdbId } = await params;
   const { searchParams } = new URL(req.url);
   const type = (searchParams.get('type') ?? 'MOVIE') as ContentType;
+  const quick = searchParams.get('quick') === '1';
   const id = Number(tmdbId);
 
   try {
+    // ── Quick path: serve from DB only, no TMDB call ─────────────────────────
+    if (quick) {
+      const stored = await prisma.content.findFirst({
+        where: { tmdbId: id },
+        include: { enrichments: { where: { source: { in: ['omdb', 'jikan'] } } } },
+      });
+
+      if (!stored) return NextResponse.json({ error: 'Not in DB' }, { status: 404 });
+
+      const omdbEnrichment = stored.enrichments.find((e) => e.source === 'omdb');
+      const omdbRatings = omdbEnrichment
+        ? ((omdbEnrichment.data as any).Ratings ?? [])
+        : (stored.omdbRatings ?? []);
+
+      const jikanEnrichment = type === 'ANIME'
+        ? stored.enrichments.find((e) => e.source === 'jikan')
+        : null;
+      const malScore = jikanEnrichment
+        ? Number(Number((jikanEnrichment.data as any).score ?? 0).toFixed(1)) || null
+        : null;
+
+      return NextResponse.json({
+        id: stored.id,
+        tmdbId: stored.tmdbId,
+        malId: stored.malId,
+        contentType: stored.contentType,
+        title: stored.title,
+        originalTitle: stored.originalTitle,
+        year: stored.year,
+        posterUrl: stored.posterUrl,
+        backdropUrl: stored.backdropUrl,
+        overview: stored.overview,
+        tagline: stored.tagline,
+        genres: stored.genres,
+        genreNames: stored.genreNames,
+        runtimeMins: stored.runtimeMins,
+        episodeRuntime: stored.episodeRuntime,
+        ageCertification: stored.ageCertification,
+        tmdbRating: stored.tmdbRating,
+        tmdbVoteCount: stored.tmdbVoteCount,
+        language: stored.language,
+        revenue: stored.revenue,
+        seasons: stored.seasons,
+        networks: stored.networks,
+        status: stored.status,
+        omdbRatings,
+        malScore,
+        _quick: true,
+      }, {
+        headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' },
+      });
+    }
+
+    // ── Full path: parallel TMDB + DB ────────────────────────────────────────
     // 1. Parallelize TMDB fetch and internal DB check
     const tmdbPromise =
       type === 'TV_SHOW' || type === 'ANIME'

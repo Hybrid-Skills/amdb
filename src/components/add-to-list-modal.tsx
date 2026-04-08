@@ -132,9 +132,11 @@ export function AddToListModal({
   const isSerial = item?.contentType === 'TV_SHOW' || item?.contentType === 'ANIME';
   const today = new Date();
 
-  // Effect 1: Fetch content details.
-  // Depends on primitive IDs + contentType so it is NOT re-triggered when
-  // ensure() adds item.id (amdbId) to the item object reference.
+  // Effect 1: Fetch content details — two-phase.
+  // Phase 1 (quick): DB-only ~100ms — renders backdrop/overview immediately.
+  // Phase 2 (full):  TMDB call ~500ms — fills in cast, providers, videos.
+  // Both fire in parallel; Phase 1 resolves first and unblocks the modal render.
+  // Depends on primitives so ensure() adding item.id doesn't retrigger.
   React.useEffect(() => {
     if (!item) {
       setDetailedItem(null);
@@ -145,9 +147,23 @@ export function AddToListModal({
     if (!id) return;
 
     const controller = new AbortController();
-
     setLoadingDetails(true);
     setProvidersLoading(true);
+
+    // Phase 1: DB-only fast path (tmdbId content only — malId-only anime skips this)
+    if (item.tmdbId) {
+      fetch(`/api/content/${id}?type=${item.contentType}&quick=1`, { signal: controller.signal })
+        .then((res) => res.json())
+        .then((data) => {
+          if (!data.error) {
+            setDetailedItem(data);
+            setLoadingDetails(false); // enough to render modal body
+          }
+        })
+        .catch(() => {});
+    }
+
+    // Phase 2: Full TMDB data — merges when ready
     fetch(`/api/content/${id}?type=${item.contentType}`, { signal: controller.signal })
       .then((res) => res.json())
       .then((data) => {

@@ -85,6 +85,7 @@ export async function POST(req: Request) {
             ? new Date(details.first_air_date).getFullYear()
             : (year || null),
       posterUrl: tmdbImageUrl(details.poster_path),
+      backdropUrl: tmdbImageUrl(details.backdrop_path, 'w1280'),
       tmdbRating: details.vote_average,
       overview: details.overview,
       ageCertification,
