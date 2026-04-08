@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { prisma } from '@/lib/prisma';
 import { getJikanDetails } from '@/lib/jikan';
+import { buildGenreNames } from '@/lib/genres';
 import type { ContentType } from '@prisma/client';
 
 export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: string }> }) {
@@ -98,16 +99,44 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
         patch.backdropUrl = tmdbImageUrl(raw.backdrop_path, 'w1280');
       if (!storedContent.posterUrl && raw.poster_path)
         patch.posterUrl = tmdbImageUrl(raw.poster_path);
+      if (!storedContent.originalTitle && (raw.original_title ?? raw.original_name))
+        patch.originalTitle = raw.original_title ?? raw.original_name;
       if (!storedContent.overview && raw.overview)
         patch.overview = raw.overview;
       if (!storedContent.tagline && raw.tagline)
         patch.tagline = raw.tagline;
+      if (!storedContent.status && raw.status)
+        patch.status = raw.status;
+      if (!storedContent.imdbId && raw.imdb_id)
+        patch.imdbId = raw.imdb_id;
       if (!storedContent.runtimeMins && raw.runtime)
         patch.runtimeMins = raw.runtime;
       if (!storedContent.episodeRuntime && raw.episode_run_time?.[0])
         patch.episodeRuntime = raw.episode_run_time[0];
       if (!storedContent.tmdbRating && raw.vote_average)
         patch.tmdbRating = Number(raw.vote_average.toFixed(1));
+      if (!storedContent.tmdbVoteCount && raw.vote_count)
+        patch.tmdbVoteCount = raw.vote_count;
+      if (!storedContent.language && raw.spoken_languages?.[0]?.english_name)
+        patch.language = raw.spoken_languages[0].english_name;
+      if (!storedContent.revenue && raw.revenue)
+        patch.revenue = raw.revenue;
+      if (!storedContent.seasons && raw.number_of_seasons)
+        patch.seasons = raw.number_of_seasons;
+      if (!storedContent.episodes && raw.number_of_episodes)
+        patch.episodes = raw.number_of_episodes;
+      // Json fields: check for empty arrays
+      const storedGenres = storedContent.genres as any[];
+      if ((!storedGenres || storedGenres.length === 0) && raw.genres?.length > 0) {
+        patch.genres = raw.genres;
+        patch.genreNames = buildGenreNames(raw.genres);
+      }
+      const storedNetworks = storedContent.networks as any[];
+      if ((!storedNetworks || storedNetworks.length === 0) && raw.networks?.length > 0)
+        patch.networks = raw.networks;
+      const storedLanguages = storedContent.languages as any[];
+      if ((!storedLanguages || storedLanguages.length === 0) && raw.spoken_languages?.length > 0)
+        patch.languages = raw.spoken_languages;
       if (!storedContent.ageCertification) {
         const cert = type === 'TV_SHOW' || type === 'ANIME'
           ? (raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'IN')?.rating

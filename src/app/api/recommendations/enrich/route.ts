@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { generateShortId } from '@/lib/id';
+import { buildGenreNames } from '@/lib/genres';
 import { ContentType } from '@prisma/client';
 
 export async function POST(req: Request) {
@@ -91,6 +92,8 @@ export async function POST(req: Request) {
       ageCertification,
       runtimeMins,
       episodeRuntime,
+      genres: details.genres ?? [],
+      genreNames: buildGenreNames(details.genres),
     };
 
     if (!content) {
