@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Sparkles, ChevronDown, History, Star, Loader2 } from 'lucide-react';
+import { Sparkles, History, Star, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence, useScroll, useMotionValueEvent } from 'framer-motion';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -17,18 +17,7 @@ import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-
 // ─── Types ───────────────────────────────────────────────────────────────────
 // ... (rest of types)
 
-type ModelId =
-  | 'gemma-4-31b-it'
-  | 'gemini-2.5-flash'
-  | 'gemini-3-flash-preview'
-  | 'gemini-3.1-flash-lite-preview';
-
-const AI_MODELS: { id: ModelId; label: string; premium: boolean }[] = [
-  { id: 'gemma-4-31b-it',                label: 'Gemma 4 31B',           premium: false },
-  { id: 'gemini-2.5-flash',              label: 'Gemini 2.5 Flash',      premium: false },
-  { id: 'gemini-3-flash-preview',        label: 'Gemini 3 Flash',        premium: true  },
-  { id: 'gemini-3.1-flash-lite-preview', label: 'Gemini 3.1 Flash Lite', premium: false },
-];
+type ModelId = 'gemini-3.1-flash-lite-preview';
 
 const CONTENT_TYPES: { value: ContentType; label: string }[] = [
   { value: 'MOVIE',   label: 'Movie' },
@@ -78,60 +67,6 @@ interface RecommendationsTabProps {
   refreshTrigger?: number;
 }
 
-// ─── ModelDropdown ────────────────────────────────────────────────────────────
-
-function ModelDropdown({ value, onChange }: { value: ModelId; onChange: (v: ModelId) => void }) {
-  const [open, setOpen] = React.useState(false);
-  const ref = React.useRef<HTMLDivElement>(null);
-  const selected = AI_MODELS.find((m) => m.id === value)!;
-
-  React.useEffect(() => {
-    function handler(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
-
-  return (
-    <div ref={ref} className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="w-full flex items-center justify-between gap-2 bg-background border border-border rounded-lg px-3 py-2 text-sm font-medium text-foreground cursor-pointer hover:border-primary/50 focus:outline-none focus:ring-2 focus:ring-primary/50 transition-colors"
-      >
-        <span className="flex items-center gap-2">
-          {selected.label}
-          {selected.premium && (
-            <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-500 to-orange-500 text-white leading-none">
-              PREMIUM
-            </span>
-          )}
-        </span>
-        <ChevronDown className={`w-3.5 h-3.5 text-muted-foreground transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
-      </button>
-      {open && (
-        <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-lg shadow-xl overflow-hidden">
-          {AI_MODELS.map((m) => (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => { onChange(m.id); setOpen(false); }}
-              className={`w-full flex items-center justify-between px-3 py-2.5 text-sm text-left transition-colors hover:bg-accent ${m.id === value ? 'bg-accent/60 font-semibold' : 'font-medium'}`}
-            >
-              {m.label}
-              {m.premium && (
-                <span className="text-[9px] font-black px-1.5 py-0.5 rounded bg-gradient-to-r from-amber-500 to-orange-500 text-white leading-none shrink-0">
-                  PREMIUM
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ─── GenerateModal ────────────────────────────────────────────────────────────
 
@@ -145,7 +80,7 @@ function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const [types, setTypes]     = React.useState<ContentType[]>([]);
   const [genres, setGenres]   = React.useState<string[]>([]);
-  const [model, setModel]     = React.useState<ModelId>('gemma-4-31b-it');
+  const model: ModelId        = 'gemini-3.1-flash-lite-preview';
   const [specialInstructions, setSpecialInstructions] = React.useState('');
 
   function toggleType(t: ContentType) {
@@ -219,11 +154,6 @@ function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
           </div>
         </div>
 
-        {/* AI Model */}
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">AI Model</p>
-          <ModelDropdown value={model} onChange={setModel} />
-        </div>
 
         {/* Special Instructions */}
         <div className="space-y-2">

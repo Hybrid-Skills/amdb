@@ -8,10 +8,10 @@ import type { ContentType } from '@prisma/client';
 export const maxDuration = 60;
 
 const ALLOWED_MODELS = new Set([
+  'gemini-3.1-flash-lite-preview',
   'gemma-4-31b-it',
   'gemini-2.5-flash',
   'gemini-3-flash-preview',
-  'gemini-3.1-flash-lite-preview',
 ]);
 
 type AllowedModel =
@@ -78,7 +78,7 @@ export async function POST(req: Request) {
 
   const model: AllowedModel = ALLOWED_MODELS.has(requestedModel)
     ? (requestedModel as AllowedModel)
-    : 'gemma-4-31b-it';
+    : 'gemini-3.1-flash-lite-preview';
 
   // contentTypes: ContentType[] — empty array means no filter (any type)
   const selectedTypes: ContentType[] = Array.isArray(contentTypes) && contentTypes.length > 0
