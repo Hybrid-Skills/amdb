@@ -583,7 +583,11 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
             paddingLeft: isFABCollapsed ? 0 : 20,
             paddingRight: isFABCollapsed ? 0 : 20,
           }}
-          transition={{ duration: 0.3, ease: "easeInOut" }}
+          transition={{ 
+            type: "tween", 
+            ease: "easeInOut", 
+            duration: 0.3 
+          }}
           className="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-70 text-white font-bold h-14 rounded-full shadow-2xl shadow-purple-500/30 transition-shadow hover:scale-105 active:scale-95 overflow-hidden"
         >
           <div className="flex items-center gap-2 px-3">
