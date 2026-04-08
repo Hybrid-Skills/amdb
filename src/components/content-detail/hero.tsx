@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { tmdbImageLoader } from '@/lib/tmdb';
 import Image from 'next/image';
 import TmdbImage from '../ui/tmdb-image';
 import Link from 'next/link';

@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import { Input } from './ui/input';
 import { Badge } from './ui/badge';
-import { tmdbImageLoader } from '@/lib/tmdb';
 import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
 
@@ -131,7 +130,7 @@ export function SearchBar({ onSelect, activeType = 'all' }: SearchBarProps) {
                   <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted relative">
                     {result.posterUrl ? (
                       <Image
-                        loader={tmdbImageLoader}
+                        
                         src={result.posterUrl}
                         alt={result.title}
                         fill

@@ -3,7 +3,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import TmdbImage from '../ui/tmdb-image';
 import { PlayCircle } from 'lucide-react';
-import { tmdbImageLoader } from '@/lib/tmdb';
 import { buildContentUrl } from '@/lib/slug';
 import { fetchMovieSimilar, fetchTvSimilar } from '@/lib/content-detail';
 

@@ -7,7 +7,6 @@ import { Star, Tv, Film, Clock, Pencil, Trash2, Bookmark, CheckCircle2, Loader2,
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { buildContentUrl } from '@/lib/slug';
-import { tmdbImageLoader } from '@/lib/tmdb';
 import TmdbImage from './ui/tmdb-image';
 import type { ContentType } from '@prisma/client';
 

@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { ChevronDown, ChevronUp, User } from 'lucide-react';
 import Image from 'next/image';
-import { tmdbImageLoader } from '@/lib/tmdb';
 import { Button } from '../ui/button';
 
 interface Actor {
@@ -65,7 +64,7 @@ export function CastSectionClient({ cast }: { cast: Actor[] }) {
               <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden border border-white/10 mb-2">
                 {actor.profile_path ? (
                   <Image
-                    loader={tmdbImageLoader}
+                    
                     src={actor.profile_path}
                     alt={actor.name}
                     fill

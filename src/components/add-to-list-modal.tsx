@@ -25,7 +25,6 @@ import { buildContentUrl } from '@/lib/slug';
 import { WatchProviders } from './ui/watch-providers';
 import { RatingBadges } from './ui/rating-badges';
 import Image from 'next/image';
-import { tmdbImageLoader } from '@/lib/tmdb';
 
 export interface SearchResult {
   id?: string; // Internal AMDB ID (CUID)
@@ -521,7 +520,7 @@ export function AddToListModal({
           <div className="absolute inset-0 z-0">
             {displayItem.backdropUrl ? (
               <Image
-                loader={tmdbImageLoader}
+                
                 src={displayItem.backdropUrl}
                 alt=""
                 fill
@@ -564,7 +563,7 @@ export function AddToListModal({
             {displayItem.posterUrl && (
               <div className="relative w-24 sm:w-32 aspect-[2/3] rounded-xl shadow-2xl border border-white/10 hidden sm:block overflow-hidden">
                 <Image
-                  loader={tmdbImageLoader}
+                  
                   src={displayItem.posterUrl}
                   alt="Poster"
                   fill
@@ -802,7 +801,7 @@ export function AddToListModal({
                     {actor.profile_path ? (
                       <div className="relative w-full aspect-[2/3] rounded-xl border border-white/10 mb-2 overflow-hidden">
                         <Image
-                          loader={tmdbImageLoader}
+                          
                           src={actor.profile_path}
                           alt={actor.name}
                           fill
@@ -868,7 +867,7 @@ export function AddToListModal({
                       <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 relative">
                         {s.poster_path || s.images?.jpg?.large_image_url ? (
                           <Image
-                            loader={s.poster_path ? tmdbImageLoader : undefined}
+
                             src={s.poster_path || s.images.jpg.large_image_url}
                             alt={simTitle}
                             fill
