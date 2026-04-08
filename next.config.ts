@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
     // Match TMDB size buckets so Next.js picks the right source size
     deviceSizes: [342, 500, 780, 1280],
     imageSizes: [92, 154, 185],
-    minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days — posters don't change
+    minimumCacheTTL: 60 * 60 * 24 * 365, // 1 year — posters don't change
     remotePatterns: [
       {
         protocol: 'https',
