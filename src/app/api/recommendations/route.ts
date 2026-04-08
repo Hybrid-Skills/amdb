@@ -106,7 +106,7 @@ export async function POST(req: Request) {
       ? 'movie, TV show, or anime'
       : selectedTypes.map((t) => t === 'TV_SHOW' ? 'TV show' : t === 'MOVIE' ? 'movie' : 'anime').join(' or ');
 
-    const prompt = `You are a movie recommendation engine. Output ONLY valid JSON. No reasoning, no explanations, no markdown — just the raw JSON array.
+    const prompt = `You are a movie recommendation engine. Output ONLY valid JSON. 
 
 Highly rated by user: ${highRated.map((i) => i.content.title).join(', ')}.
 Disliked by user: ${lowerRated.map((i) => i.content.title).join(', ')}.
@@ -114,15 +114,21 @@ Genres: ${genres?.join(', ') || 'Any'}.
 Already seen / excluded: ${exclusionList}.
 ${specialInstructions ? `Special instructions: ${specialInstructions}` : ''}
 
-Task: Suggest exactly 6 ${typeLabel} titles the user has NOT seen.
+Task: Suggest exactly 6 ${typeLabel} titles the user has NOT seen. 
+
+CRITICAL RULES:
+- TITLES MUST BE REAL: Do not suggest placeholders like "(", " ", or empty strings.
+- NO DUPLICATES: Do not suggest titles from the "Already seen" list.
+- CLEAN REASONS: Start directly with the reason. Do not prefix with "reasons:" or "Matches because...".
+- FULL JSON: Ensure the JSON array is complete and valid.
 
 Return a JSON array of exactly 6 objects. Each object must have:
 - "title": string
 - "year": number
 - "reason": string (max 2 sentences, concise)
-- "label": string (pick ONE from: UNDERRATED, CRITICALLY_ACCLAIMED, AWARD_WINNING, FAN_FAVORITE, CULT_CLASSIC, VISUAL_SPECTACLE, IMMERSIVE_SOUND, TECHNICAL_MASTERY, DIRECTORIAL_DEBUT, GENRE_DEFINING — max 2 titles sharing the same label)
+- "label": string (pick ONE from: UNDERRATED, CRITICALLY_ACCLAIMED, AWARD_WINNING, FAN_FAVORITE, CULT_CLASSIC, VISUAL_SPECTACLE, IMMERSIVE_SOUND, TECHNICAL_MASTERY, DIRECTORIAL_DEBUT, GENRE_DEFINING)
 
-Your entire response must be the JSON array. Start your response with [ and end with ].`;
+Start your response with [ and end with ].`;
 
     // 2. Start AI generation
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
@@ -143,7 +149,17 @@ Your entire response must be the JSON array. Start your response with [ and end 
     // 3. Robust JSON extraction
     const cleanedJson = extractJson(contentText);
     const recs: { title: string; year: number; reason: string; label: string }[] = JSON.parse(cleanedJson);
-    const finalRecsList = Array.isArray(recs) ? recs : (recs as any).recommendations || [];
+    const rawRecsList = Array.isArray(recs) ? recs : (recs as any).recommendations || [];
+
+    // 4. Sanity Check + Cleaning
+    const finalRecsList = rawRecsList
+      .filter((r: any) => r && r.title && r.title.trim().length >= 2) // Filter out blanks or placeholders like "("
+      .map((r: any) => ({
+        ...r,
+        title: r.title.trim(),
+        // Clean up common AI reasoning garbage: "reasons: ", "This matches because...", "Matches: "
+        reason: r.reason.replace(/^(reasons:\s*|matches because:\s*|matches:\s*|this matches because:\s*)/i, '').trim()
+      }));
 
     // Return raw suggestions for client-side enrichment
     return NextResponse.json({ recommendations: finalRecsList, debug: { rawResponse: contentText } });
