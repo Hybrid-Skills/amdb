@@ -240,7 +240,17 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
         );
         if (omdbRes.ok) {
           const omdbData = await omdbRes.json();
-          if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
+          if (omdbData.Ratings) {
+            omdbRatings = omdbData.Ratings;
+            // Persist to DB if we have a record to attach it to
+            if (storedContent?.id) {
+              await prisma.contentEnrichment.upsert({
+                where: { contentId_source: { contentId: storedContent.id, source: 'omdb' } },
+                update: { data: omdbData },
+                create: { contentId: storedContent.id, source: 'omdb', data: omdbData },
+              }).catch(e => console.error('Failed to persist OMDB data in API:', e));
+            }
+          }
         }
       } catch (e) {
         console.error('OMDB fetch error in detail API:', e);

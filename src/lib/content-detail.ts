@@ -179,7 +179,15 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
       );
       if (omdbRes.ok) {
         const omdbData = await omdbRes.json();
-        if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
+        if (omdbData.Ratings) {
+          omdbRatings = omdbData.Ratings;
+          // Persist to DB to save quota
+          await prisma.contentEnrichment.upsert({
+            where: { contentId_source: { contentId: id, source: 'omdb' } },
+            update: { data: omdbData },
+            create: { contentId: id, source: 'omdb', data: omdbData },
+          }).catch(e => console.error('Failed to persist OMDB data:', e));
+        }
       }
     } catch (e) {
       console.error('OMDB fetch error:', e);
@@ -336,7 +344,15 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
       );
       if (omdbRes.ok) {
         const omdbData = await omdbRes.json();
-        if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
+        if (omdbData.Ratings) {
+          omdbRatings = omdbData.Ratings;
+          // Persist to DB to save quota
+          await prisma.contentEnrichment.upsert({
+            where: { contentId_source: { contentId: id, source: 'omdb' } },
+            update: { data: omdbData },
+            create: { contentId: id, source: 'omdb', data: omdbData },
+          }).catch(e => console.error('Failed to persist OMDB data:', e));
+        }
       }
     } catch (e) {
       console.error('OMDB fetch error:', e);
@@ -498,7 +514,15 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
       );
       if (omdbRes.ok) {
         const omdbData = await omdbRes.json();
-        if (omdbData.Ratings) omdbRatings = omdbData.Ratings;
+        if (omdbData.Ratings) {
+          omdbRatings = omdbData.Ratings;
+          // Persist to DB to save quota
+          await prisma.contentEnrichment.upsert({
+            where: { contentId_source: { contentId: id, source: 'omdb' } },
+            update: { data: omdbData },
+            create: { contentId: id, source: 'omdb', data: omdbData },
+          }).catch(e => console.error('Failed to persist OMDB data:', e));
+        }
       }
     } catch (e) {
       console.error('OMDB fetch error:', e);

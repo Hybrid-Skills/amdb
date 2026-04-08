@@ -47,11 +47,12 @@ function extractJson(text: string) {
   }
 
   // 2. Fallback: find the last JSON array of objects (starts with [{ or [ {)
-  // Use lastIndexOf to skip any label-list notation like [UNDERRATED, ...] in thinking text
-  const lastArrayStart = text.lastIndexOf('[');
+  // We look for [{ because the AI often lists labels in brackets [LIKE_THIS, ...] 
+  // before the actual JSON, which breaks the parser if we just look for '['.
+  const arrayStart = text.indexOf('[{');
   const lastArrayEnd = text.lastIndexOf(']');
-  if (lastArrayStart !== -1 && lastArrayEnd > lastArrayStart) {
-    return text.substring(lastArrayStart, lastArrayEnd + 1).trim();
+  if (arrayStart !== -1 && lastArrayEnd > arrayStart) {
+    return text.substring(arrayStart, lastArrayEnd + 1).trim();
   }
 
   return text.trim();
