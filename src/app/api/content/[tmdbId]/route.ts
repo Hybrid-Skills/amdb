@@ -89,7 +89,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
     const [raw, storedContent] = await Promise.all([tmdbPromise, prismaPromise]);
 
     // Backfill any null fields on old DB records using fresh TMDB data.
-    // Fire-and-forget so it doesn't delay the response.
+    // Awaited (not fire-and-forget) — serverless runtimes kill promises after
+    // the response is sent, so fire-and-forget never completes on Vercel.
+    // The TMDB fetch already dominates latency, so a small DB write adds ~20ms.
     if (storedContent) {
       const patch: Record<string, any> = {};
       if (!storedContent.backdropUrl && raw.backdrop_path)
@@ -119,7 +121,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
         if (cert) patch.ageCertification = cert;
       }
       if (Object.keys(patch).length > 0) {
-        prisma.content.update({ where: { id: storedContent.id }, data: patch }).catch(() => {});
+        await prisma.content.update({ where: { id: storedContent.id }, data: patch });
       }
     }
 
