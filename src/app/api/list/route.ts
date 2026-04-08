@@ -109,28 +109,53 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.userContent.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        userRating: true,
+        watchStatus: true,
+        notes: true,
+        addedAt: true,
         content: {
-          include: {
+          select: {
+            id: true,
+            title: true,
+            year: true,
+            posterUrl: true,
+            backdropUrl: true,
+            tagline: true,
+            genres: true,
+            tmdbRating: true,
+            contentType: true,
+            adult: true,
+            revenue: true,
+            languages: true,
+            seasons: true,
+            episodes: true,
+            networks: true,
+            episodeRuntime: true,
+            runtimeMins: true,
+            ageCertification: true,
+            tmdbId: true,
+            malId: true,
             enrichments: {
               where: { source: 'omdb' },
+              select: { data: true },
               take: 1,
             },
           },
         },
       },
-      relationLoadStrategy: 'join',
       orderBy,
       skip: (page - 1) * limit,
       take: limit,
-    } as any),
+    }),
     prisma.userContent.count({ where }),
   ]);
 
   // Flatten omdb ratings into content for convenience
-  const formatted = (items as any[]).map((item) => {
+  const formatted = items.map((item) => {
     const omdb = item.content?.enrichments?.[0]?.data as Record<string, any> | undefined;
-    const { enrichments: _, ...contentRest } = item.content as any;
+    const { enrichments: _, ...contentRest } = item.content;
     return {
       ...item,
       content: {

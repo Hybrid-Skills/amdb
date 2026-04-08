@@ -443,7 +443,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
 
   return (
     <div className="relative space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <ListFilterBar filters={filters} onChange={setFilters} total={historyTotal} />
+      <ListFilterBar filters={filters} onChange={setFilters} total={historyTotal} hideUserRating />
 
       {/* Empty state */}
       {!historyLoading && !generating && historyItems.length === 0 && (

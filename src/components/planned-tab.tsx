@@ -102,7 +102,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
   if (loading && page === 1) {
     return (
       <div className="space-y-4">
-        <ListFilterBar filters={filters} onChange={setFilters} total={total} />
+        <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {Array.from({ length: 12 }).map((_, i) => (
             <div key={i} className="rounded-xl bg-muted animate-pulse overflow-hidden">
@@ -120,7 +120,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
-      <ListFilterBar filters={filters} onChange={setFilters} total={total} />
+      <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
 
       {items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center select-none text-muted-foreground">

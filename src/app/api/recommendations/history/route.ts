@@ -35,21 +35,17 @@ export async function GET(req: Request) {
     where.content.contentType = contentType;
   }
 
-  // Rating filter (using tmdbRating for recommendations)
-  where.content.tmdbRating = {
-    gte: minRating,
-    lte: maxRating,
-  };
+  // Rating filter — only apply when not the default full range, to avoid excluding null-rated items
+  if (minRating > 1 || maxRating < 10) {
+    where.content.tmdbRating = { gte: minRating, lte: maxRating };
+  }
 
-  // Genre filtering (AND logic)
+  // Genre filtering — genreNames is pipe-delimited e.g. |Action|Drama|
   if (genres.length > 0) {
     where.AND = genres.map(genre => ({
       content: {
-        genreNames: {
-          contains: genre,
-          mode: 'insensitive'
-        }
-      }
+        genreNames: { contains: `|${genre.trim()}|` },
+      },
     }));
   }
 

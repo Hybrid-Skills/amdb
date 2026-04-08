@@ -74,9 +74,10 @@ interface ListFilterBarProps {
   filters: ListFilters;
   onChange: (filters: ListFilters) => void;
   total: number;
+  hideUserRating?: boolean;
 }
 
-export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) {
+export function ListFilterBar({ filters, onChange, total, hideUserRating = false }: ListFilterBarProps) {
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [sortOpen, setSortOpen] = React.useState(false);
   const popoverRef = React.useRef<HTMLDivElement>(null);
@@ -135,7 +136,8 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const currentSort = SORT_OPTIONS.find((o) => o.value === filters.sortBy)!;
+  const sortOptions = hideUserRating ? SORT_OPTIONS.filter((o) => o.value !== 'userRating') : SORT_OPTIONS;
+  const currentSort = sortOptions.find((o) => o.value === filters.sortBy) ?? sortOptions[0];;
 
   return (
     <div className="flex flex-col gap-3 relative z-30">
@@ -187,7 +189,7 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
                   className="absolute right-0 top-full mt-1 z-[200] min-w-[170px]"
                 >
                   <GlassPanel className="rounded-xl">
-                    {SORT_OPTIONS.map((opt) => (
+                    {sortOptions.map((opt) => (
                       <button
                         key={opt.value}
                         onClick={() => {
@@ -268,51 +270,49 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
                       )}
                     </div>
 
-                    {/* My Rating range */}
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                        My Rating
-                      </p>
-                      <div className="flex items-center gap-2">
-                        <select
-                          value={filters.minRating}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            onChange({
-                              ...filters,
-                              minRating: val,
-                              maxRating: Math.max(val, filters.maxRating),
-                            });
-                          }}
-                          className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                        >
-                          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                            <option key={n} value={n}>
-                              {n}
-                            </option>
-                          ))}
-                        </select>
-                        <span className="text-muted-foreground text-sm">to</span>
-                        <select
-                          value={filters.maxRating}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            onChange({
-                              ...filters,
-                              maxRating: val,
-                              minRating: Math.min(val, filters.minRating),
-                            });
-                          }}
-                          className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                        >
-                          {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                            <option key={n} value={n}>
-                              {n}
-                            </option>
-                          ))}
-                        </select>
+                    {/* My Rating range — hidden on tabs where items have no user rating */}
+                    {!hideUserRating && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          My Rating
+                        </p>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={filters.minRating}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              onChange({
+                                ...filters,
+                                minRating: val,
+                                maxRating: Math.max(val, filters.maxRating),
+                              });
+                            }}
+                            className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                          >
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                          <span className="text-muted-foreground text-sm">to</span>
+                          <select
+                            value={filters.maxRating}
+                            onChange={(e) => {
+                              const val = Number(e.target.value);
+                              onChange({
+                                ...filters,
+                                maxRating: val,
+                                minRating: Math.min(val, filters.minRating),
+                              });
+                            }}
+                            className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
+                          >
+                            {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                        </div>
                       </div>
-                    </div>
+                    )}
 
                     {/* Watch Status */}
                     <div className="space-y-2">
@@ -365,7 +365,7 @@ export function ListFilterBar({ filters, onChange, total }: ListFilterBarProps) 
           <span>
             {total} result{total !== 1 ? 's' : ''}
           </span>
-          {(filters.minRating > 1 || filters.maxRating < 10) && (
+          {!hideUserRating && (filters.minRating > 1 || filters.maxRating < 10) && (
             <Chip
               label={`Rating ${filters.minRating}–${filters.maxRating}`}
               onRemove={() => onChange({ ...filters, minRating: 1, maxRating: 10 })}
