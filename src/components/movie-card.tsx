@@ -313,35 +313,35 @@ export function MovieCard({
             {recommendationReason && (
               <p className={cn(
                 "text-[12px] text-muted-foreground/90 italic leading-snug",
-                isHorizontal ? "line-clamp-4" : "line-clamp-2"
+                isHorizontal ? "line-clamp-5" : "line-clamp-2"
               )}>
                 {recommendationReason}
               </p>
             )}
           </div>
-
+ 
           {/* Bottom Action Area (Always flush) */}
           {isHorizontal ? (
             isEnriching ? (
-              <div className="flex items-center justify-center gap-2 px-2 py-2.5 bg-secondary/5 border-t border-border shrink-0 min-h-[44px] animate-pulse">
-                <Loader2 className="w-3.5 h-3.5 animate-spin text-muted-foreground" />
+              <div className="flex items-center justify-center gap-2 px-2 py-1.5 bg-secondary/5 border-t border-border shrink-0 min-h-[36px] animate-pulse">
+                <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
                 <span className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">Fetching details...</span>
               </div>
             ) : (
-              <div className="flex items-stretch border-t border-border shrink-0 min-h-[44px]">
+              <div className="flex items-stretch border-t border-border shrink-0 min-h-[36px]">
                  <button 
                    onClick={(e) => { e.stopPropagation(); onSecondaryAction?.(); }}
                    disabled={isSecondaryLoading}
-                   className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary min-w-0"
+                   className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary min-w-0"
                  >
-                   {isSecondaryLoading ? <Loader2 className="w-4.5 h-4.5 animate-spin"/> : <Bookmark className="w-4.5 h-4.5"/>}
+                   {isSecondaryLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Bookmark className="w-3.5 h-3.5"/>}
                    <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Plan</span>
                  </button>
                  <button 
                    onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }} 
-                   className="flex-1 flex items-center justify-center gap-2 px-2 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all min-w-0"
+                   className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all min-w-0"
                  >
-                   <Star className="w-4.5 h-4.5"/>
+                   <Star className="w-3.5 h-3.5"/>
                    <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Rate</span>
                  </button>
               </div>
