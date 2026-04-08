@@ -579,33 +579,38 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
           onClick={() => setShowGenerateModal(true)}
           disabled={generating}
           animate={{ 
-            width: isFABCollapsed ? 56 : 'auto',
-            paddingLeft: isFABCollapsed ? 0 : 20,
-            paddingRight: isFABCollapsed ? 0 : 20,
+            width: isFABCollapsed ? 56 : (generating ? 200 : 160),
+            paddingLeft: isFABCollapsed ? 0 : 16,
+            paddingRight: isFABCollapsed ? 0 : 16,
           }}
           transition={{ 
             type: "tween", 
-            ease: "easeInOut", 
+            ease: [0.4, 0, 0.2, 1], 
             duration: 0.3 
           }}
           className="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-70 text-white font-bold h-14 rounded-full shadow-2xl shadow-purple-500/30 transition-shadow hover:scale-105 active:scale-95 overflow-hidden"
         >
-          <div className="flex items-center gap-2 px-3">
+          <div className="flex items-center justify-center gap-2">
             {generating ? (
-              <Loader2 className="w-5 h-5 animate-spin" />
+              <Loader2 className="w-5 h-5 animate-spin shrink-0" />
             ) : (
               <Sparkles className="w-5 h-5 shrink-0" />
             )}
-            {!isFABCollapsed && (
-              <motion.span
-                initial={{ opacity: 0, width: 0 }}
-                animate={{ opacity: 1, width: 'auto' }}
-                exit={{ opacity: 0, width: 0 }}
-                className="whitespace-nowrap overflow-hidden"
-              >
-                {generating ? generatingStatus + '...' : 'Recommend'}
-              </motion.span>
-            )}
+            <motion.span
+              animate={{ 
+                width: isFABCollapsed ? 0 : "auto",
+                opacity: isFABCollapsed ? 0 : 1,
+                marginLeft: isFABCollapsed ? 0 : 8
+              }}
+              transition={{ 
+                type: "tween", 
+                ease: [0.4, 0, 0.2, 1], 
+                duration: 0.3 
+              }}
+              className="whitespace-nowrap overflow-hidden"
+            >
+              {generating ? generatingStatus + '...' : 'Recommend'}
+            </motion.span>
           </div>
         </motion.button>
       </div>
