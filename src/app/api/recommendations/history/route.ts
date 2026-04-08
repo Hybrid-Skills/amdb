@@ -10,6 +10,11 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const profileId = searchParams.get('profileId');
   const contentType = searchParams.get('contentType');
+  const sortBy = searchParams.get('sortBy') || 'addedAt';
+  const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+  const minRating = Number(searchParams.get('minRating') || '1');
+  const maxRating = Number(searchParams.get('maxRating') || '10');
+  const genres = searchParams.get('genres')?.split(',').filter(Boolean) || [];
   const page  = Math.max(1, Number(searchParams.get('page') ?? '1'));
   const limit = 18;
 
@@ -20,21 +25,57 @@ export async function GET(req: Request) {
   });
   if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  const where: any = { profileId, listStatus: 'RECOMMENDED' };
+  const where: any = { 
+    profileId, 
+    listStatus: 'RECOMMENDED',
+    content: {}
+  };
+
   if (contentType && contentType !== 'ALL') {
-    where.content = { contentType };
+    where.content.contentType = contentType;
+  }
+
+  // Rating filter (using tmdbRating for recommendations)
+  where.content.tmdbRating = {
+    gte: minRating,
+    lte: maxRating,
+  };
+
+  // Genre filtering (AND logic)
+  if (genres.length > 0) {
+    where.AND = genres.map(genre => ({
+      content: {
+        genreNames: {
+          contains: genre,
+          mode: 'insensitive'
+        }
+      }
+    }));
+  }
+
+  // Determine order by
+  let orderBy: any = { addedAt: sortOrder };
+  if (sortBy === 'userRating') {
+    orderBy = { userRating: sortOrder };
+  } else if (sortBy === 'tmdbRating') {
+    orderBy = { content: { tmdbRating: sortOrder } };
+  } else if (sortBy === 'title') {
+    orderBy = { content: { title: sortOrder } };
+  } else if (sortBy === 'year') {
+    orderBy = { content: { year: sortOrder } };
   }
 
   const [items, total] = await Promise.all([
     prisma.userContent.findMany({
       where,
-      orderBy: { addedAt: 'desc' },
+      orderBy,
       skip: (page - 1) * limit,
       take: limit,
       select: {
         id: true,
         listStatus: true,
         addedAt: true,
+        userRating: true,
         recommendationReason: true,
         recommendationLabel: true,
         content: {
@@ -54,7 +95,7 @@ export async function GET(req: Request) {
         },
       },
     }),
-    prisma.userContent.count({ where: { profileId, listStatus: 'RECOMMENDED' } }),
+    prisma.userContent.count({ where }),
   ]);
 
   // Normalise shape: rename addedAt → createdAt for UI consistency

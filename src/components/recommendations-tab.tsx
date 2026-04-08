@@ -297,8 +297,13 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
       const params = new URLSearchParams({
         profileId,
         page: String(page),
+        sortBy: f.sortBy,
+        sortOrder: f.sortOrder,
+        minRating: String(f.minRating),
+        maxRating: String(f.maxRating),
       });
       if (f.contentType !== 'ALL') params.set('contentType', f.contentType);
+      if (f.genres.length > 0) params.set('genres', f.genres.join(','));
       
       const res = await fetch(`/api/recommendations/history?${params}`);
       const data = await res.json();
