@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, User, Plus, Check, X, LogOut } from 'lucide-react';
-import { useSession, signIn, signOut } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import type { Profile } from './profile-selector';
@@ -26,7 +26,6 @@ interface ProfileDropdownProps {
 }
 
 export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }: ProfileDropdownProps) {
-  const { data: session, status } = useSession();
   const [profiles, setProfiles] = React.useState<Profile[]>(initialProfiles ?? []);
   const [activeProfile, setActiveProfile] = React.useState<Profile | null>(() => {
     // Restore from localStorage immediately — no fetch needed for initial render
@@ -84,11 +83,6 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProfiles]);
 
-  React.useEffect(() => {
-    // Only fetch when session first becomes authenticated without pre-loaded data.
-    if (status === 'authenticated' && profiles.length === 0) refreshProfiles();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status]);
 
   React.useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -141,22 +135,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
     setIsAdding(false);
   };
 
-  if (status === 'unauthenticated') {
-    return (
-      <button
-        onClick={() => signIn()}
-        className={cn(
-          'px-4 py-1.5 text-xs font-black uppercase tracking-widest bg-black/40 hover:bg-white/10 backdrop-blur-md border border-white/10 rounded-full transition-all hover:scale-105 active:scale-95 shadow-xl flex items-center gap-2',
-          className,
-        )}
-      >
-        <div className="w-1.5 h-1.5 rounded-full bg-white/20" />
-        Sign In
-      </button>
-    );
-  }
-
-  // Session loading or profiles not yet fetched — show skeleton avatar
+  // Profiles not yet fetched — show skeleton avatar
   if (!activeProfile) {
     return (
       <div className={cn('flex items-center gap-2 p-1 pr-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-xl', className)}>
@@ -209,7 +188,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
                       </span>
                     </div>
                     <p className="text-[10px] text-white/20 truncate">
-                      {session?.user?.email ?? 'Logged In'}
+                      {'Logged In'}
                     </p>
                   </div>
                 </div>
