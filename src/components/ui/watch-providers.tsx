@@ -45,7 +45,7 @@ export function WatchProviders({ providers, title, className }: WatchProvidersPr
         )}
 
         {hasFlatrate &&
-          uniqueProviders(providers.flatrate.filter((p: any) => p.logo_path))
+          uniqueProviders((providers.flatrate ?? []).filter((p: any) => p.logo_path))
             .slice(0, 10)
             .map((p: any) => {
               const searchUrl = getProviderSearchUrl(p.provider_name, title, providers.link!);

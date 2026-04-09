@@ -149,10 +149,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
         patch.genreNames = buildGenreNames(raw.genres);
       }
       const storedNetworks = storedContent.networks as any[];
-      if ((!storedNetworks || storedNetworks.length === 0) && raw.networks?.length > 0)
+      if ((!storedNetworks || storedNetworks.length === 0) && (raw.networks?.length ?? 0) > 0)
         patch.networks = raw.networks;
       const storedLanguages = storedContent.languages as any[];
-      if ((!storedLanguages || storedLanguages.length === 0) && raw.spoken_languages?.length > 0)
+      if ((!storedLanguages || storedLanguages.length === 0) && (raw.spoken_languages?.length ?? 0) > 0)
         patch.languages = raw.spoken_languages;
       if (!storedContent.ageCertification) {
         const cert = type === 'TV_SHOW' || type === 'ANIME'
