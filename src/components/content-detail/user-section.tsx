@@ -6,7 +6,7 @@ import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ContentDetail } from '@/lib/content-detail';
 import { AddToListModal } from '@/components/add-to-list-modal';
-import { RatingPicker } from '@/components/rating-picker';
+import { RatingPicker, RATING_LABELS, ratingColor } from '@/components/rating-picker';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   Dialog,
@@ -154,6 +154,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   const [signInOpen, setSignInOpen] = React.useState(false);
   const [planLoading, setPlanLoading] = React.useState(false);
   const [pendingRating, setPendingRating] = React.useState<number | null>(null);
+  const [activeRating, setActiveRating] = React.useState<number | null>(null);
 
   // Resolve profile from cookie
   const profileId = React.useMemo(() => {
@@ -270,7 +271,15 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   return (
     <>
       <section>
-        <SectionTitle>Your Rating</SectionTitle>
+        <div className="flex items-center gap-3 mb-4">
+          <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
+            <span className="w-1 h-5 rounded-full bg-primary inline-block" />
+            Your Rating
+          </h2>
+          {(userState === 'new' || userState === 'planned') && (
+            <span className="text-sm text-white/30 font-medium">Not rated yet</span>
+          )}
+        </div>
 
         <AnimatePresence mode="wait">
           {userState === 'loading' && (
@@ -293,11 +302,26 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-3"
             >
+              <div className="hidden md:block h-5">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={activeRating ?? 'idle'}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    className="text-sm font-bold"
+                    style={{ color: activeRating ? ratingColor(activeRating) : 'rgb(113,113,122)' }}
+                  >
+                    {activeRating ? RATING_LABELS[activeRating] : 'Select a rating'}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
               <RatingPicker
                 value={null}
                 onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
+                onActiveRating={setActiveRating}
               />
               <div className="hidden md:flex gap-3 flex-wrap">
                 <button
@@ -318,11 +342,26 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col gap-4"
+              className="flex flex-col gap-3"
             >
+              <div className="hidden md:block h-5">
+                <AnimatePresence mode="wait">
+                  <motion.span
+                    key={activeRating ?? 'idle'}
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 4 }}
+                    className="text-sm font-bold"
+                    style={{ color: activeRating ? ratingColor(activeRating) : 'rgb(113,113,122)' }}
+                  >
+                    {activeRating ? RATING_LABELS[activeRating] : 'Select a rating'}
+                  </motion.span>
+                </AnimatePresence>
+              </div>
               <RatingPicker
                 value={null}
                 onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
+                onActiveRating={setActiveRating}
               />
               <div className="hidden md:flex gap-3 flex-wrap items-center">
                 <button

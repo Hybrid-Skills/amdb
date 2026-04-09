@@ -10,7 +10,7 @@ interface RatingPickerProps {
   onActiveRating?: (rating: number | null) => void;
 }
 
-const RATING_LABELS: Record<number, string> = {
+export const RATING_LABELS: Record<number, string> = {
   1: 'Unwatchable',
   2: 'Terrible',
   3: 'Bad',
@@ -23,7 +23,7 @@ const RATING_LABELS: Record<number, string> = {
   10: 'Masterpiece',
 };
 
-function ratingColor(r: number): string {
+export function ratingColor(r: number): string {
   if (r <= 3) return 'rgb(239,68,68)';
   if (r <= 5) return 'rgb(249,115,22)';
   if (r <= 7) return 'rgb(234,179,8)';
