@@ -211,7 +211,7 @@ export function Dashboard(_: DashboardProps) {
           <div className="flex items-center justify-between gap-4">
             {/* Logo & Brand */}
             <div className="flex items-center gap-2.5 shrink-0">
-              <div className="w-8 h-8 rounded-lg overflow-hidden bg-white/5 border border-white/10 shadow-lg">
+              <div className="w-8 h-8 rounded-lg overflow-hidden">
                 <Image
                   src="/logo.avif"
                   alt="AMDB"
