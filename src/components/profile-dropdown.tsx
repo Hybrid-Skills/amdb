@@ -59,6 +59,20 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
       setActiveProfile(stored);
     } else if (initialProfiles?.length) {
       setActiveProfile(initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0]);
+    } else {
+      // No cookie and no initialProfiles (e.g. detail page after sign-in redirect)
+      // Self-bootstrap by fetching profiles
+      fetch('/api/profiles')
+        .then((r) => r.ok ? r.json() : null)
+        .then((data: Profile[] | null) => {
+          if (!data?.length) return;
+          const p = data.find((x) => x.isDefault) ?? data[0];
+          setProfiles(data);
+          setActiveProfile(p);
+          writeProfileCookie(p);
+          if (onProfileSwitch) onProfileSwitch(p);
+        })
+        .catch(() => {});
     }
     setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
   }, [initialProfiles]);
