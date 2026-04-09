@@ -21,7 +21,12 @@ export async function GET() {
 
   const profiles = await prisma.profile.findMany({
     where: { userId: session.user.id },
-    include: { _count: { select: { userContent: true } } },
+    select: {
+      id: true,
+      name: true,
+      avatarColor: true,
+      isDefault: true,
+    },
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
   });
 
