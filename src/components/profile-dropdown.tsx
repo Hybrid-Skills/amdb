@@ -44,36 +44,35 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
 
   React.useEffect(() => {
     setMounted(true);
-    // Only restore from localStorage if a valid NextAuth session cookie exists.
-    // If not, clear stale profile data left over from a previous session.
-    const hasSession = document.cookie.split('; ').some(
-      (c) => c.startsWith('next-auth.session-token=') || c.startsWith('__Secure-next-auth.session-token=')
-    );
-    if (!hasSession) {
-      clearProfileCookie();
-      setIsSignedOut(true);
-      return;
-    }
     const stored = readProfileCookie();
     if (stored) {
+      // Fast path: cookie present, render immediately
       setActiveProfile(stored);
-    } else if (initialProfiles?.length) {
-      setActiveProfile(initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0]);
-    } else {
-      // No cookie and no initialProfiles (e.g. detail page after sign-in redirect)
-      // Self-bootstrap by fetching profiles
-      fetch('/api/profiles')
-        .then((r) => r.ok ? r.json() : null)
-        .then((data: Profile[] | null) => {
-          if (!data?.length) return;
-          const p = data.find((x) => x.isDefault) ?? data[0];
-          setProfiles(data);
-          setActiveProfile(p);
-          writeProfileCookie(p);
-          if (onProfileSwitch) onProfileSwitch(p);
-        })
-        .catch(() => {});
+      setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
+      return;
     }
+    if (initialProfiles?.length) {
+      const p = initialProfiles.find((x) => x.isDefault) ?? initialProfiles[0];
+      setActiveProfile(p);
+      writeProfileCookie(p);
+      setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
+      return;
+    }
+    // No cookie, no initialProfiles — ask the server (handles post-sign-in redirect on detail page)
+    fetch('/api/profiles')
+      .then((r) => {
+        if (r.status === 401) { clearProfileCookie(); setIsSignedOut(true); return null; }
+        return r.ok ? r.json() : null;
+      })
+      .then((data: Profile[] | null) => {
+        if (!data?.length) { setIsSignedOut(true); return; }
+        const p = data.find((x) => x.isDefault) ?? data[0];
+        setProfiles(data);
+        setActiveProfile(p);
+        writeProfileCookie(p);
+        if (onProfileSwitch) onProfileSwitch(p);
+      })
+      .catch(() => setIsSignedOut(true));
     setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
   }, [initialProfiles]);
 

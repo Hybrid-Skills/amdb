@@ -54,15 +54,12 @@ export function UserContentSection({ data }: UserContentSectionProps) {
 
   React.useEffect(() => {
     if (profileId) return;
-    // Only fetch profiles if a NextAuth session cookie exists —
-    // i.e. user just signed in on this page but the profile cookie wasn't set yet.
-    const hasSession = document.cookie.split('; ').some(
-      (c) => c.startsWith('next-auth.session-token=') || c.startsWith('__Secure-next-auth.session-token=')
-    );
-    if (!hasSession) { setUserState('new'); return; }
-
+    // No profile cookie — ask the server. 401 = not logged in, ok = use first profile.
     fetch('/api/profiles')
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => {
+        if (r.status === 401) { setUserState('new'); return null; }
+        return r.ok ? r.json() : null;
+      })
       .then((profiles) => {
         if (!profiles?.length) { setUserState('new'); return; }
         const profile = profiles.find((p: any) => p.isDefault) ?? profiles[0];
