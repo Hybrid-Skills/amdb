@@ -3,10 +3,11 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, User, Plus, Check, X, LogOut, LogIn } from 'lucide-react';
-import { signIn, signOut } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { readProfileCookie, writeProfileCookie, clearProfileCookie } from '@/lib/profile-cookie';
+import { SignInPrompt } from '@/components/sign-in-prompt';
 import type { Profile } from './profile-selector';
 
 const AVATAR_COLORS = [
@@ -39,6 +40,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
   const panelRef = React.useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = React.useState(false);
   const [isSignedOut, setIsSignedOut] = React.useState(false);
+  const [signInOpen, setSignInOpen] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
@@ -144,15 +146,18 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
   if (!activeProfile) {
     if (mounted && isSignedOut) {
       return (
-        <button
-          onClick={() => signIn()}
-          className={cn(
-            'flex items-center gap-2 px-3 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-xl text-white/60 hover:text-white text-sm font-medium transition-all active:scale-95',
-            className,
-          )}
-        >
-          <LogIn className="w-4 h-4" /> Sign In
-        </button>
+        <>
+          <button
+            onClick={() => setSignInOpen(true)}
+            className={cn(
+              'flex items-center gap-2 px-3 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-xl text-white/60 hover:text-white text-sm font-medium transition-all active:scale-95',
+              className,
+            )}
+          >
+            <LogIn className="w-4 h-4" /> Sign In
+          </button>
+          <SignInPrompt open={signInOpen} onClose={() => setSignInOpen(false)} />
+        </>
       );
     }
     // Skeleton while loading profile
