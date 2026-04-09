@@ -97,7 +97,12 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
     }
   }
 
-  const isFiltered = filters.contentType !== 'ALL';
+  const isFiltered =
+    filters.contentType !== 'ALL' ||
+    filters.genres.length > 0 ||
+    filters.minRating > 1 ||
+    filters.maxRating < 10 ||
+    filters.watchStatus.length > 0;
 
   if (loading && page === 1) {
     return (
@@ -130,8 +135,8 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
           </p>
           <p className="text-sm opacity-60 max-w-xs">
             {isFiltered 
-              ? 'Try adjusting your filters to see more results.'
-              : 'Bookmark titles from Recommendations or use "Plan to Watch" when adding from search.'}
+              ? 'Please try removing some filters to see more results.'
+              : 'Bookmark titles from Recommendations or add more items using "Plan to Watch" when adding from search.'}
           </p>
         </div>
       ) : (

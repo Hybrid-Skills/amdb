@@ -301,14 +301,14 @@ export function Dashboard(_: DashboardProps) {
                       <>
                         <h3 className="text-lg font-bold text-white mb-1">No matches found</h3>
                         <p className="text-sm text-white/40 max-w-xs">
-                          Try adjusting or clearing your filters to see more results.
+                          Please try removing some filters to see more results.
                         </p>
                       </>
                     ) : (
                       <>
                         <h3 className="text-lg font-bold text-white mb-1">Your list is empty</h3>
                         <p className="text-sm text-white/40 max-w-xs">
-                          Search for a movie, show, or anime above and add it to start building your
+                          Search for a movie, show, or anime above and add more to start building your
                           collection.
                         </p>
                         <div className="mt-4 flex items-center gap-2 text-xs text-purple-400/70 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2">
