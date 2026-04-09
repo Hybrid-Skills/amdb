@@ -51,18 +51,20 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
         {/* Ratings row */}
         <RatingsRow data={data} />
 
-        {/* Your Rating (client-side, personalized) */}
-        <UserContentSection data={data} />
-
-        {/* Overview */}
-        {data.overview && (
-          <section>
-            <SectionTitle>Overview</SectionTitle>
-            <p className="text-white/80 leading-relaxed text-base font-light max-w-3xl">
-              {data.overview}
-            </p>
-          </section>
-        )}
+        {/* Overview + Your Rating side-by-side on desktop */}
+        <div className="flex flex-col md:flex-row md:gap-12">
+          {data.overview && (
+            <section className="flex-1 min-w-0">
+              <SectionTitle>Overview</SectionTitle>
+              <p className="text-white/80 leading-relaxed text-base font-light">
+                {data.overview}
+              </p>
+            </section>
+          )}
+          <div className={data.overview ? 'md:w-80 md:shrink-0' : 'w-full'}>
+            <UserContentSection data={data} />
+          </div>
+        </div>
 
         {/* Videos Section */}
         <VideosSection videos={data.videos} />
