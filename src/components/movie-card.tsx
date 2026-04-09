@@ -191,6 +191,17 @@ export function MovieCard({
   const certLabel = ageCertification ?? (adult ? '18+' : null);
 
   const handleCardClick = () => {
+    // Strictly enforce internal AMDB IDs for navigation.
+    // CUIDs start with 'c'. Numeric IDs (TMDB) or 'pending-' IDs are blocked.
+    const isInternalId = id && id.startsWith('c');
+    if (!isInternalId) {
+      // If NOT an internal ID, we trigger the details/rate modal instead 
+      // which handles the "ensure" process and eventually allows navigation.
+      if (variant === 'WATCHED') onEdit?.();
+      else onSecondaryAction?.();
+      return;
+    }
+
     const url = buildContentUrl(contentType, title, id);
     router.push(url);
   };

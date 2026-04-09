@@ -52,40 +52,98 @@ export async function GET(req: Request) {
           contentType: 'ANIME' as ContentType,
         }));
 
+      const results = [...tmdbResults, ...jikanResults];
+
+      // Batch lookup existing AMDB IDs
+      const tmdbIds = results.map((r: any) => r.tmdbId).filter(Boolean) as number[];
+      const malIds = results.map((r: any) => r.malId).filter(Boolean) as number[];
+      if (tmdbIds.length > 0 || malIds.length > 0) {
+        const { prisma } = await import('@/lib/prisma');
+        const existing = await prisma.content.findMany({
+          where: {
+            OR: [
+              ...(tmdbIds.length > 0 ? [{ tmdbId: { in: tmdbIds } }] : []),
+              ...(malIds.length > 0 ? [{ malId: { in: malIds } }] : []),
+            ],
+          },
+          select: { id: true, tmdbId: true, malId: true },
+        });
+
+        const tmdbMap = new Map(existing.filter((e) => e.tmdbId).map((e: any) => [e.tmdbId, e.id]));
+        const malMap = new Map(existing.filter((e) => e.malId).map((e: any) => [e.malId, e.id]));
+
+        results.forEach((r: any) => {
+          if (r.tmdbId && tmdbMap.has(r.tmdbId)) r.id = tmdbMap.get(r.tmdbId);
+          else if (r.malId && malMap.has(r.malId)) r.id = malMap.get(r.malId);
+        });
+      }
+
       return NextResponse.json({
-        results: [...tmdbResults, ...jikanResults],
+        results,
         totalPages: Math.min(tmdbData.total_pages, 20),
       });
     }
 
     if (type === 'MOVIE') {
       const data = await tmdb.searchMovies(query, page);
+      const results = data.results.map((r) => ({
+        tmdbId: r.id,
+        title: r.title ?? r.name ?? '',
+        year: r.release_date ? new Date(r.release_date).getFullYear() : null,
+        posterUrl: tmdbImageUrl(r.poster_path),
+        tmdbRating: r.vote_average,
+        overview: r.overview,
+        contentType: 'MOVIE' as ContentType,
+      }));
+
+      // Batch lookup existing AMDB IDs
+      const tmdbIds = results.map((r) => r.tmdbId).filter(Boolean) as number[];
+      if (tmdbIds.length > 0) {
+        const { prisma } = await import('@/lib/prisma');
+        const existing = await prisma.content.findMany({
+          where: { tmdbId: { in: tmdbIds } },
+          select: { id: true, tmdbId: true },
+        });
+        const idMap = new Map(existing.map((e) => [e.tmdbId, e.id]));
+        results.forEach((r) => {
+          if (r.tmdbId && idMap.has(r.tmdbId)) (r as any).id = idMap.get(r.tmdbId);
+        });
+      }
+
       return NextResponse.json({
-        results: data.results.map((r) => ({
-          tmdbId: r.id,
-          title: r.title ?? r.name ?? '',
-          year: r.release_date ? new Date(r.release_date).getFullYear() : null,
-          posterUrl: tmdbImageUrl(r.poster_path),
-          tmdbRating: r.vote_average,
-          overview: r.overview,
-          contentType: 'MOVIE' as ContentType,
-        })),
+        results,
         totalPages: Math.min(data.total_pages, 20),
       });
     }
 
     if (type === 'TV_SHOW') {
       const data = await tmdb.searchTv(query, page);
+      const results = data.results.map((r) => ({
+        tmdbId: r.id,
+        title: r.name ?? r.title ?? '',
+        year: r.first_air_date ? new Date(r.first_air_date).getFullYear() : null,
+        posterUrl: tmdbImageUrl(r.poster_path),
+        tmdbRating: r.vote_average,
+        overview: r.overview,
+        contentType: 'TV_SHOW' as ContentType,
+      }));
+
+      // Batch lookup existing AMDB IDs
+      const tmdbIds = results.map((r) => r.tmdbId).filter(Boolean) as number[];
+      if (tmdbIds.length > 0) {
+        const { prisma } = await import('@/lib/prisma');
+        const existing = await prisma.content.findMany({
+          where: { tmdbId: { in: tmdbIds } },
+          select: { id: true, tmdbId: true },
+        });
+        const idMap = new Map(existing.map((e) => [e.tmdbId, e.id]));
+        results.forEach((r) => {
+          if (r.tmdbId && idMap.has(r.tmdbId)) (r as any).id = idMap.get(r.tmdbId);
+        });
+      }
+
       return NextResponse.json({
-        results: data.results.map((r) => ({
-          tmdbId: r.id,
-          title: r.name ?? r.title ?? '',
-          year: r.first_air_date ? new Date(r.first_air_date).getFullYear() : null,
-          posterUrl: tmdbImageUrl(r.poster_path),
-          tmdbRating: r.vote_average,
-          overview: r.overview,
-          contentType: 'TV_SHOW' as ContentType,
-        })),
+        results,
         totalPages: Math.min(data.total_pages, 20),
       });
     }
@@ -102,22 +160,40 @@ export async function GET(req: Request) {
       return isJapaneseAnimation ? 'ANIME' : 'TV_SHOW';
     }
 
+    const results = data.results
+      .filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
+      .map((r) => ({
+        tmdbId: r.id,
+        title: r.title ?? r.name ?? '',
+        year: r.release_date
+          ? new Date(r.release_date).getFullYear()
+          : r.first_air_date
+            ? new Date(r.first_air_date).getFullYear()
+            : null,
+        posterUrl: tmdbImageUrl(r.poster_path),
+        tmdbRating: r.vote_average,
+        overview: r.overview,
+        contentType: detectContentType(r),
+      }));
+
+    // Batch lookup existing AMDB IDs
+    const tmdbIds = results.map((r) => r.tmdbId).filter(Boolean) as number[];
+    if (tmdbIds.length > 0) {
+      const { prisma } = await import('@/lib/prisma');
+      const existing = await prisma.content.findMany({
+        where: { tmdbId: { in: tmdbIds } },
+        select: { id: true, tmdbId: true },
+      });
+      const idMap = new Map(existing.map((e) => [e.tmdbId, e.id]));
+      results.forEach((r) => {
+        if (r.tmdbId && idMap.has(r.tmdbId)) {
+          (r as any).id = idMap.get(r.tmdbId);
+        }
+      });
+    }
+
     return NextResponse.json({
-      results: data.results
-        .filter((r) => r.media_type === 'movie' || r.media_type === 'tv')
-        .map((r) => ({
-          tmdbId: r.id,
-          title: r.title ?? r.name ?? '',
-          year: r.release_date
-            ? new Date(r.release_date).getFullYear()
-            : r.first_air_date
-              ? new Date(r.first_air_date).getFullYear()
-              : null,
-          posterUrl: tmdbImageUrl(r.poster_path),
-          tmdbRating: r.vote_average,
-          overview: r.overview,
-          contentType: detectContentType(r),
-        })),
+      results,
       totalPages: Math.min(data.total_pages, 20),
     });
   } catch (err) {
