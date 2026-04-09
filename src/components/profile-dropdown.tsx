@@ -44,36 +44,40 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
 
   React.useEffect(() => {
     setMounted(true);
+    setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
+
     const stored = readProfileCookie();
     if (stored) {
-      // Fast path: cookie present, render immediately
+      // Render immediately from cookie, then validate session in background
       setActiveProfile(stored);
-      setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
-      return;
-    }
-    if (initialProfiles?.length) {
+    } else if (initialProfiles?.length) {
       const p = initialProfiles.find((x) => x.isDefault) ?? initialProfiles[0];
       setActiveProfile(p);
       writeProfileCookie(p);
-      setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
-      return;
     }
-    // No cookie, no initialProfiles — ask the server (handles post-sign-in redirect on detail page)
+
+    // Always validate with the server — catches expired sessions even when cookie is present
     fetch('/api/profiles')
       .then((r) => {
-        if (r.status === 401) { clearProfileCookie(); setIsSignedOut(true); return null; }
+        if (r.status === 401) {
+          clearProfileCookie();
+          setActiveProfile(null);
+          setIsSignedOut(true);
+          return null;
+        }
         return r.ok ? r.json() : null;
       })
       .then((data: Profile[] | null) => {
-        if (!data?.length) { setIsSignedOut(true); return; }
-        const p = data.find((x) => x.isDefault) ?? data[0];
+        if (!data?.length) return;
+        const savedId = readProfileCookie()?.id;
+        const p = data.find((x) => x.id === savedId) ?? data.find((x) => x.isDefault) ?? data[0];
         setProfiles(data);
         setActiveProfile(p);
         writeProfileCookie(p);
+        setIsSignedOut(false);
         if (onProfileSwitch) onProfileSwitch(p);
       })
-      .catch(() => setIsSignedOut(true));
-    setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
+      .catch(() => {});
   }, [initialProfiles]);
 
   const refreshProfiles = async () => {

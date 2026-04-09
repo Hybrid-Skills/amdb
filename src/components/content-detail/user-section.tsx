@@ -6,7 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { ContentDetail } from '@/lib/content-detail';
 import { AddToListModal } from '@/components/add-to-list-modal';
 import { RatingPicker, RATING_LABELS, ratingColor } from '@/components/rating-picker';
-import { readProfileCookie, writeProfileCookie } from '@/lib/profile-cookie';
+import { readProfileCookie, writeProfileCookie, clearProfileCookie } from '@/lib/profile-cookie';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 
 type UserState = 'loading' | 'new' | 'planned' | 'rated';
@@ -53,20 +53,19 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   const [profileId, setProfileId] = React.useState<string | null>(() => readProfileCookie()?.id ?? null);
 
   React.useEffect(() => {
-    if (profileId) return;
-    // No profile cookie — ask the server. 401 = not logged in, ok = use first profile.
+    // Always validate session with the server — catches expired sessions even when cookie is present
     fetch('/api/profiles')
       .then((r) => {
-        if (r.status === 401) { setUserState('new'); return null; }
+        if (r.status === 401) { clearProfileCookie(); setProfileId(null); return null; }
         return r.ok ? r.json() : null;
       })
       .then((profiles) => {
-        if (!profiles?.length) { setUserState('new'); return; }
+        if (!profiles?.length) { setProfileId(null); return; }
         const profile = profiles.find((p: any) => p.isDefault) ?? profiles[0];
         writeProfileCookie(profile);
         setProfileId(profile.id);
       })
-      .catch(() => setUserState('new'));
+      .catch(() => {});
   }, []);
 
   React.useEffect(() => {
