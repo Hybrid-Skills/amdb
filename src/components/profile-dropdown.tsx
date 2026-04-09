@@ -6,6 +6,7 @@ import { ChevronDown, User, Plus, Check, X, LogOut } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
+import { readProfileCookie, writeProfileCookie, clearProfileCookie } from '@/lib/profile-cookie';
 import type { Profile } from './profile-selector';
 
 const AVATAR_COLORS = [
@@ -46,19 +47,16 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
       (c) => c.startsWith('next-auth.session-token=') || c.startsWith('__Secure-next-auth.session-token=')
     );
     if (!hasSession) {
-      localStorage.removeItem('amdb_active_profile');
-      document.cookie = 'amdb_profile_id=; path=/; max-age=0; SameSite=Lax';
+      clearProfileCookie();
       setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
       return;
     }
-    try {
-      const stored = localStorage.getItem('amdb_active_profile');
-      if (stored) {
-        setActiveProfile(JSON.parse(stored));
-      } else if (initialProfiles?.length) {
-        setActiveProfile(initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0]);
-      }
-    } catch {}
+    const stored = readProfileCookie();
+    if (stored) {
+      setActiveProfile(stored);
+    } else if (initialProfiles?.length) {
+      setActiveProfile(initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0]);
+    }
     setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
   }, [initialProfiles]);
 
@@ -67,11 +65,11 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
     if (res.ok) {
       const data: Profile[] = await res.json();
       setProfiles(data);
-      const savedId = localStorage.getItem('amdb_last_profile_id');
+      const savedId = readProfileCookie()?.id;
       const p = data.find((x) => x.id === savedId) ?? data.find((x) => x.isDefault) ?? data[0];
       if (p) {
         setActiveProfile(p);
-        localStorage.setItem('amdb_active_profile', JSON.stringify({ id: p.id, name: p.name, avatarColor: p.avatarColor, isDefault: p.isDefault }));
+        writeProfileCookie(p);
         if (onProfileSwitch) onProfileSwitch(p);
       }
     }
@@ -82,11 +80,11 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
     if (!initialProfiles?.length) return;
     setProfiles(initialProfiles);
     // Refresh stored profile with latest server data (name/color may have changed)
-    const savedId = localStorage.getItem('amdb_last_profile_id');
+    const savedId = readProfileCookie()?.id;
     const resolved = (savedId && initialProfiles.find((p) => p.id === savedId)) ?? initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0];
     if (resolved) {
       setActiveProfile(resolved);
-      localStorage.setItem('amdb_active_profile', JSON.stringify({ id: resolved.id, name: resolved.name, avatarColor: resolved.avatarColor, isDefault: resolved.isDefault }));
+      writeProfileCookie(resolved);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialProfiles]);
@@ -119,8 +117,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
 
   const handleSwitchProfile = (p: Profile) => {
     setActiveProfile(p);
-    localStorage.setItem('amdb_last_profile_id', p.id);
-    localStorage.setItem('amdb_active_profile', JSON.stringify({ id: p.id, name: p.name, avatarColor: p.avatarColor, isDefault: p.isDefault }));
+    writeProfileCookie(p);
     setIsDropdownOpen(false);
     setDropdownView('menu');
     if (onProfileSwitch) onProfileSwitch(p);

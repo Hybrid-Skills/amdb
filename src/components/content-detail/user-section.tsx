@@ -20,6 +20,7 @@ import {
   DrawerTitle,
   DrawerDescription,
 } from '@/components/ui/drawer';
+import { readProfileCookie, writeProfileCookie } from '@/lib/profile-cookie';
 
 type UserState = 'loading' | 'new' | 'planned' | 'rated';
 
@@ -120,10 +121,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
 
   // Resolve profile from cookie, falling back to /api/profiles if not set
   // (happens when user signs in directly on the detail page)
-  const cookieProfileId = typeof document !== 'undefined'
-    ? document.cookie.split('; ').find((c) => c.startsWith('amdb_profile_id='))?.split('=')[1] ?? null
-    : null;
-  const [profileId, setProfileId] = React.useState<string | null>(cookieProfileId);
+  const [profileId, setProfileId] = React.useState<string | null>(() => readProfileCookie()?.id ?? null);
 
   React.useEffect(() => {
     if (profileId) return;
@@ -139,7 +137,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
       .then((profiles) => {
         if (!profiles?.length) { setUserState('new'); return; }
         const profile = profiles.find((p: any) => p.isDefault) ?? profiles[0];
-        document.cookie = `amdb_profile_id=${profile.id}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+        writeProfileCookie(profile);
         setProfileId(profile.id);
       })
       .catch(() => setUserState('new'));

@@ -14,6 +14,7 @@ import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-
 import { AnimatePresence, motion } from 'framer-motion';
 import { List, Sparkles, Bookmark } from 'lucide-react';
 import { EmptyStateIllustration } from './ui/empty-state-illustration';
+import { readProfileCookie, writeProfileCookie } from '@/lib/profile-cookie';
 
 type DashTab = 'watched' | 'planned' | 'recommendations';
 
@@ -117,10 +118,7 @@ export function Dashboard(_: DashboardProps) {
 
   // On mount: fire profiles + list in parallel using cookie profileId
   React.useEffect(() => {
-    const cookieProfileId = document.cookie
-      .split('; ')
-      .find((c) => c.startsWith('amdb_profile_id='))
-      ?.split('=')[1] ?? null;
+    const cookieProfileId = readProfileCookie()?.id ?? null;
 
     // Fire both in parallel if cookie exists
     const listPromise = cookieProfileId ? fetchList(cookieProfileId, 1, filters) : Promise.resolve();
@@ -134,7 +132,10 @@ export function Dashboard(_: DashboardProps) {
           (cookieProfileId && data.find((p) => p.id === cookieProfileId)) ??
           data.find((p) => p.isDefault) ??
           data[0];
-        if (resolved) setActiveProfileId(resolved.id);
+        if (resolved) {
+          writeProfileCookie(resolved);
+          setActiveProfileId(resolved.id);
+        }
       })
       .catch(() => setListLoading(false));
 
@@ -151,8 +152,6 @@ export function Dashboard(_: DashboardProps) {
   // Fetch list on profile or debounced filter change
   React.useEffect(() => {
     if (!activeProfileId) return;
-    document.cookie = `amdb_profile_id=${activeProfileId}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
-    localStorage.setItem('amdb_last_profile_id', activeProfileId);
     // Skip initial fetch if mount already handled this profileId with default filters
     if (prefetchedProfileId.current === activeProfileId) {
       prefetchedProfileId.current = null;
