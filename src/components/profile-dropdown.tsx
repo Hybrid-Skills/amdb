@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, User, Plus, Check, X, LogOut } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { ChevronDown, User, Plus, Check, X, LogOut, LogIn } from 'lucide-react';
+import { signIn, signOut } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { readProfileCookie, writeProfileCookie, clearProfileCookie } from '@/lib/profile-cookie';
@@ -38,6 +38,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
   const triggerRef = React.useRef<HTMLButtonElement>(null);
   const panelRef = React.useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = React.useState(false);
+  const [isSignedOut, setIsSignedOut] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
@@ -48,7 +49,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
     );
     if (!hasSession) {
       clearProfileCookie();
-      setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
+      setIsSignedOut(true);
       return;
     }
     const stored = readProfileCookie();
@@ -140,8 +141,21 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
     setIsAdding(false);
   };
 
-  // Profiles not yet fetched — show skeleton avatar
   if (!activeProfile) {
+    if (mounted && isSignedOut) {
+      return (
+        <button
+          onClick={() => signIn()}
+          className={cn(
+            'flex items-center gap-2 px-3 py-2 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-xl text-white/60 hover:text-white text-sm font-medium transition-all active:scale-95',
+            className,
+          )}
+        >
+          <LogIn className="w-4 h-4" /> Sign In
+        </button>
+      );
+    }
+    // Skeleton while loading profile
     return (
       <div className={cn('flex items-center gap-2 p-1 pr-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-xl', className)}>
         <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
