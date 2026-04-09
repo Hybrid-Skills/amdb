@@ -27,23 +27,11 @@ interface ProfileDropdownProps {
 
 export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }: ProfileDropdownProps) {
   const [profiles, setProfiles] = React.useState<Profile[]>(initialProfiles ?? []);
-  const [activeProfile, setActiveProfile] = React.useState<Profile | null>(() => {
-    // Restore from localStorage immediately — no fetch needed for initial render
-    if (typeof window !== 'undefined') {
-      try {
-        const stored = localStorage.getItem('amdb_active_profile');
-        if (stored) return JSON.parse(stored) as Profile;
-      } catch {}
-    }
-    if (!initialProfiles?.length) return null;
-    return initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0] ?? null;
-  });
+  const [activeProfile, setActiveProfile] = React.useState<Profile | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
   const [dropdownView, setDropdownView] = React.useState<'menu' | 'switcher' | 'adding'>('menu');
   const [newName, setNewName] = React.useState('');
-  const [newColor, setNewColor] = React.useState(
-    () => AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)],
-  );
+  const [newColor, setNewColor] = React.useState(AVATAR_COLORS[0]);
   const [isAdding, setIsAdding] = React.useState(false);
   const [menuPos, setMenuPos] = React.useState({ top: 0, right: 0 });
   const triggerRef = React.useRef<HTMLButtonElement>(null);
@@ -52,7 +40,17 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
 
   React.useEffect(() => {
     setMounted(true);
-  }, []);
+    // Restore from localStorage
+    try {
+      const stored = localStorage.getItem('amdb_active_profile');
+      if (stored) {
+        setActiveProfile(JSON.parse(stored));
+      } else if (initialProfiles?.length) {
+        setActiveProfile(initialProfiles.find((p) => p.isDefault) ?? initialProfiles[0]);
+      }
+    } catch {}
+    setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
+  }, [initialProfiles]);
 
   const refreshProfiles = async () => {
     const res = await fetch('/api/profiles');

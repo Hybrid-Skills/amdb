@@ -253,7 +253,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
 
   return (
     <>
-      <section className="min-h-[140px]">
+      <section className="min-h-[50px]">
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <span className="w-1 h-5 rounded-full bg-primary inline-block" />
