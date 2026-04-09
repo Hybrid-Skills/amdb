@@ -299,7 +299,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
                 value={null}
                 onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
               />
-              <div className="flex gap-3 flex-wrap">
+              <div className="hidden md:flex gap-3 flex-wrap">
                 <button
                   onClick={handlePlan}
                   disabled={planLoading}
@@ -324,7 +324,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
                 value={null}
                 onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
               />
-              <div className="flex gap-3 flex-wrap items-center">
+              <div className="hidden md:flex gap-3 flex-wrap items-center">
                 <button
                   onClick={handleRemovePlan}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 font-bold text-sm hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all active:scale-95 group"
@@ -402,6 +402,33 @@ export function UserContentSection({ data }: UserContentSectionProps) {
 
       {/* Sign-in prompt */}
       <SignInPrompt open={signInOpen} onClose={() => setSignInOpen(false)} />
+
+      {/* Mobile sticky bottom bar — Plan to Watch / Planned */}
+      {(userState === 'new' || userState === 'planned') && (
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent pointer-events-none">
+          <div className="pointer-events-auto">
+            {userState === 'new' && (
+              <button
+                onClick={handlePlan}
+                disabled={planLoading}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white/10 border border-white/10 text-white font-bold text-sm active:scale-95 disabled:opacity-50 transition-all"
+              >
+                <Bookmark className="w-4 h-4" />
+                {planLoading ? 'Saving…' : 'Plan to Watch'}
+              </button>
+            )}
+            {userState === 'planned' && (
+              <button
+                onClick={handleRemovePlan}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 font-bold text-sm active:scale-95 transition-all"
+              >
+                <BookmarkCheck className="w-4 h-4" />
+                Planned — tap to remove
+              </button>
+            )}
+          </div>
+        </div>
+      )}
     </>
   );
 }
