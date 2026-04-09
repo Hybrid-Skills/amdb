@@ -40,7 +40,17 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
 
   React.useEffect(() => {
     setMounted(true);
-    // Restore from localStorage
+    // Only restore from localStorage if a valid NextAuth session cookie exists.
+    // If not, clear stale profile data left over from a previous session.
+    const hasSession = document.cookie.split('; ').some(
+      (c) => c.startsWith('next-auth.session-token=') || c.startsWith('__Secure-next-auth.session-token=')
+    );
+    if (!hasSession) {
+      localStorage.removeItem('amdb_active_profile');
+      document.cookie = 'amdb_profile_id=; path=/; max-age=0; SameSite=Lax';
+      setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
+      return;
+    }
     try {
       const stored = localStorage.getItem('amdb_active_profile');
       if (stored) {
