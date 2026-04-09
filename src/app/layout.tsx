@@ -18,6 +18,13 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: '/favicon.png',
+    apple: '/icon-512.avif',
+  },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'AMDB',
   },
 };
 
@@ -26,6 +33,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#000000',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
