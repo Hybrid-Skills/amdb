@@ -34,7 +34,7 @@ interface UserContentSectionProps {
   data: ContentDetail;
 }
 
-function StarDisplay({ rating, max = 10 }: { rating: number; max?: number }) {
+function StarDisplay({ rating, max = 10, onEdit }: { rating: number; max?: number; onEdit?: () => void }) {
   const stars = 5;
   const filled = Math.round((rating / max) * stars);
   return (
@@ -47,6 +47,15 @@ function StarDisplay({ rating, max = 10 }: { rating: number; max?: number }) {
       ))}
       <span className="ml-2 text-white font-black text-lg">{rating}</span>
       <span className="text-white/40 text-sm">/ {max}</span>
+      {onEdit && (
+        <button
+          onClick={onEdit}
+          className="ml-3 flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-white/50 font-bold text-xs hover:bg-white/10 hover:text-white transition-all active:scale-95"
+        >
+          <Pencil className="w-3 h-3" />
+          Edit
+        </button>
+      )}
     </div>
   );
 }
@@ -347,16 +356,12 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               exit={{ opacity: 0 }}
               className="flex flex-col gap-4"
             >
-              {/* Star display */}
+              {/* Star display + inline edit */}
               {userContent.userRating && (
-                <StarDisplay rating={userContent.userRating} />
-              )}
-
-              {/* Watch status badge for TV/Anime */}
-              {userContent.watchStatus && data.contentType !== 'MOVIE' && (
-                <span className="inline-flex w-fit items-center px-3 py-1 rounded-full bg-white/10 border border-white/10 text-xs font-bold text-white/60 uppercase tracking-wider">
-                  {userContent.watchStatus.replace(/_/g, ' ')}
-                </span>
+                <StarDisplay
+                  rating={userContent.userRating}
+                  onEdit={() => requireAuth(() => setModalOpen(true))}
+                />
               )}
 
               {/* Notes */}
@@ -365,15 +370,6 @@ export function UserContentSection({ data }: UserContentSectionProps) {
                   "{userContent.notes}"
                 </blockquote>
               )}
-
-              {/* Edit */}
-              <button
-                onClick={() => requireAuth(() => setModalOpen(true))}
-                className="flex items-center gap-2 w-fit px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-white/60 font-bold text-sm hover:bg-white/10 hover:text-white transition-all active:scale-95"
-              >
-                <Pencil className="w-3.5 h-3.5" />
-                Edit Rating
-              </button>
             </motion.div>
           )}
         </AnimatePresence>
