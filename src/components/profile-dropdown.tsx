@@ -154,7 +154,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
   };
 
   if (!activeProfile) {
-    if (mounted && isSignedOut) {
+    if (mounted && status === 'unauthenticated') {
       return (
         <>
           <button
