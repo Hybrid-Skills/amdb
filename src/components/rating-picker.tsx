@@ -41,7 +41,7 @@ export function RatingPicker({ value, onChange, onActiveRating }: RatingPickerPr
 
   return (
     <div className="flex flex-col items-center gap-3 overflow-visible w-full">
-      <div className="flex gap-1.5 px-4 md:px-0 overflow-visible w-full">
+      <div className="flex gap-1.5 overflow-visible w-full">
         {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
           const isActive = active !== null && n <= active;
           const isSelected = value !== null && n <= value && hovered === null;
