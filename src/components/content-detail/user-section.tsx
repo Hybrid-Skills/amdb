@@ -118,15 +118,25 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   const [pendingRating, setPendingRating] = React.useState<number | null>(null);
   const [activeRating, setActiveRating] = React.useState<number | null>(null);
 
-  // Resolve profile from cookie
-  const profileId = React.useMemo(() => {
-    if (typeof document === 'undefined') return null;
-    return (
-      document.cookie
-        .split('; ')
-        .find((c) => c.startsWith('amdb_profile_id='))
-        ?.split('=')[1] ?? null
-    );
+  // Resolve profile from cookie, falling back to /api/profiles if not set
+  // (happens when user signs in directly on the detail page)
+  const cookieProfileId = typeof document !== 'undefined'
+    ? document.cookie.split('; ').find((c) => c.startsWith('amdb_profile_id='))?.split('=')[1] ?? null
+    : null;
+  const [profileId, setProfileId] = React.useState<string | null>(cookieProfileId);
+
+  React.useEffect(() => {
+    if (profileId) return;
+    // No cookie — check if there's a session and bootstrap the profile
+    fetch('/api/profiles')
+      .then((r) => r.ok ? r.json() : null)
+      .then((profiles) => {
+        if (!profiles?.length) { setUserState('new'); return; }
+        const profile = profiles.find((p: any) => p.isDefault) ?? profiles[0];
+        document.cookie = `amdb_profile_id=${profile.id}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
+        setProfileId(profile.id);
+      })
+      .catch(() => setUserState('new'));
   }, []);
 
   React.useEffect(() => {
