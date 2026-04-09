@@ -65,6 +65,14 @@ const RATING_LABELS: Record<number, string> = {
   10: 'Masterpiece',
 };
 
+const getRatingColor = (r: number): string => {
+  if (r <= 3) return '#ef4444';
+  if (r <= 5) return '#f97316';
+  if (r <= 7) return '#eab308';
+  if (r <= 9) return '#84cc16';
+  return '#22c55e';
+};
+
 const CONTENT_ICONS: Record<ContentType, React.ReactNode> = {
   MOVIE: <Film className="w-3 h-3 text-cyan-400" />,
   TV_SHOW: <Tv className="w-3 h-3 text-blue-400" />,
@@ -335,14 +343,14 @@ export function MovieCard({
                    className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary min-w-0"
                  >
                    {isSecondaryLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Bookmark className="w-3.5 h-3.5"/>}
-                   <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Plan</span>
+                   <span className="text-xs font-bold uppercase tracking-tight whitespace-nowrap">Plan</span>
                  </button>
                  <button 
                    onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }} 
                    className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all min-w-0"
                  >
                    <Star className="w-3.5 h-3.5"/>
-                   <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">Rate</span>
+                   <span className="text-xs font-bold uppercase tracking-tight whitespace-nowrap">Rate</span>
                  </button>
               </div>
             )
@@ -366,11 +374,14 @@ export function MovieCard({
             >
               {variant === 'WATCHED' ? (
                 <>
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Star className="w-4.5 h-4.5 text-yellow-500 fill-yellow-500 shrink-0" />
-                    <span className="text-[10px] font-bold truncate uppercase tracking-tight whitespace-nowrap">
+                   <div className="flex items-center gap-1.5 min-w-0">
+                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
+                    <span className="text-xs font-bold truncate uppercase tracking-tight whitespace-nowrap">
                       <span className="text-foreground">{userRating}</span>
-                      <span className="font-bold opacity-70 ml-1">
+                      <span 
+                        className="font-bold ml-1.5"
+                        style={{ color: getRatingColor(userRating ?? 0) }}
+                      >
                         {RATING_LABELS[Math.round(userRating ?? 0)]}
                       </span>
                     </span>
@@ -378,11 +389,11 @@ export function MovieCard({
                   <Pencil className="w-4 h-4 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0 ml-2" />
                 </>
               ) : (
-                <div className="flex items-center justify-between w-full">
-                  <span className="text-[10px] font-bold uppercase tracking-tight whitespace-nowrap">
+                 <div className="flex items-center justify-between w-full">
+                  <span className="text-xs font-bold uppercase tracking-tight whitespace-nowrap">
                     Rate
                   </span>
-                  <Star className="w-4.5 h-4.5 shrink-0" />
+                  <Star className="w-3.5 h-3.5 shrink-0" />
                 </div>
               )}
             </div>
