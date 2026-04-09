@@ -227,15 +227,15 @@ export function UserContentSection({ data }: UserContentSectionProps) {
 
     let text = "";
     if (userState === 'new') {
-      text = `Found this ${typeLabel} with ⭐ ${ratingVal} ${ratingSource}. Add ${title} to your watch list here ${url}`;
+      text = `Found this ${typeLabel} with ⭐ ${ratingVal} ${ratingSource}. Add ${title} to your watch list here`;
     } else if (userState === 'planned') {
-      text = `I am planning to watch ${title}. This ${typeLabel} has an ${ratingSource.toLowerCase()} rating of ${ratingVal}. You should add it to your list as well here ${url}`;
+      text = `I am planning to watch ${title}. This ${typeLabel} has an ${ratingSource.toLowerCase()} rating of ${ratingVal}. You should add it to your list as well`;
     } else if (userState === 'rated' && userContent.userRating) {
       const r = userContent.userRating;
       const adj = r >= 9 ? "solid " : r >= 7 ? "decent " : r >= 5 ? "passable " : "";
-      text = `I watched ${title}, it's a ${adj}${r}/10. You can add it to your list here ${url}`;
+      text = `I watched ${title}, it's a ${adj}${r}/10. Add it to your list here`;
     } else {
-      text = `Check out ${title} on AMDB: ${url}`;
+      text = `Check out ${title} on AMDB`;
     }
 
     if (navigator.share) {
@@ -246,7 +246,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
       }
     } else {
       try {
-        await navigator.clipboard.writeText(text);
+        await navigator.clipboard.writeText(`${text} ${url}`);
         alert('Link copied to clipboard!');
       } catch (err) {
         console.error('Clipboard failed:', err);
@@ -338,6 +338,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
           )}
         </div>
 
+        <div className="min-h-[32px] md:min-h-[44px]">
         <AnimatePresence mode="wait">
           {userState === 'loading' && (
             <motion.div
@@ -419,6 +420,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
             </motion.div>
           )}
         </AnimatePresence>
+        </div>
       </section>
 
       {/* Add/Edit rating modal */}
