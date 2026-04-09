@@ -455,7 +455,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               <button
                 onClick={handlePlan}
                 disabled={planLoading}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white/10 border border-white/10 text-white font-bold text-sm active:scale-95 disabled:opacity-50 transition-all"
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white/90 border border-white/90 text-black font-bold text-sm active:scale-95 disabled:opacity-50 transition-all"
               >
                 <Bookmark className="w-4 h-4" />
                 {planLoading ? 'Saving…' : 'Plan to Watch'}
@@ -464,7 +464,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
             {userState === 'planned' && (
               <button
                 onClick={handleRemovePlan}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 font-bold text-sm active:scale-95 transition-all"
+                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-blue-500/90 border border-blue-500/90 text-white font-bold text-sm active:scale-95 transition-all"
               >
                 <BookmarkCheck className="w-4 h-4" />
                 Planned — tap to remove
