@@ -124,15 +124,31 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
   const tmdbId = contentRecord.tmdbId;
   let raw: any = {};
 
-  try {
-    if (!tmdbId) throw new Error('Missing tmdbId for movie enrichment');
-    raw = await getTmdbCommon(
-      tmdbId,
-      'movie',
-      'credits,videos,keywords,external_ids,release_dates,watch/providers',
-    );
-  } catch (e) {
-    console.error(`[AMDB] TMDB fetch error for movie ${id}:`, e);
+  const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+  const cachedTmdb = contentRecord.enrichments.find((e) => e.source === 'tmdb');
+  const isFresh = cachedTmdb && (Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < TWO_WEEKS_MS);
+
+  if (isFresh && cachedTmdb) {
+    raw = cachedTmdb.data;
+  } else {
+    try {
+      if (!tmdbId) throw new Error('Missing tmdbId for movie enrichment');
+      raw = await getTmdbCommon(
+        tmdbId,
+        'movie',
+        'credits,videos,keywords,external_ids,release_dates,watch/providers',
+      );
+      // Persist for 2 weeks
+      await prisma.contentEnrichment.upsert({
+        where: { contentId_source: { contentId: id, source: 'tmdb' } },
+        update: { data: raw, fetchedAt: new Date() },
+        create: { contentId: id, source: 'tmdb', data: raw },
+      }).catch(e => console.error('Failed to persist TMDB cache:', e));
+    } catch (e) {
+      console.error(`[AMDB] TMDB fetch error for movie ${id}:`, e);
+      // Fallback to stale cache if API fails
+      if (cachedTmdb) raw = cachedTmdb.data;
+    }
   }
 
   const crewBase: any[] = raw.credits?.crew ?? [];
@@ -308,15 +324,30 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
   const tmdbId = contentRecord.tmdbId;
   let raw: any = {};
 
-  try {
-    if (!tmdbId) throw new Error('Missing tmdbId for TV enrichment');
-    raw = await getTmdbCommon(
-      tmdbId,
-      'tv',
-      'credits,videos,keywords,external_ids,content_ratings,watch/providers',
-    );
-  } catch (e) {
-    console.error(`[AMDB] TMDB fetch error for TV ${id}:`, e);
+  const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+  const cachedTmdb = contentRecord.enrichments.find((e) => e.source === 'tmdb');
+  const isFresh = cachedTmdb && (Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < TWO_WEEKS_MS);
+
+  if (isFresh && cachedTmdb) {
+    raw = cachedTmdb.data;
+  } else {
+    try {
+      if (!tmdbId) throw new Error('Missing tmdbId for TV enrichment');
+      raw = await getTmdbCommon(
+        tmdbId,
+        'tv',
+        'credits,videos,keywords,external_ids,content_ratings,watch/providers',
+      );
+      // Persist for 2 weeks
+      await prisma.contentEnrichment.upsert({
+        where: { contentId_source: { contentId: id, source: 'tmdb' } },
+        update: { data: raw, fetchedAt: new Date() },
+        create: { contentId: id, source: 'tmdb', data: raw },
+      }).catch(e => console.error('Failed to persist TMDB cache for TV:', e));
+    } catch (e) {
+      console.error(`[AMDB] TMDB fetch error for TV ${id}:`, e);
+      if (cachedTmdb) raw = cachedTmdb.data;
+    }
   }
 
   const crewBase: any[] = raw.credits?.crew ?? [];
@@ -475,15 +506,30 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
 
   const tmdbId = contentRecord.tmdbId;
   let raw: any = {};
-  try {
-    if (!tmdbId) throw new Error('Anime missing TMDB ID');
-    raw = await getTmdbCommon(
-      tmdbId,
-      'tv',
-      'credits,videos,keywords,external_ids,content_ratings,watch/providers',
-    );
-  } catch (e) {
-    console.error(`[AMDB] TMDB fetch error for Anime ${id}:`, e);
+  const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000;
+  const cachedTmdb = contentRecord.enrichments.find((e) => e.source === 'tmdb');
+  const isFresh = cachedTmdb && (Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < TWO_WEEKS_MS);
+
+  if (isFresh && cachedTmdb) {
+    raw = cachedTmdb.data;
+  } else {
+    try {
+      if (!tmdbId) throw new Error('Anime missing TMDB ID');
+      raw = await getTmdbCommon(
+        tmdbId,
+        'tv',
+        'credits,videos,keywords,external_ids,content_ratings,watch/providers',
+      );
+      // Persist for 2 weeks
+      await prisma.contentEnrichment.upsert({
+        where: { contentId_source: { contentId: id, source: 'tmdb' } },
+        update: { data: raw, fetchedAt: new Date() },
+        create: { contentId: id, source: 'tmdb', data: raw },
+      }).catch(e => console.error('Failed to persist TMDB cache for Anime:', e));
+    } catch (e) {
+      console.error(`[AMDB] TMDB fetch error for Anime ${id}:`, e);
+      if (cachedTmdb) raw = cachedTmdb.data;
+    }
   }
 
   const crewBase: any[] = raw.credits?.crew ?? [];
