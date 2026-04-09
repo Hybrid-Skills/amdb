@@ -54,14 +54,10 @@ export async function GET(req: Request) {
 
   if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
 
-  const profile = await prisma.profile.findFirst({
-    where: { id: profileId, userId: session.user.id },
-  });
-  if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
   // Build where clause
   const where: Prisma.UserContentWhereInput = {
     profileId,
+    profile: { userId: session.user.id }, // Security: ensure profile belongs to user
     listStatus: 'WATCHED',
     ...(minRating > 1 || maxRating < 10
       ? { userRating: { gte: minRating, lte: maxRating } }
@@ -112,6 +108,7 @@ export async function GET(req: Request) {
   const [items, total] = await Promise.all([
     prisma.userContent.findMany({
       where,
+      relationLoadStrategy: 'join',
       select: {
         id: true,
         userRating: true,
@@ -124,17 +121,9 @@ export async function GET(req: Request) {
             title: true,
             year: true,
             posterUrl: true,
-            backdropUrl: true,
-            tagline: true,
-            genres: true,
             tmdbRating: true,
             contentType: true,
             adult: true,
-            revenue: true,
-            languages: true,
-            seasons: true,
-            episodes: true,
-            networks: true,
             episodeRuntime: true,
             runtimeMins: true,
             ageCertification: true,
