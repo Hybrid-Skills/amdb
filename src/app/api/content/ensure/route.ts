@@ -58,7 +58,7 @@ export async function POST(req: Request) {
       let resolvedContentType = contentType as ContentType;
       if (contentType === 'TV_SHOW') {
         const genreIds = (raw.genres ?? []).map((g: any) => g.id);
-        if (raw.original_language === 'ja' && genreIds.includes(16)) {
+        if ((raw as any).original_language === 'ja' && genreIds.includes(16)) {
           resolvedContentType = 'ANIME';
         }
       }
