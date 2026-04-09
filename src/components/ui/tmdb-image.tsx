@@ -1,13 +1,17 @@
-'use client';
-
 import Image, { ImageProps } from 'next/image';
-import { tmdbImageLoader } from '@/lib/tmdb';
 
 /**
  * Next.js Image wrapper for TMDB images.
- * Uses a custom loader to map bare TMDB paths to their full URLs
- * while allowing Next.js to handle optimization.
+ * Optimized to use the Next.js internal image server for edge caching. 
+ * Automatically prefixes bare TMDB paths with the full URL.
  */
-export default function TmdbImage(props: ImageProps) {
-  return <Image loader={tmdbImageLoader} {...props} />;
+export default function TmdbImage({ src, ...props }: ImageProps) {
+  // If we have a bare TMDB path (e.g. /abc.jpg), prefix with the full URL
+  // so that the Next.js internal loader can proxy and optimize it.
+  let finalSrc = src;
+  if (typeof src === 'string' && src.startsWith('/') && !src.startsWith('//')) {
+    finalSrc = `https://image.tmdb.org/t/p/original${src}`;
+  }
+
+  return <Image src={finalSrc} {...props} />;
 }
