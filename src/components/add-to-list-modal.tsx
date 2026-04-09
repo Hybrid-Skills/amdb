@@ -549,7 +549,8 @@ export function AddToListModal({
             {(() => {
               const pid = item.id;
               // Strictly enforce internal AMDB ID for the deep link.
-              if (!pid || !pid.startsWith('c')) return null;
+              const isInternalId = pid && isNaN(Number(pid)) && !pid.startsWith('pending');
+              if (!isInternalId) return null;
               const url = buildContentUrl(item.contentType, displayItem.title, pid);
               return (
                 <Link
