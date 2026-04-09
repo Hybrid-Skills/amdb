@@ -468,6 +468,12 @@ export function UserContentSection({ data }: UserContentSectionProps) {
             {userState === 'new' && (
               <>
                 <button
+                  onClick={handleShare}
+                  className="w-14 flex items-center justify-center rounded-xl bg-white/80 border border-white/10 text-black active:scale-95 transition-all shadow-xl shadow-black/20"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
+                <button
                   onClick={handlePlan}
                   disabled={planLoading}
                   className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white/90 border border-white/90 text-black font-bold text-sm active:scale-95 disabled:opacity-50 transition-all shadow-xl shadow-black/20"
@@ -475,28 +481,22 @@ export function UserContentSection({ data }: UserContentSectionProps) {
                   <Bookmark className="w-4 h-4" />
                   {planLoading ? 'Saving…' : 'Plan to Watch'}
                 </button>
-                <button
-                  onClick={handleShare}
-                  className="w-14 flex items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white active:scale-95 transition-all shadow-xl shadow-black/20"
-                >
-                  <Share2 className="w-5 h-5" />
-                </button>
               </>
             )}
             {userState === 'planned' && (
               <>
+                <button
+                  onClick={handleShare}
+                  className="w-14 flex items-center justify-center rounded-xl bg-white/80 border border-white/10 text-black active:scale-95 transition-all shadow-xl shadow-black/20"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
                 <button
                   onClick={handleRemovePlan}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-blue-500/90 border border-blue-500/90 text-white font-bold text-sm active:scale-95 transition-all shadow-xl shadow-black/20"
                 >
                   <BookmarkCheck className="w-4 h-4" />
                   Planned
-                </button>
-                <button
-                  onClick={handleShare}
-                  className="w-14 flex items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white active:scale-95 transition-all shadow-xl shadow-black/20"
-                >
-                  <Share2 className="w-5 h-5" />
                 </button>
               </>
             )}
