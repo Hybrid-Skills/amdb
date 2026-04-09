@@ -22,7 +22,9 @@ export async function GET() {
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
   });
 
-  return NextResponse.json(profiles);
+  return NextResponse.json(profiles, {
+    headers: { 'Cache-Control': 'private, max-age=60' },
+  });
 }
 
 export async function POST(req: Request) {

@@ -77,6 +77,7 @@ export function Dashboard(_: DashboardProps) {
   const [totalPages, setTotalPages] = React.useState(0);
   const [total, setTotal] = React.useState(0);
   const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
+  const [debouncedFilters, setDebouncedFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
 
   async function fetchProfiles() {
     const res = await fetch('/api/profiles');
@@ -100,7 +101,7 @@ export function Dashboard(_: DashboardProps) {
     if (f.watchStatus.length > 0) params.set('watchStatus', f.watchStatus.join(','));
     if (f.genres.length > 0) params.set('genres', f.genres.join(','));
 
-    const res = await fetch(`/api/list?${params}`, { cache: 'no-store' });
+    const res = await fetch(`/api/list?${params}`);
     if (res.ok) {
       const data = await res.json();
       setListItems(data.items);
@@ -141,19 +142,25 @@ export function Dashboard(_: DashboardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Fetch list on profile/filter change — skip if already fetched on mount for this profile
+  // Debounce filter changes — 500ms
+  React.useEffect(() => {
+    const t = setTimeout(() => setDebouncedFilters(filters), 500);
+    return () => clearTimeout(t);
+  }, [filters]);
+
+  // Fetch list on profile or debounced filter change
   React.useEffect(() => {
     if (!activeProfileId) return;
     document.cookie = `amdb_profile_id=${activeProfileId}; path=/; max-age=${60 * 60 * 24 * 365}; SameSite=Lax`;
     localStorage.setItem('amdb_last_profile_id', activeProfileId);
     // Skip initial fetch if mount already handled this profileId with default filters
     if (prefetchedProfileId.current === activeProfileId) {
-      prefetchedProfileId.current = null; // only skip once
+      prefetchedProfileId.current = null;
       return;
     }
-    fetchList(activeProfileId, 1, filters);
+    fetchList(activeProfileId, 1, debouncedFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProfileId, filters]);
+  }, [activeProfileId, debouncedFilters]);
 
   function handleFiltersChange(f: ListFilters) {
     setFilters(f);
@@ -396,7 +403,7 @@ export function Dashboard(_: DashboardProps) {
                         variant="outline"
                         size="sm"
                         disabled={page === 1}
-                        onClick={() => fetchList(activeProfileId, page - 1, filters)}
+                        onClick={() => fetchList(activeProfileId, page - 1, debouncedFilters)}
                       >
                         Previous
                       </Button>
@@ -407,7 +414,7 @@ export function Dashboard(_: DashboardProps) {
                         variant="outline"
                         size="sm"
                         disabled={page === totalPages}
-                        onClick={() => fetchList(activeProfileId, page + 1, filters)}
+                        onClick={() => fetchList(activeProfileId, page + 1, debouncedFilters)}
                       >
                         Next
                       </Button>

@@ -170,7 +170,7 @@ export async function GET(req: Request) {
     { items: formatted, total, page, totalPages: Math.ceil(total / limit) },
     {
       headers: {
-        'Cache-Control': 's-maxage=1, stale-while-revalidate=59',
+        'Cache-Control': 'private, max-age=30',
       },
     },
   );

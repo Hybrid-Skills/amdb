@@ -102,7 +102,9 @@ export async function GET(req: Request) {
   // Normalise shape: rename addedAt → createdAt for UI consistency
   const normalised = items.map((i) => ({ ...i, createdAt: i.addedAt }));
 
-  return NextResponse.json({ items: normalised, total, page, totalPages: Math.ceil(total / limit) });
+  return NextResponse.json({ items: normalised, total, page, totalPages: Math.ceil(total / limit) }, {
+    headers: { 'Cache-Control': 'private, max-age=30' },
+  });
 }
 
 // POST /api/watchlist — create PLANNED entry, or promote RECOMMENDED → PLANNED
