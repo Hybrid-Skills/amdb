@@ -309,14 +309,11 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex flex-col gap-4"
+              className="flex gap-1.5"
             >
-              <div className="flex gap-1.5">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <div key={i} className="flex-1 h-8 md:h-11 rounded-md bg-white/10 animate-pulse" />
-                ))}
-              </div>
-              <div className="h-5 w-2/3 rounded-md bg-white/5 animate-pulse" />
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="flex-1 h-8 md:h-11 rounded-md bg-white/10 animate-pulse" />
+              ))}
             </motion.div>
           )}
 

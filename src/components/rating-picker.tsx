@@ -40,38 +40,36 @@ export function RatingPicker({ value, onChange, onActiveRating }: RatingPickerPr
   }, [active]);
 
   return (
-    <div className="flex flex-col items-center gap-3 overflow-visible w-full">
-      <div className="flex gap-1.5 overflow-visible w-full">
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
-          const isActive = active !== null && n <= active;
-          const isSelected = value !== null && n <= value && hovered === null;
-          return (
-            <motion.button
-              key={n}
-              type="button"
-              whileHover={{ scale: 1.2, y: -4 }}
-              whileTap={{ scale: 0.9 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-              onMouseEnter={() => setHovered(n)}
-              onMouseLeave={() => setHovered(null)}
-              onClick={() => onChange(n)}
-              className={cn(
-                'flex-1 h-8 md:h-11 rounded-md text-sm font-bold transition-colors border',
-                isActive
-                  ? 'text-background border-transparent'
-                  : 'text-muted-foreground border-muted-foreground/30 hover:border-transparent',
-              )}
-              style={
-                isActive
-                  ? { backgroundColor: ratingColor(active!), borderColor: 'transparent' }
-                  : {}
-              }
-            >
-              {n}
-            </motion.button>
-          );
-        })}
-      </div>
+    <div className="flex gap-1.5 overflow-visible w-full">
+      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => {
+        const isActive = active !== null && n <= active;
+        const isSelected = value !== null && n <= value && hovered === null;
+        return (
+          <motion.button
+            key={n}
+            type="button"
+            whileHover={{ scale: 1.2, y: -4 }}
+            whileTap={{ scale: 0.9 }}
+            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+            onMouseEnter={() => setHovered(n)}
+            onMouseLeave={() => setHovered(null)}
+            onClick={() => onChange(n)}
+            className={cn(
+              'flex-1 h-8 md:h-11 rounded-md text-sm font-bold transition-colors border',
+              isActive
+                ? 'text-background border-transparent'
+                : 'text-muted-foreground border-muted-foreground/30 hover:border-transparent',
+            )}
+            style={
+              isActive
+                ? { backgroundColor: ratingColor(active!), borderColor: 'transparent' }
+                : {}
+            }
+          >
+            {n}
+          </motion.button>
+        );
+      })}
     </div>
   );
 }
