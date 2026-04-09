@@ -10,8 +10,7 @@ interface CrewMember {
 }
 
 interface CrewSectionProps {
-  tmdbId: number;
-  contentType: 'MOVIE' | 'TV_SHOW' | 'ANIME';
+  fullCrew: CrewMember[];
 }
 
 const deptOrder = [
@@ -27,11 +26,7 @@ const deptOrder = [
   'Other',
 ];
 
-export async function CrewSection({ tmdbId, contentType }: CrewSectionProps) {
-  const credits =
-    contentType === 'MOVIE' ? await fetchMovieCredits(tmdbId) : await fetchTvCredits(tmdbId);
-
-  const fullCrew = credits.fullCrew;
+export function CrewSection({ fullCrew }: CrewSectionProps) {
   if (!fullCrew?.length) return null;
 
   const crewByDept = fullCrew.reduce(

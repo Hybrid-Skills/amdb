@@ -100,17 +100,9 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
 
         {tmdbId && (
           <>
-            <Suspense fallback={<SkeletonSection height="h-60" />}>
-              <CastSection tmdbId={tmdbId} contentType={data.contentType} />
-            </Suspense>
-
-            <Suspense fallback={<SkeletonSection height="h-40" />}>
-              <CrewSection tmdbId={tmdbId} contentType={data.contentType} />
-            </Suspense>
-
-            <Suspense fallback={<SkeletonSection height="h-64" />}>
-              <SimilarSection tmdbId={tmdbId} contentType={data.contentType} />
-            </Suspense>
+            <CastSection cast={data.cast} />
+            <CrewSection fullCrew={data.fullCrew} />
+            <SimilarSection items={data.similar} contentType={data.contentType} />
           </>
         )}
 

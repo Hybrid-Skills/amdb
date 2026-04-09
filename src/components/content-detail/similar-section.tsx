@@ -14,14 +14,11 @@ interface SimilarItem {
 }
 
 interface SimilarSectionProps {
-  tmdbId: number;
+  items: SimilarItem[];
   contentType: 'MOVIE' | 'TV_SHOW' | 'ANIME';
 }
 
-export async function SimilarSection({ tmdbId, contentType }: SimilarSectionProps) {
-  const items =
-    contentType === 'MOVIE' ? await fetchMovieSimilar(tmdbId) : await fetchTvSimilar(tmdbId);
-
+export function SimilarSection({ items, contentType }: SimilarSectionProps) {
   if (!items?.length) return null;
 
   return (
