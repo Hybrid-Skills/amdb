@@ -137,11 +137,7 @@ export async function GET(req: Request) {
             ageCertification: true,
             tmdbId: true,
             malId: true,
-            enrichments: {
-              where: { source: 'omdb' },
-              select: { data: true },
-              take: 1,
-            },
+            omdbRatings: true,
           },
         },
       },
@@ -154,14 +150,16 @@ export async function GET(req: Request) {
 
   // Flatten omdb ratings into content for convenience
   const formatted = items.map((item) => {
-    const omdb = item.content?.enrichments?.[0]?.data as Record<string, any> | undefined;
-    const { enrichments: _, ...contentRest } = item.content;
+    const { ...contentRest } = item.content;
+    const omdbRatings = (contentRest.omdbRatings as any[]) || [];
+    const imdbRating = (omdbRatings.find(r => r.Source === 'Internet Movie Database')?.Value) || null;
+
     return {
       ...item,
       content: {
         ...contentRest,
-        omdbRatings: omdb?.Ratings ?? [],
-        imdbRating: omdb?.imdbRating ?? null,
+        omdbRatings,
+        imdbRating,
       },
     };
   });
@@ -299,9 +297,15 @@ export async function POST(req: Request) {
           if (omdbRes.ok) {
             const omdbData = await omdbRes.json();
             if (omdbData.Response === 'True') {
-              await prisma.contentEnrichment.create({
-                data: { contentId: content.id, source: 'omdb', data: omdbData },
-              });
+              await Promise.all([
+                prisma.contentEnrichment.create({
+                  data: { contentId: content.id, source: 'omdb', data: omdbData },
+                }),
+                prisma.content.update({
+                  where: { id: content.id },
+                  data: { omdbRatings: omdbData.Ratings ?? [] },
+                }),
+              ]);
             }
           }
         } catch (e) {
