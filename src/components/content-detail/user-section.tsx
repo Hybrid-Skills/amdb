@@ -6,6 +6,7 @@ import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ContentDetail } from '@/lib/content-detail';
 import { AddToListModal } from '@/components/add-to-list-modal';
+import { RatingPicker } from '@/components/rating-picker';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import {
   Dialog,
@@ -152,6 +153,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   const [modalOpen, setModalOpen] = React.useState(false);
   const [signInOpen, setSignInOpen] = React.useState(false);
   const [planLoading, setPlanLoading] = React.useState(false);
+  const [pendingRating, setPendingRating] = React.useState<number | null>(null);
 
   // Resolve profile from cookie
   const profileId = React.useMemo(() => {
@@ -277,12 +279,11 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex items-center gap-3"
+              className="flex gap-1.5"
             >
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="w-5 h-5 rounded bg-white/10 animate-pulse" />
+              {Array.from({ length: 10 }).map((_, i) => (
+                <div key={i} className="flex-1 h-8 md:h-11 rounded-md bg-white/10 animate-pulse" />
               ))}
-              <div className="w-20 h-5 rounded bg-white/10 animate-pulse ml-2" />
             </motion.div>
           )}
 
@@ -294,23 +295,11 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               exit={{ opacity: 0 }}
               className="flex flex-col gap-4"
             >
-              {/* Empty stars */}
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-white/20" />
-                ))}
-                <span className="ml-2 text-white/30 text-sm">Not rated yet</span>
-              </div>
-
-              {/* CTAs */}
+              <RatingPicker
+                value={null}
+                onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
+              />
               <div className="flex gap-3 flex-wrap">
-                <button
-                  onClick={() => requireAuth(() => setModalOpen(true))}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
-                >
-                  <Star className="w-4 h-4" />
-                  Rate
-                </button>
                 <button
                   onClick={handlePlan}
                   disabled={planLoading}
@@ -331,23 +320,11 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               exit={{ opacity: 0 }}
               className="flex flex-col gap-4"
             >
-              {/* Empty stars */}
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star key={i} className="w-5 h-5 text-white/20" />
-                ))}
-                <span className="ml-2 text-white/30 text-sm">Not rated yet</span>
-              </div>
-
-              {/* Planned badge + Rate CTA */}
+              <RatingPicker
+                value={null}
+                onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
+              />
               <div className="flex gap-3 flex-wrap items-center">
-                <button
-                  onClick={() => requireAuth(() => setModalOpen(true))}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-primary text-black font-bold text-sm hover:bg-primary/90 transition-all active:scale-95 shadow-lg shadow-primary/20"
-                >
-                  <Star className="w-4 h-4" />
-                  Rate
-                </button>
                 <button
                   onClick={handleRemovePlan}
                   className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 font-bold text-sm hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all active:scale-95 group"
@@ -393,13 +370,14 @@ export function UserContentSection({ data }: UserContentSectionProps) {
           key={data.tmdbId ?? data.malId ?? 'detail'}
           item={modalItem as any}
           profileId={profileId ?? ''}
-          initialRating={userContent.userRating ?? undefined}
+          initialRating={pendingRating ?? userContent.userRating ?? undefined}
           initialNotes={userContent.notes}
           initialWatchStatus={userContent.watchStatus}
           startInEditMode={userState === 'rated'}
-          onClose={() => setModalOpen(false)}
+          onClose={() => { setModalOpen(false); setPendingRating(null); }}
           onSuccess={() => {
             setModalOpen(false);
+            setPendingRating(null);
             // Re-check state after rating
             const params = new URLSearchParams({ profileId: profileId! });
             if (data.tmdbId) params.set('tmdbId', String(data.tmdbId));
