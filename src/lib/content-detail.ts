@@ -17,6 +17,7 @@ export interface ContentDetail {
   status: string | null;
   imdbId: string | null;
   tmdbId: number | null;
+  malId: number | null;
   tmdbRating: number | null;
   tmdbVoteCount: number | null;
   popularity: number | null;
@@ -208,6 +209,7 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
     status: raw.status ?? contentRecord.status,
     imdbId: raw.imdb_id ?? contentRecord.imdbId,
     tmdbId: tmdbId ?? null,
+    malId: null,
     tmdbRating: raw.vote_average
       ? Number(raw.vote_average.toFixed(1))
       : contentRecord.tmdbRating
@@ -378,6 +380,7 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
     status: isOngoing ? 'Ongoing' : (raw.status ?? contentRecord.status),
     imdbId: raw.external_ids?.imdb_id ?? contentRecord.imdbId,
     tmdbId: tmdbId ?? null,
+    malId: null,
     tmdbRating: raw.vote_average
       ? Number(raw.vote_average.toFixed(1))
       : contentRecord.tmdbRating
@@ -543,6 +546,7 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
     status: isOngoing ? 'Ongoing' : (raw.status ?? contentRecord.status),
     imdbId: raw.external_ids?.imdb_id ?? contentRecord.imdbId,
     tmdbId: tmdbId ?? null,
+    malId: contentRecord.malId ?? null,
     tmdbRating: raw.vote_average
       ? Number(raw.vote_average.toFixed(1))
       : contentRecord.tmdbRating
@@ -656,6 +660,7 @@ export async function fetchAnimeByMalId(malId: number, amdbId: string): Promise<
     status: isOngoing ? 'Ongoing' : (raw.status ?? null),
     imdbId: null,
     tmdbId: null,
+    malId: malId,
     tmdbRating: raw.score ? Number(raw.score.toFixed(1)) : null,
     tmdbVoteCount: raw.scored_by ?? null,
     popularity: raw.members ?? null,

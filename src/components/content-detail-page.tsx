@@ -8,6 +8,7 @@ import { VideosSection } from './content-detail/videos-section';
 import { CrewSection } from './content-detail/crew-section';
 import { SimilarSection } from './content-detail/similar-section';
 import { ReleaseDatesSection } from './content-detail/release-dates-section';
+import { UserContentSection } from './content-detail/user-section';
 
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,9 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
       <div className="max-w-6xl mx-auto px-4 md:px-8 pt-2 pb-8 md:py-10 flex flex-col gap-4 md:gap-14">
         {/* Ratings row */}
         <RatingsRow data={data} />
+
+        {/* Your Rating (client-side, personalized) */}
+        <UserContentSection data={data} />
 
         {/* Overview */}
         {data.overview && (
