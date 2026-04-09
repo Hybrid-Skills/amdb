@@ -39,6 +39,8 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
   const [menuPos, setMenuPos] = React.useState({ top: 0, right: 0 });
   const [mounted, setMounted] = React.useState(false);
   const [signInOpen, setSignInOpen] = React.useState(false);
+  const triggerRef = React.useRef<HTMLButtonElement>(null);
+  const panelRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     setMounted(true);
