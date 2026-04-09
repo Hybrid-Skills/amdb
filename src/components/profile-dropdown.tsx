@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronDown, User, Plus, Check, X, LogOut, LogIn } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { signOut, useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { readProfileCookie, writeProfileCookie, clearProfileCookie } from '@/lib/profile-cookie';
@@ -28,6 +28,7 @@ interface ProfileDropdownProps {
 }
 
 export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }: ProfileDropdownProps) {
+  const { status } = useSession();
   const [profiles, setProfiles] = React.useState<Profile[]>(initialProfiles ?? []);
   const [activeProfile, setActiveProfile] = React.useState<Profile | null>(null);
   const [isDropdownOpen, setIsDropdownOpen] = React.useState(false);
@@ -36,49 +37,41 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
   const [newColor, setNewColor] = React.useState(AVATAR_COLORS[0]);
   const [isAdding, setIsAdding] = React.useState(false);
   const [menuPos, setMenuPos] = React.useState({ top: 0, right: 0 });
-  const triggerRef = React.useRef<HTMLButtonElement>(null);
-  const panelRef = React.useRef<HTMLDivElement>(null);
   const [mounted, setMounted] = React.useState(false);
-  const [isSignedOut, setIsSignedOut] = React.useState(false);
   const [signInOpen, setSignInOpen] = React.useState(false);
 
   React.useEffect(() => {
     setMounted(true);
     setNewColor(AVATAR_COLORS[Math.floor(Math.random() * AVATAR_COLORS.length)]);
+  }, []);
+
+  // When session is confirmed, load profile from cookie or fetch from API
+  React.useEffect(() => {
+    if (status === 'unauthenticated') {
+      clearProfileCookie();
+      setActiveProfile(null);
+      return;
+    }
+    if (status !== 'authenticated') return; // still loading
 
     const stored = readProfileCookie();
     if (stored) {
-      // Render immediately from cookie, then validate session in background
       setActiveProfile(stored);
-    } else if (initialProfiles?.length) {
-      const p = initialProfiles.find((x) => x.isDefault) ?? initialProfiles[0];
-      setActiveProfile(p);
-      writeProfileCookie(p);
+      return;
     }
-
-    // Always validate with the server — catches expired sessions even when cookie is present
+    // Authenticated but no cookie — fetch profiles (e.g. post sign-in redirect)
     fetch('/api/profiles')
-      .then((r) => {
-        if (r.status === 401) {
-          clearProfileCookie();
-          setActiveProfile(null);
-          setIsSignedOut(true);
-          return null;
-        }
-        return r.ok ? r.json() : null;
-      })
+      .then((r) => r.ok ? r.json() : null)
       .then((data: Profile[] | null) => {
         if (!data?.length) return;
-        const savedId = readProfileCookie()?.id;
-        const p = data.find((x) => x.id === savedId) ?? data.find((x) => x.isDefault) ?? data[0];
+        const p = data.find((x) => x.isDefault) ?? data[0];
         setProfiles(data);
         setActiveProfile(p);
         writeProfileCookie(p);
-        setIsSignedOut(false);
         if (onProfileSwitch) onProfileSwitch(p);
       })
       .catch(() => {});
-  }, [initialProfiles]);
+  }, [status]);
 
   const refreshProfiles = async () => {
     const res = await fetch('/api/profiles');

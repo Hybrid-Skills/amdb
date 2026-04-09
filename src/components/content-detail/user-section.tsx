@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Star, Bookmark, BookmarkCheck, Pencil, Share2 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ContentDetail } from '@/lib/content-detail';
 import { AddToListModal } from '@/components/add-to-list-modal';
@@ -34,6 +35,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 
 export function UserContentSection({ data }: UserContentSectionProps) {
+  const { status } = useSession();
   const [userState, setUserState] = React.useState<UserState>('loading');
   const [userContent, setUserContent] = React.useState<UserContent>({
     entryId: null,
@@ -48,25 +50,33 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   const [pendingRating, setPendingRating] = React.useState<number | null>(null);
   const [activeRating, setActiveRating] = React.useState<number | null>(null);
 
-  // Resolve profile from cookie, falling back to /api/profiles if not set
-  // (happens when user signs in directly on the detail page)
   const [profileId, setProfileId] = React.useState<string | null>(() => readProfileCookie()?.id ?? null);
 
+  // Derive profile from session + cookie
   React.useEffect(() => {
-    // Always validate session with the server — catches expired sessions even when cookie is present
+    if (status === 'unauthenticated') {
+      clearProfileCookie();
+      setProfileId(null);
+      return;
+    }
+    if (status !== 'authenticated') return; // still loading
+
+    const stored = readProfileCookie();
+    if (stored) {
+      setProfileId(stored.id);
+      return;
+    }
+    // Authenticated but no cookie — fetch to get profile id
     fetch('/api/profiles')
-      .then((r) => {
-        if (r.status === 401) { clearProfileCookie(); setProfileId(null); return null; }
-        return r.ok ? r.json() : null;
-      })
+      .then((r) => r.ok ? r.json() : null)
       .then((profiles) => {
-        if (!profiles?.length) { setProfileId(null); return; }
+        if (!profiles?.length) return;
         const profile = profiles.find((p: any) => p.isDefault) ?? profiles[0];
         writeProfileCookie(profile);
         setProfileId(profile.id);
       })
       .catch(() => {});
-  }, []);
+  }, [status]);
 
   React.useEffect(() => {
     if (!profileId) {
