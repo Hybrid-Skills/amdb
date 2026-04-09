@@ -215,8 +215,8 @@ export function UserContentSection({ data }: UserContentSectionProps) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            tmdbId: data.tmdbId,
-            malId: data.malId,
+            ...(data.tmdbId ? { tmdbId: data.tmdbId } : {}),
+            ...(data.malId ? { malId: data.malId } : {}),
             contentType: data.contentType,
           }),
         });
@@ -268,6 +268,27 @@ export function UserContentSection({ data }: UserContentSectionProps) {
     contentType: data.contentType,
   };
 
+  // Pre-populate the modal with data we already have — avoids redundant /api/content fetch
+  const prefetchedContent = React.useMemo(() => ({
+    ...modalItem,
+    backdropUrl: data.backdropUrl,
+    tagline: data.tagline,
+    genres: data.genres,
+    runtimeMins: data.runtimeMins,
+    adult: data.adult,
+    networks: data.networks,
+    first_air_date: data.firstAirDate,
+    last_air_date: data.lastAirDate,
+    number_of_seasons: data.numberOfSeasons,
+    number_of_episodes: data.numberOfEpisodes,
+    episode_run_time: data.episodeRuntime ? [data.episodeRuntime] : [],
+    videos: { results: data.videos },
+    similar: { results: data.similar },
+    cast: data.cast,
+    watchProviders: data.watchProviders,
+    omdbRatings: data.omdbRatings,
+  }), [data.id]);
+
   return (
     <>
       <section>
@@ -277,7 +298,18 @@ export function UserContentSection({ data }: UserContentSectionProps) {
             Your Rating
           </h2>
           {(userState === 'new' || userState === 'planned') && (
-            <span className="text-sm text-white/30 font-medium">Not rated yet</span>
+            <AnimatePresence mode="wait">
+              <motion.span
+                key={activeRating ?? 'idle'}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="text-sm font-medium"
+                style={{ color: activeRating ? ratingColor(activeRating) : 'rgba(255,255,255,0.3)' }}
+              >
+                {activeRating ? RATING_LABELS[activeRating] : 'Not rated yet'}
+              </motion.span>
+            </AnimatePresence>
           )}
         </div>
 
@@ -304,20 +336,6 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               exit={{ opacity: 0 }}
               className="flex flex-col gap-3"
             >
-              <div className="hidden md:block h-5">
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={activeRating ?? 'idle'}
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    className="text-sm font-bold"
-                    style={{ color: activeRating ? ratingColor(activeRating) : 'rgb(113,113,122)' }}
-                  >
-                    {activeRating ? RATING_LABELS[activeRating] : 'Select a rating'}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
               <RatingPicker
                 value={null}
                 onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
@@ -344,20 +362,6 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               exit={{ opacity: 0 }}
               className="flex flex-col gap-3"
             >
-              <div className="hidden md:block h-5">
-                <AnimatePresence mode="wait">
-                  <motion.span
-                    key={activeRating ?? 'idle'}
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 4 }}
-                    className="text-sm font-bold"
-                    style={{ color: activeRating ? ratingColor(activeRating) : 'rgb(113,113,122)' }}
-                  >
-                    {activeRating ? RATING_LABELS[activeRating] : 'Select a rating'}
-                  </motion.span>
-                </AnimatePresence>
-              </div>
               <RatingPicker
                 value={null}
                 onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
@@ -412,6 +416,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
           initialRating={pendingRating ?? userContent.userRating ?? undefined}
           initialNotes={userContent.notes}
           initialWatchStatus={userContent.watchStatus}
+          prefetchedContent={prefetchedContent}
           startInEditMode={userState === 'rated'}
           onClose={() => { setModalOpen(false); setPendingRating(null); }}
           onSuccess={() => {
@@ -444,7 +449,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
 
       {/* Mobile sticky bottom bar — Plan to Watch / Planned */}
       {(userState === 'new' || userState === 'planned') && (
-        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent pointer-events-none">
+        <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-8 bg-gradient-to-t from-black to-transparent pointer-events-none">
           <div className="pointer-events-auto">
             {userState === 'new' && (
               <button

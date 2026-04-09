@@ -68,6 +68,7 @@ interface AddToListModalProps {
   initialNotes?: string | null;
   initialRating?: number | null;
   startInEditMode?: boolean;
+  prefetchedContent?: Record<string, any>;
 }
 
 const WATCH_STATUS_OPTIONS = [
@@ -101,6 +102,7 @@ export function AddToListModal({
   initialNotes,
   initialWatchStatus,
   startInEditMode,
+  prefetchedContent,
 }: AddToListModalProps) {
   const router = useRouter();
   const isDesktop = useMediaQuery('(min-width: 768px)');
@@ -144,6 +146,16 @@ export function AddToListModal({
       setWatchProviders(null);
       return;
     }
+
+    // If caller already has the content data, skip the network fetch entirely
+    if (prefetchedContent) {
+      setDetailedItem(prefetchedContent);
+      setWatchProviders(prefetchedContent.watchProviders ?? null);
+      setLoadingDetails(false);
+      setProvidersLoading(false);
+      return;
+    }
+
     const id = item.tmdbId ?? item.malId;
     if (!id) return;
 
@@ -297,7 +309,6 @@ export function AddToListModal({
     // Optimistic update — flip state immediately, modal stays open
     setIsPlanned(false);
     setPlannedId(null);
-    toast({ title: 'Removed from plan', duration: 1000 });
     try {
       await fetch(`/api/watchlist/${plannedId}`, { method: 'DELETE' });
     } catch {
