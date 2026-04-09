@@ -369,23 +369,27 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
     }
   }
 
-  const isFiltered = filters.contentType !== 'ALL';
+  const isFiltered =
+    filters.contentType !== 'ALL' ||
+    filters.genres.length > 0 ||
+    filters.minRating > 1 ||
+    filters.maxRating < 10;
 
   return (
     <div className="relative space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <ListFilterBar filters={filters} onChange={setFilters} total={historyTotal} hideUserRating />
 
       {/* Empty state */}
-      {!historyLoading && !generating && historyItems.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-24 text-muted-foreground border-2 border-dashed border-border rounded-2xl text-center">
-          <History className="w-12 h-12 mb-4 opacity-20" />
-          <p className="text-lg font-medium mb-1 text-foreground">
+      {historyItems.length === 0 && !historyLoading && !generating && (
+        <div className="flex flex-col items-center justify-center py-24 text-center select-none text-muted-foreground">
+          <Sparkles className="w-14 h-14 mb-4 opacity-20" />
+          <p className="text-lg font-bold text-white mb-1">
             {isFiltered ? 'No matches found' : 'No recommendations yet'}
           </p>
-          <p className="text-sm opacity-80 max-w-sm">
-            {isFiltered
-              ? 'Try adjusting your filters to see more results.'
-              : 'Hit Recommend to get personalised recommendations based on your ratings history.'}
+          <p className="text-sm opacity-60 max-w-xs">
+            {isFiltered 
+              ? 'Please try removing some filters to see more results.'
+              : 'Add more recommendations by hitting Recommend.'}
           </p>
         </div>
       )}
