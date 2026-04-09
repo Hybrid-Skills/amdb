@@ -253,12 +253,16 @@ export function UserContentSection({ data }: UserContentSectionProps) {
 
   return (
     <>
-      <section>
+      <section className="min-h-[140px]">
         <div className="flex items-center gap-3 mb-4">
           <h2 className="text-xl font-bold tracking-tight flex items-center gap-2">
             <span className="w-1 h-5 rounded-full bg-primary inline-block" />
             Your Rating
           </h2>
+
+          {userState === 'loading' && (
+            <div className="w-24 h-6 rounded-md bg-white/10 animate-pulse ml-1" />
+          )}
 
           {userState === 'rated' && userContent.userRating && (
             <div className="flex items-center gap-2.5 ml-1">
@@ -305,11 +309,14 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="flex gap-1.5"
+              className="flex flex-col gap-4"
             >
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="flex-1 h-8 md:h-11 rounded-md bg-white/10 animate-pulse" />
-              ))}
+              <div className="flex gap-1.5">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div key={i} className="flex-1 h-8 md:h-11 rounded-md bg-white/10 animate-pulse" />
+                ))}
+              </div>
+              <div className="h-5 w-2/3 rounded-md bg-white/5 animate-pulse" />
             </motion.div>
           )}
 

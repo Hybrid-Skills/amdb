@@ -52,7 +52,7 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
         <RatingsRow data={data} />
 
         {/* Overview + Your Rating: stacked on mobile (rating first), side-by-side on desktop */}
-        <div className="flex flex-col md:flex-row md:gap-12">
+        <div className="flex flex-col gap-8 md:flex-row md:gap-12">
           <div className={`md:order-2 ${data.overview ? 'md:w-80 md:shrink-0' : 'w-full'}`}>
             <UserContentSection data={data} />
           </div>
