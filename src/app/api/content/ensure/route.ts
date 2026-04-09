@@ -56,11 +56,12 @@ export async function POST(req: Request) {
       // Re-evaluate TV_SHOW → ANIME using full genre data from TMDB.
       // Multi-search genre_ids can be incomplete; full TV endpoint is authoritative.
       let resolvedContentType = contentType as ContentType;
-      if (contentType === 'TV_SHOW') {
+      if (contentType === 'TV_SHOW' || contentType === 'ANIME') {
         const genreIds = (raw.genres ?? []).map((g: any) => g.id);
-        if ((raw as any).original_language === 'ja' && genreIds.includes(16)) {
-          resolvedContentType = 'ANIME';
-        }
+        const isJapanese =
+          (raw as any).original_language === 'ja' ||
+          ((raw as any).origin_country ?? []).includes('JP');
+        resolvedContentType = isJapanese && genreIds.includes(16) ? 'ANIME' : 'TV_SHOW';
       }
 
       contentData = {
