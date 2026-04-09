@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Star, Bookmark, BookmarkCheck, Pencil, LogIn } from 'lucide-react';
+import { Star, Bookmark, BookmarkCheck, Pencil, LogIn, Share2 } from 'lucide-react';
 import { signIn } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ContentDetail } from '@/lib/content-detail';
@@ -218,6 +218,42 @@ export function UserContentSection({ data }: UserContentSectionProps) {
     }
   }
 
+  async function handleShare() {
+    const ratingSource = data.omdbRatings?.find(r => r.Source === 'Internet Movie Database') ? 'IMDb' : data.malScore ? 'MAL' : 'TMDB';
+    const ratingVal = data.omdbRatings?.find(r => r.Source === 'Internet Movie Database')?.Value.split('/')[0] || data.malScore || data.tmdbRating || 'N/A';
+    const typeLabel = data.contentType === 'MOVIE' ? 'movie' : data.contentType === 'TV_SHOW' ? 'TV show' : 'anime';
+    const url = window.location.href;
+    const title = data.title;
+
+    let text = "";
+    if (userState === 'new') {
+      text = `Found this ${typeLabel} with ⭐ ${ratingVal} ${ratingSource}. Add ${title} to your watch list here ${url}`;
+    } else if (userState === 'planned') {
+      text = `I am planning to watch ${title}. This ${typeLabel} has an ${ratingSource.toLowerCase()} rating of ${ratingVal}. You should add it to your list as well here ${url}`;
+    } else if (userState === 'rated' && userContent.userRating) {
+      const r = userContent.userRating;
+      const adj = r >= 9 ? "solid " : r >= 7 ? "decent " : r >= 5 ? "passable " : "";
+      text = `I watched ${title}, it's a ${adj}${r}/10. You can add it to your list here ${url}`;
+    } else {
+      text = `Check out ${title} on AMDB: ${url}`;
+    }
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, text, url });
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') console.error('Share failed:', err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(text);
+        alert('Link copied to clipboard!');
+      } catch (err) {
+        console.error('Clipboard failed:', err);
+      }
+    }
+  }
+
   const modalItem = {
     id: data.id,
     tmdbId: data.tmdbId ?? undefined,
@@ -425,27 +461,52 @@ export function UserContentSection({ data }: UserContentSectionProps) {
       {/* Sign-in prompt */}
       <SignInPrompt open={signInOpen} onClose={() => setSignInOpen(false)} />
 
-      {/* Mobile sticky bottom bar — Plan to Watch / Planned */}
-      {(userState === 'new' || userState === 'planned') && (
+      {/* Mobile sticky bottom bar */}
+      {userState !== 'loading' && (
         <div className="md:hidden fixed bottom-0 left-0 right-0 z-40 px-4 pb-6 pt-8 bg-gradient-to-t from-black to-transparent pointer-events-none">
-          <div className="pointer-events-auto">
+          <div className="flex gap-2 pointer-events-auto">
             {userState === 'new' && (
-              <button
-                onClick={handlePlan}
-                disabled={planLoading}
-                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white/90 border border-white/90 text-black font-bold text-sm active:scale-95 disabled:opacity-50 transition-all"
-              >
-                <Bookmark className="w-4 h-4" />
-                {planLoading ? 'Saving…' : 'Plan to Watch'}
-              </button>
+              <>
+                <button
+                  onClick={handlePlan}
+                  disabled={planLoading}
+                  className="flex-1 flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-white/90 border border-white/90 text-black font-bold text-sm active:scale-95 disabled:opacity-50 transition-all shadow-xl shadow-black/20"
+                >
+                  <Bookmark className="w-4 h-4" />
+                  {planLoading ? 'Saving…' : 'Plan to Watch'}
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="w-14 flex items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white active:scale-95 transition-all shadow-xl shadow-black/20"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
+              </>
             )}
             {userState === 'planned' && (
+              <>
+                <button
+                  onClick={handleRemovePlan}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-blue-500/90 border border-blue-500/90 text-white font-bold text-sm active:scale-95 transition-all shadow-xl shadow-black/20"
+                >
+                  <BookmarkCheck className="w-4 h-4" />
+                  Planned
+                </button>
+                <button
+                  onClick={handleShare}
+                  className="w-14 flex items-center justify-center rounded-xl bg-white/10 border border-white/10 text-white active:scale-95 transition-all shadow-xl shadow-black/20"
+                >
+                  <Share2 className="w-5 h-5" />
+                </button>
+              </>
+            )}
+            {userState === 'rated' && (
               <button
-                onClick={handleRemovePlan}
-                className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-blue-500/90 border border-blue-500/90 text-white font-bold text-sm active:scale-95 transition-all"
+                onClick={handleShare}
+                className="w-full flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-primary border border-primary text-black font-bold text-sm active:scale-95 transition-all shadow-xl shadow-black/20"
               >
-                <BookmarkCheck className="w-4 h-4" />
-                Planned — tap to remove
+                <Share2 className="w-4 h-4" />
+                Share with friends
               </button>
             )}
           </div>
