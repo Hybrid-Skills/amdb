@@ -53,8 +53,18 @@ export async function POST(req: Request) {
           ? await tmdb.tvDetails(tmdbId)
           : await tmdb.movieDetails(tmdbId);
 
+      // Re-evaluate TV_SHOW → ANIME using full genre data from TMDB.
+      // Multi-search genre_ids can be incomplete; full TV endpoint is authoritative.
+      let resolvedContentType = contentType as ContentType;
+      if (contentType === 'TV_SHOW') {
+        const genreIds = (raw.genres ?? []).map((g: any) => g.id);
+        if (raw.original_language === 'ja' && genreIds.includes(16)) {
+          resolvedContentType = 'ANIME';
+        }
+      }
+
       contentData = {
-        contentType: contentType as ContentType,
+        contentType: resolvedContentType,
         title: raw.title ?? raw.name ?? '',
         originalTitle: raw.original_title ?? raw.original_name ?? null,
         year: raw.release_date

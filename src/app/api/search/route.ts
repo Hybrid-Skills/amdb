@@ -152,11 +152,15 @@ export async function GET(req: Request) {
     const data = await tmdb.searchMulti(query, page);
 
     // Heuristic: Japanese animation on TMDB appears as media_type='tv'.
-    // Classify as ANIME if: original_language is 'ja' AND genre 16 (Animation) is present.
+    // Classify as ANIME if: (original_language='ja' OR origin_country includes 'JP')
+    // AND genre 16 (Animation) is present.
+    // Note: multi-search genre_ids can be incomplete — ensure route re-checks with full data.
     function detectContentType(r: (typeof data.results)[0]): ContentType {
       if (r.media_type === 'movie') return 'MOVIE';
-      const isJapaneseAnimation =
-        (r as any).original_language === 'ja' && (r.genre_ids ?? []).includes(16);
+      const isJapanese =
+        (r as any).original_language === 'ja' ||
+        ((r as any).origin_country ?? []).includes('JP');
+      const isJapaneseAnimation = isJapanese && (r.genre_ids ?? []).includes(16);
       return isJapaneseAnimation ? 'ANIME' : 'TV_SHOW';
     }
 
