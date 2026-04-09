@@ -191,17 +191,6 @@ export function MovieCard({
   const certLabel = ageCertification ?? (adult ? '18+' : null);
 
   const handleCardClick = () => {
-    // Strictly enforce internal AMDB IDs for navigation.
-    // TMDB IDs are numeric; our internal IDs (CUIDs/ShortIDs) are alphanumeric.
-    const isInternalId = id && isNaN(Number(id)) && !id.startsWith('pending');
-    if (!isInternalId) {
-      // If NOT an internal ID, we trigger the details/rate modal instead 
-      // which handles the "ensure" process and eventually allows navigation.
-      if (variant === 'WATCHED') onEdit?.();
-      else onSecondaryAction?.();
-      return;
-    }
-
     const url = buildContentUrl(contentType, title, id);
     router.push(url);
   };
@@ -366,22 +355,14 @@ export function MovieCard({
               </div>
             )
           ) : (
-            /* Vertical Unified CTA (Already optimized) */
+            /* Vertical Unified CTA - Clicking navigates by bubbling up */
             <div 
               className={cn(
-                "px-3 py-2.5 flex items-center justify-between transition-all active:scale-[0.98] group/cta shrink-0 rounded-b-xl",
+                "px-3 py-2.5 flex items-center justify-between transition-all group/cta shrink-0 rounded-b-xl",
                 variant === 'WATCHED' 
                   ? "bg-secondary/40 hover:bg-secondary/60 text-foreground" 
                   : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
               )}
-              onClick={(e) => {
-                e.stopPropagation();
-                if (variant === 'WATCHED') {
-                  onEdit?.();
-                } else {
-                  onSecondaryAction?.();
-                }
-              }}
             >
               {variant === 'WATCHED' ? (
                 <>
@@ -397,7 +378,15 @@ export function MovieCard({
                       </span>
                     </span>
                   </div>
-                  <Pencil className="w-4 h-4 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0 ml-2" />
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEdit?.();
+                    }}
+                    className="p-1 hover:bg-black/10 rounded-md transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0" />
+                  </button>
                 </>
               ) : (
                  <div className="flex items-center justify-between w-full">

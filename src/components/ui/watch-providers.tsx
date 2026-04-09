@@ -45,7 +45,7 @@ export function WatchProviders({ providers, title, className }: WatchProvidersPr
         )}
 
         {hasFlatrate &&
-          uniqueProviders(providers.flatrate)
+          uniqueProviders(providers.flatrate.filter((p: any) => p.logo_path))
             .slice(0, 10)
             .map((p: any) => {
               const searchUrl = getProviderSearchUrl(p.provider_name, title, providers.link!);
@@ -73,7 +73,9 @@ export function WatchProviders({ providers, title, className }: WatchProvidersPr
         {hasFlatrate && hasRentBuy && <div className="w-px h-3 bg-white/10 shrink-0 mx-1" />}
 
         {hasRentBuy &&
-          uniqueProviders([...(providers.rent || []), ...(providers.buy || [])])
+          uniqueProviders(
+            [...(providers.rent || []), ...(providers.buy || [])].filter((p: any) => p.logo_path),
+          )
             .slice(0, 8)
             .map((p: any) => {
               const searchUrl = getProviderSearchUrl(p.provider_name, title, providers.link!);
