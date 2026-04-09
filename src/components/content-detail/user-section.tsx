@@ -36,15 +36,27 @@ interface UserContentSectionProps {
 
 function StarDisplay({ rating, max = 10, onEdit }: { rating: number; max?: number; onEdit?: () => void }) {
   const stars = 5;
-  const filled = Math.round((rating / max) * stars);
+  const raw = (rating / max) * stars;
+  const filled = Math.floor(raw);
+  const hasHalf = raw - filled >= 0.5;
   return (
     <div className="flex items-center gap-1">
-      {Array.from({ length: stars }).map((_, i) => (
-        <Star
-          key={i}
-          className={`w-5 h-5 ${i < filled ? 'fill-yellow-400 text-yellow-400' : 'text-white/20'}`}
-        />
-      ))}
+      {Array.from({ length: stars }).map((_, i) => {
+        if (i < filled) {
+          return <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />;
+        }
+        if (i === filled && hasHalf) {
+          return (
+            <div key={i} className="relative w-5 h-5">
+              <Star className="w-5 h-5 absolute inset-0 text-white/20" />
+              <div className="absolute inset-0 overflow-hidden w-[50%]">
+                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
+              </div>
+            </div>
+          );
+        }
+        return <Star key={i} className="w-5 h-5 text-white/20" />;
+      })}
       <span className="ml-2 text-white font-black text-lg">{rating}</span>
       <span className="text-white/40 text-sm">/ {max}</span>
       {onEdit && (
