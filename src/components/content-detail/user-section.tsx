@@ -35,44 +35,6 @@ interface UserContentSectionProps {
   data: ContentDetail;
 }
 
-function StarDisplay({ rating, max = 10, onEdit }: { rating: number; max?: number; onEdit?: () => void }) {
-  const stars = 5;
-  const raw = (rating / max) * stars;
-  const filled = Math.floor(raw);
-  const hasHalf = raw - filled >= 0.5;
-  return (
-    <div className="flex items-center gap-1">
-      {Array.from({ length: stars }).map((_, i) => {
-        if (i < filled) {
-          return <Star key={i} className="w-5 h-5 fill-yellow-400 text-yellow-400" />;
-        }
-        if (i === filled && hasHalf) {
-          return (
-            <div key={i} className="relative w-5 h-5">
-              <Star className="w-5 h-5 absolute inset-0 text-white/20" />
-              <div className="absolute inset-0 overflow-hidden w-[50%]">
-                <Star className="w-5 h-5 fill-yellow-400 text-yellow-400" />
-              </div>
-            </div>
-          );
-        }
-        return <Star key={i} className="w-5 h-5 text-white/20" />;
-      })}
-      <span className="ml-2 text-white font-black text-lg">{rating}</span>
-      <span className="text-white/40 text-sm">/ {max}</span>
-      {onEdit && (
-        <button
-          onClick={onEdit}
-          className="ml-3 flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-white/50 font-bold text-xs hover:bg-white/10 hover:text-white transition-all active:scale-95"
-        >
-          <Pencil className="w-3 h-3" />
-          Edit
-        </button>
-      )}
-    </div>
-  );
-}
-
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
     <h2 className="text-xl font-bold tracking-tight mb-4 flex items-center gap-2">
@@ -297,6 +259,29 @@ export function UserContentSection({ data }: UserContentSectionProps) {
             <span className="w-1 h-5 rounded-full bg-primary inline-block" />
             Your Rating
           </h2>
+
+          {userState === 'rated' && userContent.userRating && (
+            <div className="flex items-center gap-2.5 ml-1">
+              <Star className="w-5 h-5 text-yellow-500 fill-yellow-500 shrink-0" />
+              <div className="flex items-baseline gap-2">
+                <span className="text-lg font-black text-white leading-none">{userContent.userRating}</span>
+                <span 
+                  className="text-xs font-bold uppercase tracking-tight"
+                  style={{ color: ratingColor(userContent.userRating) }}
+                >
+                  {RATING_LABELS[userContent.userRating]}
+                </span>
+              </div>
+              <button
+                onClick={() => requireAuth(() => setModalOpen(true))}
+                className="ml-1 p-1.5 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:bg-white/10 hover:text-white transition-all active:scale-95 group"
+                title="Edit rating"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+
           {(userState === 'new' || userState === 'planned') && (
             <AnimatePresence mode="wait">
               <motion.span
@@ -388,20 +373,9 @@ export function UserContentSection({ data }: UserContentSectionProps) {
               exit={{ opacity: 0 }}
               className="flex flex-col gap-4"
             >
-              {/* Star display + inline edit */}
-              {userContent.userRating && (
-                <StarDisplay
-                  rating={userContent.userRating}
-                  onEdit={() => requireAuth(() => setModalOpen(true))}
-                />
-              )}
-
-              {/* Notes */}
-              {userContent.notes && (
-                <blockquote className="border-l-2 border-primary/50 pl-4 text-white/60 text-sm italic leading-relaxed max-w-lg">
-                  "{userContent.notes}"
-                </blockquote>
-              )}
+              <p className="text-white/60 text-sm italic leading-relaxed max-w-lg">
+                {userContent.notes || "No review notes left"}
+              </p>
             </motion.div>
           )}
         </AnimatePresence>
