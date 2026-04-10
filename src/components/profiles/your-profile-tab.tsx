@@ -125,13 +125,13 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
             </button>
 
             {colorOpen && (
-              <div className="absolute top-full left-0 mt-1.5 z-50 bg-zinc-900 border border-white/10 rounded-xl p-3 shadow-xl">
-                <div className="grid grid-cols-4 gap-2">
+              <div className="absolute top-full left-0 mt-1.5 z-50 bg-zinc-900 border border-white/10 rounded-xl p-4 shadow-xl">
+                <div className="grid grid-cols-4 gap-3">
                   {AVATAR_COLORS.map((color) => (
                     <button
                       key={color}
                       onClick={() => handleColorSelect(color)}
-                      className="relative w-8 h-8 rounded-full transition-all hover:scale-110"
+                      className="relative w-9 h-9 rounded-full transition-all hover:scale-110"
                       style={{ backgroundColor: color }}
                     >
                       {profile.avatarColor === color && (
