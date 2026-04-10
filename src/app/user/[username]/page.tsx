@@ -36,27 +36,36 @@ export default async function UserProfilePage({ params }: Props) {
 
   if (!profileUser) notFound();
 
-  // Fetch stats and rated items
-  const stats = await getProfileStats(profileUser.id);
+  // Parallelize fetches for better performance
+  const [stats, initialRatedData] = await Promise.all([
+    getProfileStats(profileUser.id),
+    prisma.userContent.findMany({
+      where: {
+        userId: profileUser.id,
+        userRating: { not: null },
+      },
+      select: {
+        userRating: true,
+        content: {
+          select: {
+            id: true,
+            title: true,
+            year: true,
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: 'desc',
+      },
+      take: 12,
+    }),
+  ]);
 
-  // Fetch rated items for the "List" tab
-  const ratedItems = await prisma.userContent.findMany({
+  // Check if there are more items for initial pagination state
+  const totalRatedCount = await prisma.userContent.count({
     where: {
       userId: profileUser.id,
       userRating: { not: null },
-    },
-    select: {
-      userRating: true,
-      content: {
-        select: {
-          id: true,
-          title: true,
-          year: true,
-        },
-      },
-    },
-    orderBy: {
-      updatedAt: 'desc',
     },
   });
 
@@ -74,12 +83,13 @@ export default async function UserProfilePage({ params }: Props) {
       }}
       isOwner={isOwner}
       stats={stats}
-      ratedItems={ratedItems.map((item) => ({
+      initialRatedItems={initialRatedData.map((item) => ({
         id: item.content.id,
         title: item.content.title,
         year: item.content.year,
         rating: item.userRating!,
       }))}
+      initialHasMore={totalRatedCount > 12}
     />
   );
 }

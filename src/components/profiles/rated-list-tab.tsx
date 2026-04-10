@@ -14,9 +14,18 @@ interface RatedItem {
 interface RatedListTabProps {
   items: RatedItem[];
   profileName: string;
+  hasMore?: boolean;
+  loadingMore?: boolean;
+  onLoadMore?: () => void;
 }
 
-export function RatedListTab({ items, profileName }: RatedListTabProps) {
+export function RatedListTab({ 
+  items, 
+  profileName, 
+  hasMore, 
+  loadingMore, 
+  onLoadMore 
+}: RatedListTabProps) {
   if (items.length === 0) {
     return (
       <div className="py-20 text-center space-y-3">
@@ -37,13 +46,10 @@ export function RatedListTab({ items, profileName }: RatedListTabProps) {
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-white/5">
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">
-                Title
+              <th className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30">
+                Title (Year)
               </th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-center">
-                Year
-              </th>
-              <th className="px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">
+              <th className="px-4 sm:px-6 py-4 text-[10px] font-black uppercase tracking-widest text-white/30 text-right">
                 {firstName}&apos;s Rating
               </th>
             </tr>
@@ -51,23 +57,29 @@ export function RatedListTab({ items, profileName }: RatedListTabProps) {
           <tbody className="divide-y divide-white/[0.02]">
             {items.map((item) => (
               <tr key={item.id} className="group hover:bg-white/[0.02] transition-colors">
-                <td className="px-6 py-4">
+                <td className="px-4 sm:px-6 py-4">
                   <Link
                     href={`/content/${item.id}`}
-                    className="flex items-center gap-2 text-sm font-bold text-white hover:text-white/80 transition-colors group-hover:translate-x-1 transition-transform"
+                    className="flex flex-col gap-0.5 group-hover:translate-x-1 transition-transform"
                   >
-                    {item.title}
-                    <ArrowRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-bold text-white leading-tight">
+                        {item.title}
+                      </span>
+                      <ArrowRight className="w-3 h-3 text-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    {item.year && (
+                      <span className="text-[10px] sm:text-xs text-white/30 font-medium tracking-wide">
+                        {item.year}
+                      </span>
+                    )}
                   </Link>
                 </td>
-                <td className="px-6 py-4 text-center">
-                  <span className="text-sm text-white/40 tabular-nums">{item.year ?? 'N/A'}</span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10">
-                    <Star className="w-3.5 h-3.5 fill-yellow-500 text-yellow-500" />
-                    <span className="text-sm font-black text-white tabular-nums">
-                      {item.rating}/10
+                <td className="px-4 sm:px-6 py-4 text-right">
+                  <div className="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-white/5 border border-white/10 group-hover:border-white/20 transition-colors">
+                    <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
+                    <span className="text-xs sm:text-sm font-black text-white tabular-nums">
+                      {item.rating}
                     </span>
                   </div>
                 </td>
@@ -76,6 +88,18 @@ export function RatedListTab({ items, profileName }: RatedListTabProps) {
           </tbody>
         </table>
       </div>
+      
+      {hasMore && (
+        <div className="p-4 border-t border-white/5 flex justify-center">
+          <button
+            onClick={onLoadMore}
+            disabled={loadingMore}
+            className="w-full sm:w-auto px-8 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 text-white/60 hover:text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-white/5 hover:border-white/10"
+          >
+            {loadingMore ? 'Loading...' : 'Load More'}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

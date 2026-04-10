@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Share2 } from 'lucide-react';
+import { Home, Share2 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { ProfileOverviewCard } from './profile-overview-card';
 import { RatedListTab } from './rated-list-tab';
 import { StatisticsTab } from './statistics-tab';
@@ -31,7 +32,8 @@ interface ProfilePageShellProps {
   profileUser: ProfileUser;
   isOwner: boolean;
   stats: ProfileStats;
-  ratedItems: RatedItem[];
+  initialRatedItems: RatedItem[];
+  initialHasMore: boolean;
 }
 
 type Tab = 'stats' | 'list' | 'awards';
@@ -40,18 +42,48 @@ export function ProfilePageShell({
   profileUser,
   isOwner,
   stats,
-  ratedItems,
+  initialRatedItems,
+  initialHasMore,
 }: ProfilePageShellProps) {
   const { update: updateSession } = useSession();
   const [activeTab, setActiveTab] = React.useState<Tab>('list');
   const [currentUser, setCurrentUser] = React.useState(profileUser);
+
+  const [ratedItems, setRatedItems] = React.useState(initialRatedItems);
+  const [hasMore, setHasMore] = React.useState(initialHasMore);
+  const [loadingMore, setLoadingMore] = React.useState(false);
 
   // Sync state if server data changes
   React.useEffect(() => {
     setCurrentUser(profileUser);
   }, [profileUser]);
 
-  async function handleProfileUpdate(updates: any) {
+  // Handle loading more entries
+  async function handleLoadMore() {
+    if (loadingMore || !hasMore) return;
+    
+    setLoadingMore(true);
+    try {
+      const offset = ratedItems.length;
+      const res = await fetch(`/api/user/${profileUser.id}/rated?offset=${offset}&limit=12`);
+      if (!res.ok) throw new Error('Failed to fetch more items');
+      
+      const data = await res.json();
+      setRatedItems(prev => [...prev, ...data.items]);
+      setHasMore(data.hasMore);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
+
+  async function handleProfileUpdate(updates: {
+    name?: string;
+    username?: string;
+    avatarColor?: string;
+    avatarEmoji?: string | null;
+  }) {
     const res = await fetch('/api/user', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
@@ -85,7 +117,7 @@ export function ProfilePageShell({
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/" className="p-2 -ml-2 text-white/40 hover:text-white transition-colors">
-              <ArrowLeft className="w-5 h-5" />
+              <Home className="w-5 h-5" />
             </Link>
             <h1 className="text-sm font-black text-white uppercase tracking-widest truncate max-w-[150px]">
               {currentUser.name}
@@ -137,7 +169,13 @@ export function ProfilePageShell({
 
           <div className="min-h-[400px]">
             {activeTab === 'list' && (
-              <RatedListTab items={ratedItems} profileName={currentUser.name} />
+              <RatedListTab 
+                items={ratedItems} 
+                profileName={currentUser.name} 
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                onLoadMore={handleLoadMore}
+              />
             )}
             {activeTab === 'stats' && <StatisticsTab stats={stats} />}
             {activeTab === 'awards' && <AwardsTab stats={stats} />}

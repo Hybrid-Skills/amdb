@@ -1,7 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { Check, Settings, Lock, ChevronDown } from 'lucide-react';
+import { Check, Pencil, Lock, ChevronDown } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import { getTier, getNextTier, AVATAR_COLORS, AVATAR_EMOJIS } from '@/lib/gamification';
 import { AWARDS } from '@/lib/awards';
 import { cn } from '@/lib/utils';
@@ -26,6 +28,9 @@ interface ProfileOverviewCardProps {
   }) => Promise<void>;
 }
 
+  onUpdate: (updates: { name: string; username: string; avatarColor: string; avatarEmoji: string | null }) => Promise<void>;
+}
+
 export function ProfileOverviewCard({
   user,
   score,
@@ -33,6 +38,7 @@ export function ProfileOverviewCard({
   unlockedAwardIds,
   onUpdate,
 }: ProfileOverviewCardProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = React.useState(false);
   const [editName, setEditName] = React.useState(user.name);
   const [editUsername, setEditUsername] = React.useState(user.username);
@@ -77,6 +83,11 @@ export function ProfileOverviewCard({
         avatarEmoji: editEmoji,
       });
       setIsEditing(false);
+      
+      // If username changed, redirect to new vanity URL
+      if (trimmedUsername !== user.username) {
+        router.push(`/user/${trimmedUsername}`);
+      }
     } catch (err: any) {
       if (err.message?.includes('taken')) {
         setUsernameError('Username handled already taken');
@@ -105,11 +116,11 @@ export function ProfileOverviewCard({
         style={{ backgroundColor: tier.color }}
       />
 
-      <div className="p-6 sm:p-8 space-y-8">
-        {/* Top Section: Avatar + Identity */}
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+      <div className="p-4 sm:p-8 space-y-6 sm:space-y-8">
+        {/* Top Section: Avatar + Identity + Tier */}
+        <div className="flex items-start gap-4 sm:gap-6">
           <div
-            className="w-24 h-24 rounded-3xl flex items-center justify-center text-5xl font-black text-white shadow-2xl shrink-0 group relative overflow-hidden transition-colors duration-500"
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl flex items-center justify-center text-4xl sm:text-5xl font-black text-white shadow-2xl shrink-0 group relative overflow-hidden transition-colors duration-500"
             style={{ backgroundColor: isEditing ? editColor : user.avatarColor }}
           >
             {isEditing
@@ -117,45 +128,55 @@ export function ProfileOverviewCard({
               : (user.avatarEmoji ?? user.name.charAt(0).toUpperCase())}
           </div>
 
-          <div className="flex-1 text-center sm:text-left space-y-1">
-            <div className="flex items-center justify-center sm:justify-start gap-2">
-              <h2 className="text-2xl font-black text-white tracking-tight">{user.name}</h2>
-              {!isEditing && isOwner && (
-                <button
-                  onClick={() => setIsEditing(true)}
-                  className="p-1.5 rounded-lg bg-white/5 text-white/30 hover:text-white hover:bg-white/10 transition-all ml-2"
-                  title="Edit Profile"
-                >
-                  <Settings className="w-4 h-4" />
-                </button>
-              )}
+          <div className="flex-1 flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+            <div className="space-y-1">
+              <div className="flex items-center gap-2">
+                <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+                  {user.name}
+                </h2>
+                {!isEditing && isOwner && (
+                  <button
+                    onClick={() => setIsEditing(true)}
+                    className="p-1.5 rounded-lg bg-white/5 text-white/30 hover:text-white hover:bg-white/10 transition-all ml-1"
+                    title="Edit Profile"
+                  >
+                    <Pencil className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              <div className="flex flex-col min-h-[40px] justify-center">
+                <p className="text-white/40 text-sm sm:text-base font-medium">@{user.username}</p>
+                {isOwner && (
+                  <div className="h-4">
+                    {user.email && (
+                      <p className="text-white/20 text-[10px] sm:text-xs truncate max-w-[150px] sm:max-w-[200px]">
+                        {user.email}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
-            <div className="flex flex-col gap-0.5">
-              <p className="text-white/40 font-medium">@{user.username}</p>
-              {user.email && (
-                <p className="text-white/20 text-xs truncate max-w-[200px]">{user.email}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Tier Badge */}
-          <div className="flex flex-col items-center sm:items-end gap-1">
-            <div
-              className="px-3 py-1.5 rounded-full flex items-center gap-2 border shadow-lg transition-transform hover:scale-105"
-              style={{ backgroundColor: `${tier.color}15`, borderColor: `${tier.color}30` }}
-            >
-              <span className="text-lg">{tier.emoji}</span>
-              <span
-                className="text-xs font-bold uppercase tracking-widest"
-                style={{ color: tier.color }}
+            {/* Tier Badge */}
+            <div className="flex flex-col items-start sm:items-end gap-1">
+              <div
+                className="px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full flex items-center gap-2 border shadow-lg transition-transform hover:scale-105"
+                style={{ backgroundColor: `${tier.color}15`, borderColor: `${tier.color}30` }}
               >
-                {tier.name}
-              </span>
+                <span className="text-base sm:text-lg">{tier.emoji}</span>
+                <span
+                  className="text-[10px] sm:text-xs font-bold uppercase tracking-widest"
+                  style={{ color: tier.color }}
+                >
+                  {tier.name}
+                </span>
+              </div>
+              <p className="hidden sm:block text-[10px] uppercase tracking-tighter text-white/20 font-bold">
+                Level {tier.level}
+              </p>
             </div>
-            <p className="text-[10px] uppercase tracking-tighter text-white/20 font-bold">
-              Level {tier.level}
-            </p>
           </div>
         </div>
 
@@ -291,8 +312,13 @@ export function ProfileOverviewCard({
         {!isEditing && (
           <div className="space-y-3 animate-in fade-in duration-700">
             <div className="flex items-end justify-between text-[10px] font-bold uppercase tracking-widest">
-              <div className="text-white/30">
-                Progression <span className="text-white/60 ml-1">{Math.floor(progress)}%</span>
+              <div className="text-white/30 flex items-center gap-2">
+                Progression <span className="text-white/60">{Math.floor(progress)}%</span>
+                {nextTier && (
+                  <span className="text-[8px] bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5">
+                    Next: {nextTier.name}
+                  </span>
+                )}
               </div>
               {nextTier ? (
                 <div className="text-white/40">

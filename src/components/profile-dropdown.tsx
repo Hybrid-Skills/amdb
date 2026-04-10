@@ -127,7 +127,7 @@ export function ProfileDropdown({ className }: ProfileDropdownProps) {
               </div>
 
               <Link
-                href="/profiles"
+                href={`/user/${session.user.username}`}
                 onClick={() => setIsDropdownOpen(false)}
                 className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left font-medium"
               >

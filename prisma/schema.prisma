@@ -137,6 +137,7 @@ model UserContent {
   @@index([userId, listStatus, addedAt(sort: Desc)])
   @@index([userId, userRating(sort: Desc)])
   @@index([userId, watchStatus])
+  @@index([userId, updatedAt(sort: Desc)])
   @@index([contentId])
 }
 
