@@ -18,13 +18,13 @@ export async function GET(req: Request) {
   const minRating = Number(searchParams.get('minRating') || '1');
   const maxRating = Number(searchParams.get('maxRating') || '10');
   const genres = searchParams.get('genres')?.split(',').filter(Boolean) || [];
-  const page  = Math.max(1, Number(searchParams.get('page') ?? '1'));
+  const page = Math.max(1, Number(searchParams.get('page') ?? '1'));
   const limit = 18;
 
   const where: any = {
     userId,
     listStatus: 'RECOMMENDED',
-    content: {}
+    content: {},
   };
 
   if (contentType && contentType !== 'ALL') {
@@ -38,7 +38,7 @@ export async function GET(req: Request) {
 
   // Genre filtering — genreNames is pipe-delimited e.g. |Action|Drama|
   if (genres.length > 0) {
-    where.AND = genres.map(genre => ({
+    where.AND = genres.map((genre) => ({
       content: {
         genreNames: { contains: `|${genre.trim()}|` },
       },
@@ -93,12 +93,15 @@ export async function GET(req: Request) {
   // Normalise shape: rename addedAt → createdAt for UI consistency
   const normalised = items.map((i) => ({ ...i, createdAt: i.addedAt }));
 
-  return NextResponse.json({
-    items: normalised,
-    total,
-    page,
-    totalPages: Math.ceil(total / limit),
-  }, {
-    headers: { 'Cache-Control': 'private, max-age=30' },
-  });
+  return NextResponse.json(
+    {
+      items: normalised,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    },
+    {
+      headers: { 'Cache-Control': 'private, max-age=30' },
+    },
+  );
 }

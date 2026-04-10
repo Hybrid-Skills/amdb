@@ -24,11 +24,13 @@ export async function GET() {
   if (!user) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   // Return as single-item array to maintain backward compat with any remaining callers
-  return NextResponse.json([{
-    id: user.id,
-    name: user.username ?? user.name ?? 'My Profile',
-    avatarColor: user.avatarColor,
-    avatarEmoji: user.avatarEmoji,
-    isDefault: true,
-  }]);
+  return NextResponse.json([
+    {
+      id: user.id,
+      name: user.username ?? user.name ?? 'My Profile',
+      avatarColor: user.avatarColor,
+      avatarEmoji: user.avatarEmoji,
+      isDefault: true,
+    },
+  ]);
 }

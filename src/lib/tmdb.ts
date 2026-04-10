@@ -8,7 +8,15 @@ export const tmdbImageUrl = (path: string | null, size = 'w500') =>
  * Next.js Custom Image Loader for TMDB
  * Maps requested widths to the nearest TMDB size bucket.
  */
-export function tmdbImageLoader({ src, width, quality }: { src: string; width: number; quality?: number }) {
+export function tmdbImageLoader({
+  src,
+  width,
+  _quality,
+}: {
+  src: string;
+  width: number;
+  quality?: number;
+}) {
   // Resolve size bucket first so it's available for all return paths
   let size = 'w500';
   if (width <= 92) size = 'w92';
@@ -21,7 +29,9 @@ export function tmdbImageLoader({ src, width, quality }: { src: string; width: n
   else size = 'original';
 
   // src is already a full TMDB URL or a path. If it's a full URL, extract the bare path.
-  const path = src.includes('image.tmdb.org') ? src.split('/t/p/')[1].split('/').slice(1).join('/') : src;
+  const path = src.includes('image.tmdb.org')
+    ? src.split('/t/p/')[1].split('/').slice(1).join('/')
+    : src;
 
   // External non-TMDB URL — return as-is
   if (!path || path.startsWith('http')) return src;

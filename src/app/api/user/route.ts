@@ -12,9 +12,15 @@ const updateSchema = z.object({
     .string()
     .min(1)
     .max(20)
-    .regex(/^[a-zA-Z0-9._-]+$/, 'Username can only contain letters, numbers, periods, underscores, and hyphens')
+    .regex(
+      /^[a-zA-Z0-9._-]+$/,
+      'Username can only contain letters, numbers, periods, underscores, and hyphens',
+    )
     .optional(),
-  avatarColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  avatarColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
   avatarEmoji: z.string().max(2).nullable().optional(),
 });
 

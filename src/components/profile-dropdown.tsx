@@ -73,7 +73,12 @@ export function ProfileDropdown({ className }: ProfileDropdownProps) {
 
   if (status === 'loading' || !session) {
     return (
-      <div className={cn('flex items-center gap-2 p-1 pr-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-xl', className)}>
+      <div
+        className={cn(
+          'flex items-center gap-2 p-1 pr-3 rounded-full bg-black/40 backdrop-blur-md border border-white/10 shadow-xl',
+          className,
+        )}
+      >
         <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse" />
         <div className="w-3.5 h-3.5" />
       </div>
@@ -116,12 +121,8 @@ export function ProfileDropdown({ className }: ProfileDropdownProps) {
                   </span>
                 </div>
                 <div className="flex flex-col gap-0.5 overflow-hidden">
-                  <span className="text-[13px] font-medium text-white truncate">
-                    {displayName}
-                  </span>
-                  <p className="text-[10px] text-white/30 truncate">
-                    {session.user.email ?? ''}
-                  </p>
+                  <span className="text-[13px] font-medium text-white truncate">{displayName}</span>
+                  <p className="text-[10px] text-white/30 truncate">{session.user.email ?? ''}</p>
                 </div>
               </div>
 

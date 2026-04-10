@@ -35,7 +35,13 @@ export function StreamingButton({ tmdbId, contentType, title }: StreamingButtonP
   }
 
   return (
-    <Popover open={open} onOpenChange={(o) => { setOpen(o); if (o) load(); }}>
+    <Popover
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (o) load();
+      }}
+    >
       <PopoverTrigger asChild>
         <button
           onClick={(e) => e.stopPropagation()}

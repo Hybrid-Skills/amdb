@@ -20,21 +20,27 @@ export function StatsDashboard({ stats }: StatsDashboardProps) {
           <StatCard
             label="Movies"
             value={watched.MOVIE.count}
-            subvalue={watched.MOVIE.totalMins > 0 ? formatWatchTime(watched.MOVIE.totalMins) : undefined}
+            subvalue={
+              watched.MOVIE.totalMins > 0 ? formatWatchTime(watched.MOVIE.totalMins) : undefined
+            }
             icon="🎬"
             dim={watched.MOVIE.count === 0}
           />
           <StatCard
             label="TV Shows"
             value={watched.TV_SHOW.count}
-            subvalue={watched.TV_SHOW.totalMins > 0 ? formatWatchTime(watched.TV_SHOW.totalMins) : undefined}
+            subvalue={
+              watched.TV_SHOW.totalMins > 0 ? formatWatchTime(watched.TV_SHOW.totalMins) : undefined
+            }
             icon="📺"
             dim={watched.TV_SHOW.count === 0}
           />
           <StatCard
             label="Anime"
             value={watched.ANIME.count}
-            subvalue={watched.ANIME.totalMins > 0 ? formatWatchTime(watched.ANIME.totalMins) : undefined}
+            subvalue={
+              watched.ANIME.totalMins > 0 ? formatWatchTime(watched.ANIME.totalMins) : undefined
+            }
             icon="🐉"
             dim={watched.ANIME.count === 0}
           />
@@ -47,7 +53,11 @@ export function StatsDashboard({ stats }: StatsDashboardProps) {
           <StatCard
             label="Reviews"
             value={watched.reviewCount}
-            subvalue={watched.totalCount > 0 ? `${Math.round((watched.reviewCount / watched.totalCount) * 100)}% rated` : undefined}
+            subvalue={
+              watched.totalCount > 0
+                ? `${Math.round((watched.reviewCount / watched.totalCount) * 100)}% rated`
+                : undefined
+            }
             icon="✍️"
             dim={watched.reviewCount === 0}
           />

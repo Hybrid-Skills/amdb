@@ -6,11 +6,36 @@ import { motion } from 'framer-motion';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from './ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle, DrawerDescription } from './ui/drawer';
 import { Button } from './ui/button';
-import { 
-  Star, Loader2, Bookmark, CheckCircle2, History, Pencil, Trash2, 
-  Calendar, Clock, Film, Tv, Activity, DollarSign, Clapperboard, Users, PlayCircle,
-  ExternalLink, Info, Search, Heart, Award, Trophy, Eye, Waves, Cpu, Zap, X, Maximize2,
-  Check
+import {
+  Star,
+  Loader2,
+  Bookmark,
+  CheckCircle2,
+  History,
+  Pencil,
+  Trash2,
+  Calendar,
+  Clock,
+  Film,
+  Tv,
+  Activity,
+  DollarSign,
+  Clapperboard,
+  Users,
+  PlayCircle,
+  ExternalLink,
+  Info,
+  Search,
+  Heart,
+  Award,
+  Trophy,
+  Eye,
+  Waves,
+  Cpu,
+  Zap,
+  X,
+  Maximize2,
+  Check,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Textarea } from './ui/textarea';
@@ -129,7 +154,6 @@ export function AddToListModal({
 
   const isEditing = isRecordExisting; // true = existing list entry
 
-
   const isSerial = item?.contentType === 'TV_SHOW' || item?.contentType === 'ANIME';
   const today = new Date();
 
@@ -226,9 +250,13 @@ export function AddToListModal({
         }
       })
       .catch(() => {})
-      .finally(() => { if (!cancelled) setCheckingExistence(false); });
+      .finally(() => {
+        if (!cancelled) setCheckingExistence(false);
+      });
 
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [item?.tmdbId, item?.malId, initialRating]);
 
   async function handleSubmit() {
@@ -274,7 +302,7 @@ export function AddToListModal({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             tmdbId: item.tmdbId,
-            malId:  item.malId,
+            malId: item.malId,
             contentType: item.contentType,
           }),
         });
@@ -528,7 +556,6 @@ export function AddToListModal({
           <div className="absolute inset-0 z-0">
             {displayItem.backdropUrl ? (
               <Image
-                
                 src={displayItem.backdropUrl}
                 alt=""
                 fill
@@ -571,7 +598,6 @@ export function AddToListModal({
             {displayItem.posterUrl && (
               <div className="relative w-24 sm:w-32 aspect-[2/3] rounded-xl shadow-2xl border border-white/10 hidden sm:block overflow-hidden">
                 <Image
-                  
                   src={displayItem.posterUrl}
                   alt="Poster"
                   fill
@@ -809,7 +835,6 @@ export function AddToListModal({
                     {actor.profile_path ? (
                       <div className="relative w-full aspect-[2/3] rounded-xl border border-white/10 mb-2 overflow-hidden">
                         <Image
-                          
                           src={actor.profile_path}
                           alt={actor.name}
                           fill
@@ -875,7 +900,6 @@ export function AddToListModal({
                       <div className="aspect-[2/3] rounded-xl overflow-hidden bg-white/5 border border-white/10 relative">
                         {s.poster_path || s.images?.jpg?.large_image_url ? (
                           <Image
-
                             src={s.poster_path || s.images.jpg.large_image_url}
                             alt={simTitle}
                             fill
@@ -908,7 +932,9 @@ export function AddToListModal({
             // While the existence check is running, show a neutral loading button
             <div className="flex-1 max-w-md mx-auto h-11 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-white/40" />
-              <span className="text-sm text-white/40 uppercase tracking-tight font-bold">Checking...</span>
+              <span className="text-sm text-white/40 uppercase tracking-tight font-bold">
+                Checking...
+              </span>
             </div>
           ) : (
             <>
@@ -917,16 +943,16 @@ export function AddToListModal({
                   onClick={isPlanned ? handleRemoveFromPlan : handlePlanToWatch}
                   disabled={planningToWatch || submitting}
                   className={cn(
-                    "flex-1 flex items-center justify-center gap-2 h-11 rounded-xl border transition-all disabled:opacity-50",
+                    'flex-1 flex items-center justify-center gap-2 h-11 rounded-xl border transition-all disabled:opacity-50',
                     isPlanned
-                      ? "border-primary/60 bg-primary/20 text-primary hover:bg-primary/10"
-                      : "border-white/20 bg-white/5 hover:bg-white/10 text-white"
+                      ? 'border-primary/60 bg-primary/20 text-primary hover:bg-primary/10'
+                      : 'border-white/20 bg-white/5 hover:bg-white/10 text-white',
                   )}
                 >
                   {planningToWatch ? (
                     <Loader2 className="w-4 h-4 animate-spin text-white/40" />
                   ) : (
-                    <Bookmark className={cn("w-4 h-4", isPlanned && "fill-current")} />
+                    <Bookmark className={cn('w-4 h-4', isPlanned && 'fill-current')} />
                   )}
                   <span className="text-sm font-bold uppercase tracking-tight">
                     {isPlanned ? 'Planned' : 'Plan'}
@@ -937,8 +963,8 @@ export function AddToListModal({
                 onClick={handleSubmit}
                 disabled={!rating || submitting || planningToWatch}
                 className={cn(
-                  "flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all disabled:opacity-50",
-                  isEditing && "max-w-md mx-auto"
+                  'flex-1 flex items-center justify-center gap-2 h-11 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground transition-all disabled:opacity-50',
+                  isEditing && 'max-w-md mx-auto',
                 )}
               >
                 {submitting ? (

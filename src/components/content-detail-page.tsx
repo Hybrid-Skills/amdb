@@ -59,9 +59,7 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
           {data.overview && (
             <section className="md:order-1 flex-1 min-w-0">
               <SectionTitle>Overview</SectionTitle>
-              <p className="text-white/80 leading-relaxed text-base font-light">
-                {data.overview}
-              </p>
+              <p className="text-white/80 leading-relaxed text-base font-light">{data.overview}</p>
             </section>
           )}
         </div>

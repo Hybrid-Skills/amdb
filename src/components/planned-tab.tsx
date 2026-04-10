@@ -57,7 +57,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
       if (f.contentType !== 'ALL') params.set('contentType', f.contentType);
       if (f.genres.length > 0) params.set('genres', f.genres.join(','));
       if (f.watchStatus.length > 0) params.set('watchStatuses', f.watchStatus.join(','));
-      
+
       const res = await fetch(`/api/watchlist?${params}`, { cache: force ? 'reload' : 'default' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -85,7 +85,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
 
   async function handleRemove(entryId: string) {
     if (!confirm('Remove this title from your planned list?')) return;
-    
+
     setRemoving((prev) => new Set([...prev, entryId]));
     try {
       const res = await fetch(`/api/watchlist/${entryId}`, { method: 'DELETE' });
@@ -141,7 +141,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
             {isFiltered ? 'No matches found' : 'Nothing planned yet'}
           </p>
           <p className="text-sm opacity-60 max-w-xs">
-            {isFiltered 
+            {isFiltered
               ? 'Please try removing some filters to see more results.'
               : 'Bookmark titles from Recommendations or add more items using "Plan to Watch" when adding from search.'}
           </p>
@@ -166,17 +166,19 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
                     episodeRuntime={item.episodeRuntime}
                     variant="PLANNED"
                     onDelete={() => handleRemove(entry.id)}
-                    onSecondaryAction={() => onSelect({
-                      id:          item.id,
-                      tmdbId:      item.tmdbId ?? undefined,
-                      malId:       item.malId ?? undefined,
-                      title:       item.title,
-                      year:        item.year,
-                      posterUrl:   item.posterUrl,
-                      tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
-                      overview:    null,
-                      contentType: item.contentType as ContentType,
-                    })}
+                    onSecondaryAction={() =>
+                      onSelect({
+                        id: item.id,
+                        tmdbId: item.tmdbId ?? undefined,
+                        malId: item.malId ?? undefined,
+                        title: item.title,
+                        year: item.year,
+                        posterUrl: item.posterUrl,
+                        tmdbRating: item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                        overview: null,
+                        contentType: item.contentType as ContentType,
+                      })
+                    }
                   />
                 );
               })}

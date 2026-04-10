@@ -56,34 +56,36 @@ export async function GET(req: Request) {
   const where: Prisma.UserContentWhereInput = {
     userId,
     listStatus: 'WATCHED',
-    ...(minRating > 1 || maxRating < 10
-      ? { userRating: { gte: minRating, lte: maxRating } }
-      : {}),
+    ...(minRating > 1 || maxRating < 10 ? { userRating: { gte: minRating, lte: maxRating } } : {}),
     ...(watchStatus &&
       watchStatus !== '' && {
         watchStatus: { in: watchStatus.split(',') as WatchStatusValue[] },
       }),
     content: (Object.keys({
-      ...(contentType && contentType !== 'ALL' && {
-        contentType: contentType as ContentType,
-      }),
+      ...(contentType &&
+        contentType !== 'ALL' && {
+          contentType: contentType as ContentType,
+        }),
       ...(genres &&
-        genres !== '' && {
+        genres !== '' &&
+        ({
           OR: genres.split(',').map((g) => ({
             genreNames: { contains: `|${g.trim()}|` },
           })),
-        } as any),
+        } as any)),
     }).length > 0
       ? {
-          ...(contentType && contentType !== 'ALL' && {
-            contentType: contentType as ContentType,
-          }),
+          ...(contentType &&
+            contentType !== 'ALL' && {
+              contentType: contentType as ContentType,
+            }),
           ...(genres &&
-            genres !== '' && {
+            genres !== '' &&
+            ({
               AND: genres.split(',').map((g) => ({
                 genreNames: { contains: `|${g.trim()}|` },
               })),
-            } as any),
+            } as any)),
         }
       : undefined) as any,
   };
@@ -141,7 +143,8 @@ export async function GET(req: Request) {
   const formatted = items.map((item) => {
     const { ...contentRest } = item.content;
     const omdbRatings = (contentRest.omdbRatings as any[]) || [];
-    const imdbRating = (omdbRatings.find(r => r.Source === 'Internet Movie Database')?.Value) || null;
+    const imdbRating =
+      omdbRatings.find((r) => r.Source === 'Internet Movie Database')?.Value || null;
 
     return {
       ...item,
@@ -321,7 +324,14 @@ export async function POST(req: Request) {
 
   const userContent = await prisma.userContent.upsert({
     where: { userId_contentId: { userId, contentId: content.id } },
-    create: { userId, contentId: content.id, listStatus: 'WATCHED', userRating, notes, ...serialFields },
+    create: {
+      userId,
+      contentId: content.id,
+      listStatus: 'WATCHED',
+      userRating,
+      notes,
+      ...serialFields,
+    },
     update: { listStatus: 'WATCHED', userRating, notes, ...serialFields, updatedAt: new Date() },
     include: { content: true },
   });

@@ -8,7 +8,14 @@ interface AwardsTabProps {
   stats: ProfileStats;
 }
 
-const CATEGORY_ORDER: AwardCategory[] = ['milestone', 'movies', 'tv', 'anime', 'reviews', 'watchtime'];
+const CATEGORY_ORDER: AwardCategory[] = [
+  'milestone',
+  'movies',
+  'tv',
+  'anime',
+  'reviews',
+  'watchtime',
+];
 
 export function AwardsTab({ stats }: AwardsTabProps) {
   const unlockedIds = new Set(AWARDS.filter((a) => a.isUnlocked(stats)).map((a) => a.id));
@@ -40,11 +47,7 @@ export function AwardsTab({ stats }: AwardsTabProps) {
           </h3>
           <div className="grid grid-cols-4 sm:grid-cols-5 gap-4">
             {awards.map((award) => (
-              <AwardBadge
-                key={award.id}
-                award={award}
-                unlocked={unlockedIds.has(award.id)}
-              />
+              <AwardBadge key={award.id} award={award} unlocked={unlockedIds.has(award.id)} />
             ))}
           </div>
         </div>

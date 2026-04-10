@@ -30,13 +30,19 @@ export async function POST(req: Request) {
     ];
 
     // Prefer exact title match, then year proximity, then first result
-    const data = allResults.find(
-      (r: any) => (r.title ?? r.name)?.toLowerCase() === title.toLowerCase()
-    ) || allResults.find(
-      (r: any) => Math.abs(
-        (r.release_date ? new Date(r.release_date).getFullYear() : (r.first_air_date ? new Date(r.first_air_date).getFullYear() : 0)) - (year || 0)
-      ) <= 1
-    ) || allResults[0];
+    const data =
+      allResults.find((r: any) => (r.title ?? r.name)?.toLowerCase() === title.toLowerCase()) ||
+      allResults.find(
+        (r: any) =>
+          Math.abs(
+            (r.release_date
+              ? new Date(r.release_date).getFullYear()
+              : r.first_air_date
+                ? new Date(r.first_air_date).getFullYear()
+                : 0) - (year || 0),
+          ) <= 1,
+      ) ||
+      allResults[0];
 
     if (!data) {
       return NextResponse.json({ error: 'Content not found' }, { status: 404 });
@@ -49,9 +55,7 @@ export async function POST(req: Request) {
     let contentType: ContentType = isTv ? ContentType.TV_SHOW : ContentType.MOVIE;
 
     // 2. Fetch Full Details for Certification and Runtime
-    const details = isTv
-      ? await tmdb.tvDetails(tmdbId)
-      : await tmdb.movieDetails(tmdbId);
+    const details = isTv ? await tmdb.tvDetails(tmdbId) : await tmdb.movieDetails(tmdbId);
 
     if (isTv) {
       const genreIds = (details.genres ?? []).map((g: any) => g.id);
@@ -64,8 +68,12 @@ export async function POST(req: Request) {
     // Extract Certification (IN Priority, US Fallback)
     let ageCertification = null;
     if (isTv) {
-      const inRating = details.content_ratings?.results.find((r: any) => r.iso_3166_1 === 'IN')?.rating;
-      const usRating = details.content_ratings?.results.find((r: any) => r.iso_3166_1 === 'US')?.rating;
+      const inRating = details.content_ratings?.results.find(
+        (r: any) => r.iso_3166_1 === 'IN',
+      )?.rating;
+      const usRating = details.content_ratings?.results.find(
+        (r: any) => r.iso_3166_1 === 'US',
+      )?.rating;
       ageCertification = inRating || usRating || null;
     } else {
       const inRelease = details.release_dates?.results.find((r: any) => r.iso_3166_1 === 'IN');
@@ -78,8 +86,8 @@ export async function POST(req: Request) {
     }
 
     // Extract Runtime
-    const runtimeMins = !isTv ? (details.runtime || null) : null;
-    const episodeRuntime = isTv ? (details.episode_run_time?.[0] || null) : null;
+    const runtimeMins = !isTv ? details.runtime || null : null;
+    const episodeRuntime = isTv ? details.episode_run_time?.[0] || null : null;
 
     // 3. Check local Database Cache by TMDB ID
     let content = await prisma.content.findUnique({
@@ -91,10 +99,10 @@ export async function POST(req: Request) {
       contentType,
       title: details.title ?? details.name ?? 'Untitled',
       year: details.release_date
-          ? new Date(details.release_date).getFullYear()
-          : details.first_air_date
-            ? new Date(details.first_air_date).getFullYear()
-            : (year || null),
+        ? new Date(details.release_date).getFullYear()
+        : details.first_air_date
+          ? new Date(details.first_air_date).getFullYear()
+          : year || null,
       posterUrl: tmdbImageUrl(details.poster_path),
       backdropUrl: tmdbImageUrl(details.backdrop_path, 'w1280'),
       tmdbRating: details.vote_average,
@@ -130,36 +138,35 @@ export async function POST(req: Request) {
     if (existing && existing.listStatus !== 'RECOMMENDED') {
       return NextResponse.json(
         { error: 'already_in_list', listStatus: existing.listStatus },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
     // 6. Create UserContent entry (RECOMMENDED status)
     const userContent = await prisma.userContent.upsert({
       where: {
-        userId_contentId: { userId, contentId: content.id }
+        userId_contentId: { userId, contentId: content.id },
       },
       update: {
         recommendationReason: reason || null,
-        recommendationLabel: label as any || null,
+        recommendationLabel: (label as any) || null,
       },
       create: {
         userId,
         contentId: content.id,
         listStatus: 'RECOMMENDED',
         recommendationReason: reason || null,
-        recommendationLabel: label as any || null,
-      }
+        recommendationLabel: (label as any) || null,
+      },
     });
 
     return NextResponse.json({
       ...userContent,
       content: {
         ...content,
-        reason: reason // Return the AI reason
-      }
+        reason: reason, // Return the AI reason
+      },
     });
-
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

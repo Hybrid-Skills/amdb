@@ -1,15 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  CartesianGrid,
-} from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 type Period = '7d' | '30d' | '3m' | '1y';
 
@@ -63,8 +55,11 @@ export function ActivityChart({}: ActivityChartProps) {
   React.useEffect(() => {
     setLoading(true);
     fetch(`/api/user/activity?period=${period}`)
-      .then((r) => r.ok ? r.json() : [])
-      .then((d) => { setData(d); setLoading(false); })
+      .then((r) => (r.ok ? r.json() : []))
+      .then((d) => {
+        setData(d);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
   }, [period]);
 
@@ -85,9 +80,7 @@ export function ActivityChart({}: ActivityChartProps) {
               key={p.value}
               onClick={() => setPeriod(p.value)}
               className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
-                period === p.value
-                  ? 'bg-white text-black'
-                  : 'text-white/40 hover:text-white'
+                period === p.value ? 'bg-white text-black' : 'text-white/40 hover:text-white'
               }`}
             >
               {p.label}
@@ -117,8 +110,16 @@ export function ActivityChart({}: ActivityChartProps) {
           </div>
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={displayData} barSize={period === '1y' ? 4 : period === '3m' ? 5 : 10} barGap={1}>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+            <BarChart
+              data={displayData}
+              barSize={period === '1y' ? 4 : period === '3m' ? 5 : 10}
+              barGap={1}
+            >
+              <CartesianGrid
+                strokeDasharray="3 3"
+                stroke="rgba(255,255,255,0.05)"
+                vertical={false}
+              />
               <XAxis
                 dataKey="label"
                 tick={{ fill: 'rgba(255,255,255,0.3)', fontSize: 10 }}

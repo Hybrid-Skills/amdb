@@ -20,15 +20,31 @@ import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-
 type ModelId = 'gemini-3.1-flash-lite-preview';
 
 const CONTENT_TYPES: { value: ContentType; label: string }[] = [
-  { value: 'MOVIE',   label: 'Movie' },
+  { value: 'MOVIE', label: 'Movie' },
   { value: 'TV_SHOW', label: 'TV Show' },
-  { value: 'ANIME',   label: 'Anime' },
+  { value: 'ANIME', label: 'Anime' },
 ];
 
 const GENRES = [
-  'Action','Adventure','Animation','Comedy','Crime','Documentary','Drama',
-  'Fantasy','Horror','Mystery','Romance','Sci-Fi','Thriller','Western',
-  'Isekai','Mecha','Slice of Life','Sports','Supernatural',
+  'Action',
+  'Adventure',
+  'Animation',
+  'Comedy',
+  'Crime',
+  'Documentary',
+  'Drama',
+  'Fantasy',
+  'Horror',
+  'Mystery',
+  'Romance',
+  'Sci-Fi',
+  'Thriller',
+  'Western',
+  'Isekai',
+  'Mecha',
+  'Slice of Life',
+  'Sports',
+  'Supernatural',
 ];
 
 interface HistoryEntry {
@@ -68,24 +84,28 @@ interface RecommendationsTabProps {
   onPageChange?: (p: number) => void;
 }
 
-
 // ─── GenerateModal ────────────────────────────────────────────────────────────
 
 interface GenerateModalProps {
   open: boolean;
   onClose: () => void;
-  onGenerate: (types: ContentType[], genres: string[], model: ModelId, specialInstructions?: string) => void;
+  onGenerate: (
+    types: ContentType[],
+    genres: string[],
+    model: ModelId,
+    specialInstructions?: string,
+  ) => void;
 }
 
 function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
-  const [types, setTypes]     = React.useState<ContentType[]>([]);
-  const [genres, setGenres]   = React.useState<string[]>([]);
-  const model: ModelId        = 'gemini-3.1-flash-lite-preview';
+  const [types, setTypes] = React.useState<ContentType[]>([]);
+  const [genres, setGenres] = React.useState<string[]>([]);
+  const model: ModelId = 'gemini-3.1-flash-lite-preview';
   const [specialInstructions, setSpecialInstructions] = React.useState('');
 
   function toggleType(t: ContentType) {
-    setTypes((prev) => prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]);
+    setTypes((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
   }
 
   function toggleGenre(g: string) {
@@ -112,7 +132,8 @@ function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
         {/* Content Type — multi-select badges in one line */}
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
-            Content Type <span className="text-xs text-muted-foreground/60">(any if none selected)</span>
+            Content Type{' '}
+            <span className="text-xs text-muted-foreground/60">(any if none selected)</span>
           </p>
           <div className="flex gap-2">
             {CONTENT_TYPES.map(({ value, label }) => (
@@ -155,14 +176,16 @@ function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
           </div>
         </div>
 
-
         {/* Special Instructions */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-sm font-medium text-muted-foreground">
-              Special Instructions <span className="text-xs text-muted-foreground/60">(optional)</span>
+              Special Instructions{' '}
+              <span className="text-xs text-muted-foreground/60">(optional)</span>
             </p>
-            <span className="text-[10px] text-muted-foreground">{specialInstructions.length}/200</span>
+            <span className="text-[10px] text-muted-foreground">
+              {specialInstructions.length}/200
+            </span>
           </div>
           <textarea
             value={specialInstructions}
@@ -196,28 +219,33 @@ function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
 
 // ─── RecommendationsTab ───────────────────────────────────────────────────────
 
-export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, onPageChange }: RecommendationsTabProps) {
+export function RecommendationsTab({
+  onSelect,
+  refreshTrigger,
+  initialPage = 1,
+  onPageChange,
+}: RecommendationsTabProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const isLargeDesktop = useMediaQuery('(min-width: 1024px)');
-  const [historyItems, setHistoryItems]     = React.useState<HistoryEntry[]>([]);
+  const [historyItems, setHistoryItems] = React.useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = React.useState(true);
-  const [historyPage, setHistoryPage]       = React.useState(initialPage);
+  const [historyPage, setHistoryPage] = React.useState(initialPage);
   const [historyTotalPages, setHistoryTotalPages] = React.useState(0);
-  const [historyTotal, setHistoryTotal]           = React.useState(0);
-  const [filters, setFilters]                     = React.useState<ListFilters>(DEFAULT_FILTERS);
+  const [historyTotal, setHistoryTotal] = React.useState(0);
+  const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
 
-  const [generating, setGenerating]               = React.useState(false);
-  const [generatingStatus, setGeneratingStatus]   = React.useState('');
+  const [generating, setGenerating] = React.useState(false);
+  const [generatingStatus, setGeneratingStatus] = React.useState('');
   const [showGenerateModal, setShowGenerateModal] = React.useState(false);
-  const [pendingRecs, setPendingRecs]             = React.useState<PendingRecommendation[]>([]);
-  const [isFABCollapsed, setIsFABCollapsed]       = React.useState(false);
-  const [bookmarking, setBookmarking]             = React.useState<Set<string>>(new Set());
-  const [deleting, setDeleting]                   = React.useState<Set<string>>(new Set());
+  const [pendingRecs, setPendingRecs] = React.useState<PendingRecommendation[]>([]);
+  const [isFABCollapsed, setIsFABCollapsed] = React.useState(false);
+  const [bookmarking, setBookmarking] = React.useState<Set<string>>(new Set());
+  const [deleting, setDeleting] = React.useState<Set<string>>(new Set());
   const { toast } = useToast();
 
   const { scrollY } = useScroll();
 
-  useMotionValueEvent(scrollY, "change", (latest) => {
+  useMotionValueEvent(scrollY, 'change', (latest) => {
     if (latest > 50 && !isFABCollapsed) setIsFABCollapsed(true);
     else if (latest <= 50 && isFABCollapsed) setIsFABCollapsed(false);
   });
@@ -239,7 +267,7 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
       });
       if (f.contentType !== 'ALL') params.set('contentType', f.contentType);
       if (f.genres.length > 0) params.set('genres', f.genres.join(','));
-      
+
       const res = await fetch(`/api/recommendations/history?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
@@ -259,7 +287,12 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters, refreshTrigger]);
 
-  async function handleGenerate(types: ContentType[], genres: string[], model: ModelId, specialInstructions?: string) {
+  async function handleGenerate(
+    types: ContentType[],
+    genres: string[],
+    model: ModelId,
+    specialInstructions?: string,
+  ) {
     setShowGenerateModal(false);
     setGenerating(true);
 
@@ -271,7 +304,7 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ contentTypes: types, genres, model, specialInstructions }),
       });
-      
+
       // 2. Phase 2: Getting Recommendations
       setGeneratingStatus('Getting recommendations');
       const data = await res.json();
@@ -281,48 +314,54 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
       if (rawRecs.length === 0) throw new Error('No recommendations generated');
 
       // 3. Instant Placeholder Creation
-      setPendingRecs(rawRecs.map((r: any, idx: number) => ({
-        tempId: `pending-${Date.now()}-${idx}`,
-        title: r.title,
-        year: r.year,
-        reason: r.reason,
-        label: r.label,
-        contentType: types[0] ?? 'MOVIE',
-      })));
+      setPendingRecs(
+        rawRecs.map((r: any, idx: number) => ({
+          tempId: `pending-${Date.now()}-${idx}`,
+          title: r.title,
+          year: r.year,
+          reason: r.reason,
+          label: r.label,
+          contentType: types[0] ?? 'MOVIE',
+        })),
+      );
 
       // 4. Phase 3: Getting Details (Enrichment)
       setGeneratingStatus('Getting details');
-      
+
       const enrichmentPromises = rawRecs.map(async (raw: any) => {
         try {
           const enrichRes = await fetch('/api/recommendations/enrich', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: raw.title, year: raw.year, reason: raw.reason, label: raw.label }),
+            body: JSON.stringify({
+              title: raw.title,
+              year: raw.year,
+              reason: raw.reason,
+              label: raw.label,
+            }),
           });
           const enrichedData = await enrichRes.json();
           if (enrichRes.ok) {
             setHistoryItems((prev) => {
-              if (prev.some(item => item.id === enrichedData.id)) return prev;
+              if (prev.some((item) => item.id === enrichedData.id)) return prev;
               return [enrichedData, ...prev];
             });
             // Remove from pending once enriched
-            setPendingRecs((prev) => prev.filter(p => p.title !== raw.title));
+            setPendingRecs((prev) => prev.filter((p) => p.title !== raw.title));
           } else if (enrichRes.status === 409) {
             // Already in watched/planned list — silently discard
-            setPendingRecs((prev) => prev.filter(p => p.title !== raw.title));
+            setPendingRecs((prev) => prev.filter((p) => p.title !== raw.title));
           }
         } catch (e) {
           console.error('Enrichment failed for', raw.title, e);
           // Remove the stuck pending card so it doesn't hang forever
-          setPendingRecs((prev) => prev.filter(p => p.title !== raw.title));
+          setPendingRecs((prev) => prev.filter((p) => p.title !== raw.title));
         }
       });
 
       await Promise.all(enrichmentPromises);
       setPendingRecs([]); // clear any remaining pending cards
       toast({ title: 'Suggestions ready!' });
-
     } catch (err: any) {
       toast({
         title: 'Recommendation failed',
@@ -341,7 +380,10 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
       const res = await fetch(`/api/watchlist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contentId: entry.content.id, contentType: entry.content.contentType }),
+        body: JSON.stringify({
+          contentId: entry.content.id,
+          contentType: entry.content.contentType,
+        }),
       });
       if (res.ok) {
         setHistoryItems((prev) => prev.filter((e) => e.id !== entry.id));
@@ -355,7 +397,7 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
       });
     }
   }
-  
+
   async function handleDelete(entry: HistoryEntry) {
     setDeleting((prev) => new Set([...prev, entry.id]));
     try {
@@ -393,7 +435,7 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
             {isFiltered ? 'No matches found' : 'No recommendations yet'}
           </p>
           <p className="text-sm opacity-60 max-w-xs">
-            {isFiltered 
+            {isFiltered
               ? 'Please try removing some filters to see more results.'
               : 'Add more recommendations by hitting Recommend.'}
           </p>
@@ -433,31 +475,33 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
           <AnimatePresence mode="popLayout">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6">
               {/* Initial Skeletons while generating metadata */}
-              {generating && pendingRecs.length === 0 && Array.from({ length: isLargeDesktop ? 3 : 1 }).map((_, i) => (
-                <div key={`skeleton-${i}`} className="md:col-span-2">
-                  <div className="flex w-full animate-pulse overflow-hidden rounded-xl border border-border bg-card h-[180px] md:h-[225px] flex-row">
-                    {/* Poster Placeholder */}
-                    <div className="w-[120px] sm:w-[150px] aspect-[2/3] bg-muted shrink-0" />
-                    
-                    <div className="flex flex-col flex-1 min-h-0 bg-card">
-                      <div className="flex-1 p-3 md:p-4 space-y-4">
-                        <div className="h-4 w-3/4 rounded bg-muted" />
-                        <div className="space-y-2">
-                          <div className="h-3 w-full rounded bg-muted" />
-                          <div className="h-3 w-5/6 rounded bg-muted" />
-                          <div className="h-3 w-4/6 rounded bg-muted" />
+              {generating &&
+                pendingRecs.length === 0 &&
+                Array.from({ length: isLargeDesktop ? 3 : 1 }).map((_, i) => (
+                  <div key={`skeleton-${i}`} className="md:col-span-2">
+                    <div className="flex w-full animate-pulse overflow-hidden rounded-xl border border-border bg-card h-[180px] md:h-[225px] flex-row">
+                      {/* Poster Placeholder */}
+                      <div className="w-[120px] sm:w-[150px] aspect-[2/3] bg-muted shrink-0" />
+
+                      <div className="flex flex-col flex-1 min-h-0 bg-card">
+                        <div className="flex-1 p-3 md:p-4 space-y-4">
+                          <div className="h-4 w-3/4 rounded bg-muted" />
+                          <div className="space-y-2">
+                            <div className="h-3 w-full rounded bg-muted" />
+                            <div className="h-3 w-5/6 rounded bg-muted" />
+                            <div className="h-3 w-4/6 rounded bg-muted" />
+                          </div>
                         </div>
-                      </div>
-                      
-                      {/* Action Bar Placeholder */}
-                      <div className="flex items-stretch border-t border-border shrink-0 h-[44px]">
-                        <div className="flex-1 border-r border-border" />
-                        <div className="flex-1 bg-muted/10" />
+
+                        {/* Action Bar Placeholder */}
+                        <div className="flex items-stretch border-t border-border shrink-0 h-[44px]">
+                          <div className="flex-1 border-r border-border" />
+                          <div className="flex-1 bg-muted/10" />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))}
 
               {/* Pending Items (AI titles returned, fetching enrichment) */}
               {pendingRecs.map((pending) => (
@@ -467,7 +511,9 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
                     title={pending.title}
                     year={pending.year}
                     posterUrl={null}
-                    contentType={pending.contentType === 'ANY' ? 'MOVIE' : pending.contentType as ContentType}
+                    contentType={
+                      pending.contentType === 'ANY' ? 'MOVIE' : (pending.contentType as ContentType)
+                    }
                     tmdbRating={null}
                     variant="RECOMMENDED"
                     layout="horizontal"
@@ -501,17 +547,19 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
                       onSecondaryAction={() => handleBookmark(entry)}
                       recommendationReason={entry.recommendationReason}
                       recommendationLabel={entry.recommendationLabel}
-                      onViewDetails={() => onSelect({
-                        id:          item.id,
-                        tmdbId:      item.tmdbId ?? undefined,
-                        malId:       item.malId ?? undefined,
-                        title:       item.title,
-                        year:        item.year,
-                        posterUrl:   item.posterUrl,
-                        tmdbRating:  item.tmdbRating != null ? Number(item.tmdbRating) : null,
-                        overview:    null,
-                        contentType: item.contentType as ContentType,
-                      })}
+                      onViewDetails={() =>
+                        onSelect({
+                          id: item.id,
+                          tmdbId: item.tmdbId ?? undefined,
+                          malId: item.malId ?? undefined,
+                          title: item.title,
+                          year: item.year,
+                          posterUrl: item.posterUrl,
+                          tmdbRating: item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                          overview: null,
+                          contentType: item.contentType as ContentType,
+                        })
+                      }
                     />
                   </div>
                 );
@@ -551,15 +599,15 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
         <motion.button
           onClick={() => setShowGenerateModal(true)}
           disabled={generating}
-          animate={{ 
-            width: isFABCollapsed ? 56 : (generating ? 200 : 160),
+          animate={{
+            width: isFABCollapsed ? 56 : generating ? 200 : 160,
             paddingLeft: isFABCollapsed ? 0 : 16,
             paddingRight: isFABCollapsed ? 0 : 16,
           }}
-          transition={{ 
-            type: "tween", 
-            ease: [0.4, 0, 0.2, 1], 
-            duration: 0.3 
+          transition={{
+            type: 'tween',
+            ease: [0.4, 0, 0.2, 1],
+            duration: 0.3,
           }}
           className="flex items-center justify-center bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 disabled:opacity-70 text-white font-bold h-14 rounded-full shadow-2xl shadow-purple-500/30 transition-shadow hover:scale-105 active:scale-95 overflow-hidden"
         >
@@ -570,15 +618,15 @@ export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, 
               <Sparkles className="w-5 h-5 shrink-0" />
             )}
             <motion.span
-              animate={{ 
-                width: isFABCollapsed ? 0 : "auto",
+              animate={{
+                width: isFABCollapsed ? 0 : 'auto',
                 opacity: isFABCollapsed ? 0 : 1,
-                marginLeft: isFABCollapsed ? 0 : 8
+                marginLeft: isFABCollapsed ? 0 : 8,
               }}
-              transition={{ 
-                type: "tween", 
-                ease: [0.4, 0, 0.2, 1], 
-                duration: 0.3 
+              transition={{
+                type: 'tween',
+                ease: [0.4, 0, 0.2, 1],
+                duration: 0.3,
               }}
               className="whitespace-nowrap overflow-hidden"
             >

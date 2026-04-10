@@ -7,7 +7,10 @@ import { z } from 'zod';
 
 const updateSchema = z.object({
   name: z.string().min(1).max(30).optional(),
-  avatarColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
+  avatarColor: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .optional(),
   avatarEmoji: z.string().max(2).nullable().optional(),
 });
 
@@ -47,5 +50,8 @@ export async function PATCH(req: Request) {
 
 export async function DELETE() {
   // Profiles no longer exist as separate entities; deletion is not applicable
-  return NextResponse.json({ error: 'Profiles have been merged into user accounts' }, { status: 410 });
+  return NextResponse.json(
+    { error: 'Profiles have been merged into user accounts' },
+    { status: 410 },
+  );
 }

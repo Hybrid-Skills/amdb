@@ -64,7 +64,6 @@ export function CastSectionClient({ cast }: { cast: Actor[] }) {
               <div className="relative w-full aspect-[2/3] rounded-xl overflow-hidden border border-white/10 mb-2">
                 {actor.profile_path ? (
                   <Image
-                    
                     src={actor.profile_path}
                     alt={actor.name}
                     fill

@@ -158,8 +158,7 @@ export async function GET(req: Request) {
     function detectContentType(r: (typeof data.results)[0]): ContentType {
       if (r.media_type === 'movie') return 'MOVIE';
       const isJapanese =
-        (r as any).original_language === 'ja' ||
-        ((r as any).origin_country ?? []).includes('JP');
+        (r as any).original_language === 'ja' || ((r as any).origin_country ?? []).includes('JP');
       const isJapaneseAnimation = isJapanese && (r.genre_ids ?? []).includes(16);
       return isJapaneseAnimation ? 'ANIME' : 'TV_SHOW';
     }

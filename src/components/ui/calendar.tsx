@@ -14,10 +14,33 @@ interface CalendarProps {
 }
 
 const MONTHS = [
-  'January','February','March','April','May','June',
-  'July','August','September','October','November','December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
-const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const MONTHS_SHORT = [
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
+];
 const DAYS = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
 type View = 'day' | 'month-year';
@@ -43,7 +66,9 @@ export function Calendar({ value, onChange, className, maxDate, minYear = 1900 }
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
 
-  function prevMonth() { setViewDate(new Date(year, month - 1, 1)); }
+  function prevMonth() {
+    setViewDate(new Date(year, month - 1, 1));
+  }
   function nextMonth() {
     const next = new Date(year, month + 1, 1);
     if (!maxDate || next <= new Date(maxDate.getFullYear(), maxDate.getMonth(), 1))
@@ -81,11 +106,23 @@ export function Calendar({ value, onChange, className, maxDate, minYear = 1900 }
     return (
       <div className={cn('p-3 select-none w-[224px]', className)}>
         <div className="flex items-center justify-between mb-3">
-          <Button variant="ghost" size="icon" onClick={() => setPickerYear((y) => Math.max(minYear, y - 1))} disabled={pickerYear <= minYear} className="h-7 w-7">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setPickerYear((y) => Math.max(minYear, y - 1))}
+            disabled={pickerYear <= minYear}
+            className="h-7 w-7"
+          >
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-sm font-bold">{pickerYear}</span>
-          <Button variant="ghost" size="icon" onClick={() => setPickerYear((y) => Math.min(maxYear, y + 1))} disabled={pickerYear >= maxYear} className="h-7 w-7">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setPickerYear((y) => Math.min(maxYear, y + 1))}
+            disabled={pickerYear >= maxYear}
+            className="h-7 w-7"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
@@ -94,15 +131,31 @@ export function Calendar({ value, onChange, className, maxDate, minYear = 1900 }
             const disabled = isMonthDisabled(i);
             const active = pickerYear === year && i === month;
             return (
-              <button key={name} onClick={() => selectMonth(i)} disabled={disabled}
-                className={cn('h-9 rounded-lg text-sm font-medium transition-colors', active && 'bg-primary text-primary-foreground', !active && !disabled && 'hover:bg-accent', disabled && 'opacity-30 cursor-not-allowed')}>
+              <button
+                key={name}
+                onClick={() => selectMonth(i)}
+                disabled={disabled}
+                className={cn(
+                  'h-9 rounded-lg text-sm font-medium transition-colors',
+                  active && 'bg-primary text-primary-foreground',
+                  !active && !disabled && 'hover:bg-accent',
+                  disabled && 'opacity-30 cursor-not-allowed',
+                )}
+              >
                 {name}
               </button>
             );
           })}
         </div>
         <div className="mt-2 flex justify-center">
-          <Button variant="ghost" size="sm" onClick={() => setView('day')} className="text-xs text-muted-foreground h-7">Cancel</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setView('day')}
+            className="text-xs text-muted-foreground h-7"
+          >
+            Cancel
+          </Button>
         </div>
       </div>
     );
@@ -114,8 +167,13 @@ export function Calendar({ value, onChange, className, maxDate, minYear = 1900 }
         <Button variant="ghost" size="icon" onClick={prevMonth} className="h-7 w-7">
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <button onClick={() => { setPickerYear(year); setView('month-year'); }}
-          className="text-sm font-medium hover:text-primary transition-colors px-2 py-0.5 rounded hover:bg-accent">
+        <button
+          onClick={() => {
+            setPickerYear(year);
+            setView('month-year');
+          }}
+          className="text-sm font-medium hover:text-primary transition-colors px-2 py-0.5 rounded hover:bg-accent"
+        >
           {MONTHS[month]} {year}
         </button>
         <Button variant="ghost" size="icon" onClick={nextMonth} className="h-7 w-7">
@@ -124,26 +182,43 @@ export function Calendar({ value, onChange, className, maxDate, minYear = 1900 }
       </div>
       <div className="grid grid-cols-7 gap-1 mb-1">
         {DAYS.map((d) => (
-          <div key={d} className="text-center text-xs text-muted-foreground font-medium py-1">{d}</div>
+          <div key={d} className="text-center text-xs text-muted-foreground font-medium py-1">
+            {d}
+          </div>
         ))}
       </div>
       <div className="grid grid-cols-7 gap-1">
         {cells.map((day, i) =>
-          day === null ? <div key={`empty-${i}`} /> : (
-            <button key={day} onClick={() => selectDay(day)} disabled={isDisabled(day)}
-              className={cn('h-8 w-8 rounded-full text-sm transition-colors flex items-center justify-center',
+          day === null ? (
+            <div key={`empty-${i}`} />
+          ) : (
+            <button
+              key={day}
+              onClick={() => selectDay(day)}
+              disabled={isDisabled(day)}
+              className={cn(
+                'h-8 w-8 rounded-full text-sm transition-colors flex items-center justify-center',
                 isSelected(day) && 'bg-primary text-primary-foreground',
                 !isSelected(day) && isToday(day) && 'border border-primary text-primary',
                 !isSelected(day) && !isToday(day) && !isDisabled(day) && 'hover:bg-accent',
-                isDisabled(day) && 'opacity-30 cursor-not-allowed')}>
+                isDisabled(day) && 'opacity-30 cursor-not-allowed',
+              )}
+            >
               {day}
             </button>
-          )
+          ),
         )}
       </div>
       {value && (
         <div className="mt-2 flex justify-center">
-          <Button variant="ghost" size="sm" onClick={() => onChange(null)} className="text-xs text-muted-foreground h-7">Clear date</Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => onChange(null)}
+            className="text-xs text-muted-foreground h-7"
+          >
+            Clear date
+          </Button>
         </div>
       )}
     </div>

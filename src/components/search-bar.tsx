@@ -130,7 +130,6 @@ export function SearchBar({ onSelect, activeType = 'all' }: SearchBarProps) {
                   <div className="shrink-0 w-10 h-14 rounded overflow-hidden bg-muted relative">
                     {result.posterUrl ? (
                       <Image
-                        
                         src={result.posterUrl}
                         alt={result.title}
                         fill

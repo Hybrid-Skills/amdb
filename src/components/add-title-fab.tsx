@@ -6,16 +6,8 @@ import { motion, useScroll, useMotionValueEvent } from 'framer-motion';
 import Image from 'next/image';
 import { Badge } from './ui/badge';
 import { useMediaQuery } from '@/hooks/use-media-query';
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
-  Drawer,
-  DrawerContent,
-  DrawerTitle,
-} from '@/components/ui/drawer';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
 import type { SearchResult } from './add-to-list-modal';
 
 interface AddTitleFABProps {
@@ -51,17 +43,29 @@ function SearchSheet({
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   React.useEffect(() => {
-    if (!open) { setQuery(''); setResults([]); return; }
+    if (!open) {
+      setQuery('');
+      setResults([]);
+      return;
+    }
     setTimeout(() => inputRef.current?.focus(), 100);
   }, [open]);
 
   React.useEffect(() => {
-    if (debouncedQuery.length < 2) { setResults([]); return; }
+    if (debouncedQuery.length < 2) {
+      setResults([]);
+      return;
+    }
     const controller = new AbortController();
     setLoading(true);
-    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}&page=1`, { signal: controller.signal })
-      .then((r) => r.ok ? r.json() : null)
-      .then((data) => { setResults(data?.results ?? []); setLoading(false); })
+    fetch(`/api/search?q=${encodeURIComponent(debouncedQuery)}&page=1`, {
+      signal: controller.signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        setResults(data?.results ?? []);
+        setLoading(false);
+      })
       .catch(() => setLoading(false));
     return () => controller.abort();
   }, [debouncedQuery]);
@@ -94,39 +98,48 @@ function SearchSheet({
             <Loader2 className="w-5 h-5 animate-spin text-white/40" />
           </div>
         )}
-        {!loading && results.map((r) => (
-          <button
-            key={r.tmdbId ?? r.malId}
-            onClick={() => { onSelect(r); onClose(); }}
-            className="w-full flex items-center gap-3 py-3 border-b border-white/5 last:border-0 hover:bg-white/5 rounded-xl px-2 transition-colors text-left"
-          >
-            <div className="w-10 h-14 rounded-lg overflow-hidden bg-white/5 shrink-0">
-              {r.posterUrl ? (
-                <Image
-                  src={r.posterUrl}
-                  alt={r.title}
-                  width={40}
-                  height={56}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-sm truncate">{r.title}</p>
-              <p className="text-xs text-white/40">{r.year ?? '—'}</p>
-            </div>
-            <Badge variant="outline" className="text-[10px] shrink-0 border-white/10 text-white/40">
-              {r.contentType === 'MOVIE' ? 'Movie' : r.contentType === 'ANIME' ? 'Anime' : 'TV'}
-            </Badge>
-          </button>
-        ))}
+        {!loading &&
+          results.map((r) => (
+            <button
+              key={r.tmdbId ?? r.malId}
+              onClick={() => {
+                onSelect(r);
+                onClose();
+              }}
+              className="w-full flex items-center gap-3 py-3 border-b border-white/5 last:border-0 hover:bg-white/5 rounded-xl px-2 transition-colors text-left"
+            >
+              <div className="w-10 h-14 rounded-lg overflow-hidden bg-white/5 shrink-0">
+                {r.posterUrl ? (
+                  <Image
+                    src={r.posterUrl}
+                    alt={r.title}
+                    width={40}
+                    height={56}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-semibold text-sm truncate">{r.title}</p>
+                <p className="text-xs text-white/40">{r.year ?? '—'}</p>
+              </div>
+              <Badge
+                variant="outline"
+                className="text-[10px] shrink-0 border-white/10 text-white/40"
+              >
+                {r.contentType === 'MOVIE' ? 'Movie' : r.contentType === 'ANIME' ? 'Anime' : 'TV'}
+              </Badge>
+            </button>
+          ))}
         {!loading && debouncedQuery.length >= 2 && results.length === 0 && (
           <p className="text-center text-white/30 text-sm py-8">No results found</p>
         )}
         {!loading && debouncedQuery.length < 2 && (
-          <p className="text-center text-white/20 text-sm py-8">Type at least 2 characters to search</p>
+          <p className="text-center text-white/20 text-sm py-8">
+            Type at least 2 characters to search
+          </p>
         )}
       </div>
     </div>
@@ -153,7 +166,12 @@ function SearchSheet({
   );
 }
 
-export function AddTitleFAB({ onSelect, open: controlledOpen, onOpenChange, showButton = true }: AddTitleFABProps) {
+export function AddTitleFAB({
+  onSelect,
+  open: controlledOpen,
+  onOpenChange,
+  showButton = true,
+}: AddTitleFABProps) {
   const [collapsed, setCollapsed] = React.useState(false);
   const [internalOpen, setInternalOpen] = React.useState(false);
   const open = controlledOpen ?? internalOpen;

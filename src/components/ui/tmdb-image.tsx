@@ -2,7 +2,7 @@ import Image, { ImageProps } from 'next/image';
 
 /**
  * Next.js Image wrapper for TMDB images.
- * Optimized to use the Next.js internal image server for edge caching. 
+ * Optimized to use the Next.js internal image server for edge caching.
  * Automatically prefixes bare TMDB paths with the full URL.
  */
 export default function TmdbImage({ src, ...props }: ImageProps) {

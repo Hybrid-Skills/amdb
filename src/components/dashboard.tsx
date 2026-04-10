@@ -133,7 +133,7 @@ export function Dashboard(_: DashboardProps) {
       const existing = window.history.state ?? {};
       window.history.replaceState(
         { ...existing, _amdb: { ...existing._amdb, scroll: undefined } },
-        ''
+        '',
       );
     }
   }, [listLoading]);
@@ -153,7 +153,7 @@ export function Dashboard(_: DashboardProps) {
     } else {
       setListLoading(false);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
   // Debounce filter changes — 500ms
@@ -207,11 +207,12 @@ export function Dashboard(_: DashboardProps) {
     }
   }
 
-  const NAV_TABS: { value: DashTab; label: string; shortLabel: string; Icon: React.ElementType }[] = [
-    { value: 'watched',         label: 'Watched',         shortLabel: 'Watched', Icon: List },
-    { value: 'planned',         label: 'Planned',         shortLabel: 'Planned', Icon: Bookmark },
-    { value: 'recommendations', label: 'Recommendations', shortLabel: 'Recs',    Icon: Sparkles },
-  ];
+  const NAV_TABS: { value: DashTab; label: string; shortLabel: string; Icon: React.ElementType }[] =
+    [
+      { value: 'watched', label: 'Watched', shortLabel: 'Watched', Icon: List },
+      { value: 'planned', label: 'Planned', shortLabel: 'Planned', Icon: Bookmark },
+      { value: 'recommendations', label: 'Recommendations', shortLabel: 'Recs', Icon: Sparkles },
+    ];
 
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-8">
@@ -241,9 +242,11 @@ export function Dashboard(_: DashboardProps) {
                     key={value}
                     onClick={() => handleTabChange(value)}
                     className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all
-                      ${activeTab === value
-                        ? 'bg-white text-black shadow'
-                        : 'text-white/50 hover:text-white'}`}
+                      ${
+                        activeTab === value
+                          ? 'bg-white text-black shadow'
+                          : 'text-white/50 hover:text-white'
+                      }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                     {label}
@@ -314,8 +317,8 @@ export function Dashboard(_: DashboardProps) {
                       <>
                         <h3 className="text-lg font-bold text-white mb-1">Your list is empty</h3>
                         <p className="text-sm text-white/40 max-w-xs">
-                          Search for a movie, show, or anime above and add more to start building your
-                          collection.
+                          Search for a movie, show, or anime above and add more to start building
+                          your collection.
                         </p>
                         <button
                           onClick={() => setAddTitleOpen(true)}
@@ -346,7 +349,9 @@ export function Dashboard(_: DashboardProps) {
                         tagline={item.content.tagline}
                         genres={item.content.genres}
                         userRating={item.userRating}
-                        tmdbRating={item.content.tmdbRating ? Number(item.content.tmdbRating) : null}
+                        tmdbRating={
+                          item.content.tmdbRating ? Number(item.content.tmdbRating) : null
+                        }
                         contentType={item.content.contentType as 'MOVIE' | 'TV_SHOW' | 'ANIME'}
                         adult={item.content.adult}
                         revenue={item.content.revenue}
@@ -448,7 +453,11 @@ export function Dashboard(_: DashboardProps) {
           {activeTab === 'planned' && (
             <PlannedTab
               onSelect={handleSearchSelect}
-              initialPage={window.history.state?._amdb?.tab === 'planned' ? (window.history.state._amdb.page ?? 1) : 1}
+              initialPage={
+                window.history.state?._amdb?.tab === 'planned'
+                  ? (window.history.state._amdb.page ?? 1)
+                  : 1
+              }
               onPageChange={(p) => saveNavState('planned', p)}
             />
           )}
@@ -458,7 +467,11 @@ export function Dashboard(_: DashboardProps) {
             <RecommendationsTab
               onSelect={handleSearchSelect}
               refreshTrigger={recommendationsRefreshTrigger}
-              initialPage={window.history.state?._amdb?.tab === 'recommendations' ? (window.history.state._amdb.page ?? 1) : 1}
+              initialPage={
+                window.history.state?._amdb?.tab === 'recommendations'
+                  ? (window.history.state._amdb.page ?? 1)
+                  : 1
+              }
               onPageChange={(p) => saveNavState('recommendations', p)}
             />
           )}

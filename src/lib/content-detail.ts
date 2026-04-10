@@ -104,10 +104,10 @@ export interface ContentDetail {
 // <1 year old → 7 days (ratings still moving)
 // >1 year old → 30 days (stable)
 function getCacheTtlMs(year: number | null): number {
-  const ONE_WEEK_MS  = 7  * 24 * 60 * 60 * 1000;
+  const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
   const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
   if (!year) return ONE_WEEK_MS;
-  return (new Date().getFullYear() - year) > 1 ? ONE_MONTH_MS : ONE_WEEK_MS;
+  return new Date().getFullYear() - year > 1 ? ONE_MONTH_MS : ONE_WEEK_MS;
 }
 
 // --- Modular Fetchers (for Streaming/RSC) ---
@@ -136,7 +136,7 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
 
   const tmdbTtl = getCacheTtlMs(contentRecord.year);
   const cachedTmdb = contentRecord.enrichments.find((e) => e.source === 'tmdb');
-  const isFresh = cachedTmdb && (Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < tmdbTtl);
+  const isFresh = cachedTmdb && Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < tmdbTtl;
 
   if (isFresh && cachedTmdb) {
     raw = cachedTmdb.data;
@@ -148,11 +148,13 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
         'movie',
         'credits,videos,keywords,external_ids,release_dates,watch/providers,similar',
       );
-      await prisma.contentEnrichment.upsert({
-        where: { contentId_source: { contentId: id, source: 'tmdb' } },
-        update: { data: raw, fetchedAt: new Date() },
-        create: { contentId: id, source: 'tmdb', data: raw },
-      }).catch(e => console.error('Failed to persist TMDB cache:', e));
+      await prisma.contentEnrichment
+        .upsert({
+          where: { contentId_source: { contentId: id, source: 'tmdb' } },
+          update: { data: raw, fetchedAt: new Date() },
+          create: { contentId: id, source: 'tmdb', data: raw },
+        })
+        .catch((e) => console.error('Failed to persist TMDB cache:', e));
     } catch (e) {
       console.error(`[AMDB] TMDB fetch error for movie ${id}:`, e);
       if (cachedTmdb) raw = cachedTmdb.data;
@@ -195,7 +197,7 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
   let omdbRatings = [];
   const storedOmdb = contentRecord.enrichments.find((e: any) => e.source === 'omdb');
   const omdbTtl = getCacheTtlMs(contentRecord.year);
-  const omdbFresh = storedOmdb && (Date.now() - new Date(storedOmdb.fetchedAt).getTime() < omdbTtl);
+  const omdbFresh = storedOmdb && Date.now() - new Date(storedOmdb.fetchedAt).getTime() < omdbTtl;
   if (omdbFresh && storedOmdb) {
     omdbRatings = (storedOmdb.data as any).Ratings ?? [];
   } else if (raw.imdb_id && process.env.OMDB_API_KEY) {
@@ -208,11 +210,13 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
         const omdbData = await omdbRes.json();
         if (omdbData.Ratings) {
           omdbRatings = omdbData.Ratings;
-          await prisma.contentEnrichment.upsert({
-            where: { contentId_source: { contentId: id, source: 'omdb' } },
-            update: { data: omdbData, fetchedAt: new Date() },
-            create: { contentId: id, source: 'omdb', data: omdbData },
-          }).catch(e => console.error('Failed to persist OMDB data:', e));
+          await prisma.contentEnrichment
+            .upsert({
+              where: { contentId_source: { contentId: id, source: 'omdb' } },
+              update: { data: omdbData, fetchedAt: new Date() },
+              create: { contentId: id, source: 'omdb', data: omdbData },
+            })
+            .catch((e) => console.error('Failed to persist OMDB data:', e));
         }
       }
     } catch (e) {
@@ -336,7 +340,7 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
 
   const tmdbTtl = getCacheTtlMs(contentRecord.year);
   const cachedTmdb = contentRecord.enrichments.find((e) => e.source === 'tmdb');
-  const isFresh = cachedTmdb && (Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < tmdbTtl);
+  const isFresh = cachedTmdb && Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < tmdbTtl;
 
   if (isFresh && cachedTmdb) {
     raw = cachedTmdb.data;
@@ -348,11 +352,13 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
         'tv',
         'credits,videos,keywords,external_ids,content_ratings,watch/providers,similar',
       );
-      await prisma.contentEnrichment.upsert({
-        where: { contentId_source: { contentId: id, source: 'tmdb' } },
-        update: { data: raw, fetchedAt: new Date() },
-        create: { contentId: id, source: 'tmdb', data: raw },
-      }).catch(e => console.error('Failed to persist TMDB cache for TV:', e));
+      await prisma.contentEnrichment
+        .upsert({
+          where: { contentId_source: { contentId: id, source: 'tmdb' } },
+          update: { data: raw, fetchedAt: new Date() },
+          create: { contentId: id, source: 'tmdb', data: raw },
+        })
+        .catch((e) => console.error('Failed to persist TMDB cache for TV:', e));
     } catch (e) {
       console.error(`[AMDB] TMDB fetch error for TV ${id}:`, e);
       if (cachedTmdb) raw = cachedTmdb.data;
@@ -378,7 +384,7 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
       : null;
 
   const omdbTtl = getCacheTtlMs(contentRecord.year);
-  const omdbFresh = storedOmdb && (Date.now() - new Date(storedOmdb.fetchedAt).getTime() < omdbTtl);
+  const omdbFresh = storedOmdb && Date.now() - new Date(storedOmdb.fetchedAt).getTime() < omdbTtl;
   if (omdbFresh && storedOmdb) {
     omdbRatings = (storedOmdb.data as any).Ratings ?? [];
   } else if (imdbId && process.env.OMDB_API_KEY) {
@@ -391,11 +397,13 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
         const omdbData = await omdbRes.json();
         if (omdbData.Ratings) {
           omdbRatings = omdbData.Ratings;
-          await prisma.contentEnrichment.upsert({
-            where: { contentId_source: { contentId: id, source: 'omdb' } },
-            update: { data: omdbData, fetchedAt: new Date() },
-            create: { contentId: id, source: 'omdb', data: omdbData },
-          }).catch(e => console.error('Failed to persist OMDB data:', e));
+          await prisma.contentEnrichment
+            .upsert({
+              where: { contentId_source: { contentId: id, source: 'omdb' } },
+              update: { data: omdbData, fetchedAt: new Date() },
+              create: { contentId: id, source: 'omdb', data: omdbData },
+            })
+            .catch((e) => console.error('Failed to persist OMDB data:', e));
         }
       }
     } catch (e) {
@@ -520,7 +528,7 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
   let raw: any = {};
   const tmdbTtl = getCacheTtlMs(contentRecord.year);
   const cachedTmdb = contentRecord.enrichments.find((e) => e.source === 'tmdb');
-  const isFresh = cachedTmdb && (Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < tmdbTtl);
+  const isFresh = cachedTmdb && Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < tmdbTtl;
 
   if (isFresh && cachedTmdb) {
     raw = cachedTmdb.data;
@@ -532,11 +540,13 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
         'tv',
         'credits,videos,keywords,external_ids,content_ratings,watch/providers,similar',
       );
-      await prisma.contentEnrichment.upsert({
-        where: { contentId_source: { contentId: id, source: 'tmdb' } },
-        update: { data: raw, fetchedAt: new Date() },
-        create: { contentId: id, source: 'tmdb', data: raw },
-      }).catch(e => console.error('Failed to persist TMDB cache for Anime:', e));
+      await prisma.contentEnrichment
+        .upsert({
+          where: { contentId_source: { contentId: id, source: 'tmdb' } },
+          update: { data: raw, fetchedAt: new Date() },
+          create: { contentId: id, source: 'tmdb', data: raw },
+        })
+        .catch((e) => console.error('Failed to persist TMDB cache for Anime:', e));
     } catch (e) {
       console.error(`[AMDB] TMDB fetch error for Anime ${id}:`, e);
       if (cachedTmdb) raw = cachedTmdb.data;
@@ -566,7 +576,7 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
 
   const imdbId = raw.external_ids?.imdb_id || null;
   const omdbTtl = getCacheTtlMs(contentRecord.year);
-  const omdbFresh = storedOmdb && (Date.now() - new Date(storedOmdb.fetchedAt).getTime() < omdbTtl);
+  const omdbFresh = storedOmdb && Date.now() - new Date(storedOmdb.fetchedAt).getTime() < omdbTtl;
   if (omdbFresh && storedOmdb) {
     omdbRatings = (storedOmdb.data as any).Ratings ?? [];
   } else if (imdbId && process.env.OMDB_API_KEY) {
@@ -579,11 +589,13 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
         const omdbData = await omdbRes.json();
         if (omdbData.Ratings) {
           omdbRatings = omdbData.Ratings;
-          await prisma.contentEnrichment.upsert({
-            where: { contentId_source: { contentId: id, source: 'omdb' } },
-            update: { data: omdbData, fetchedAt: new Date() },
-            create: { contentId: id, source: 'omdb', data: omdbData },
-          }).catch(e => console.error('Failed to persist OMDB data:', e));
+          await prisma.contentEnrichment
+            .upsert({
+              where: { contentId_source: { contentId: id, source: 'omdb' } },
+              update: { data: omdbData, fetchedAt: new Date() },
+              create: { contentId: id, source: 'omdb', data: omdbData },
+            })
+            .catch((e) => console.error('Failed to persist OMDB data:', e));
         }
       }
     } catch (e) {

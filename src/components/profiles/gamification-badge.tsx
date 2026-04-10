@@ -52,7 +52,6 @@ export function GamificationBadge({ score }: GamificationBadgeProps) {
       ) : (
         <p className="text-xs text-cyan-400/60">You&apos;ve reached the highest tier 👑</p>
       )}
-
     </div>
   );
 }

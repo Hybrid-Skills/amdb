@@ -9,7 +9,7 @@
  */
 const GENRE_ALIASES: Record<string, string> = {
   'Science Fiction': 'Sci-Fi',
-  'Politics': 'War & Politics', // keep compound split for now, just normalize sci-fi
+  Politics: 'War & Politics', // keep compound split for now, just normalize sci-fi
 };
 
 // Normalize a single split token to its canonical form

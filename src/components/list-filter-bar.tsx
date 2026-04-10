@@ -63,7 +63,12 @@ interface ListFilterBarProps {
   hideUserRating?: boolean;
 }
 
-export function ListFilterBar({ filters, onChange, total, hideUserRating = false }: ListFilterBarProps) {
+export function ListFilterBar({
+  filters,
+  onChange,
+  total,
+  hideUserRating = false,
+}: ListFilterBarProps) {
   const [filterOpen, setFilterOpen] = React.useState(false);
   const [sortOpen, setSortOpen] = React.useState(false);
   const popoverRef = React.useRef<HTMLDivElement>(null);
@@ -122,8 +127,10 @@ export function ListFilterBar({ filters, onChange, total, hideUserRating = false
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  const sortOptions = hideUserRating ? SORT_OPTIONS.filter((o) => o.value !== 'userRating') : SORT_OPTIONS;
-  const currentSort = sortOptions.find((o) => o.value === filters.sortBy) ?? sortOptions[0];;
+  const sortOptions = hideUserRating
+    ? SORT_OPTIONS.filter((o) => o.value !== 'userRating')
+    : SORT_OPTIONS;
+  const currentSort = sortOptions.find((o) => o.value === filters.sortBy) ?? sortOptions[0];
 
   return (
     <div className="flex flex-col gap-3 relative z-30">
@@ -276,7 +283,9 @@ export function ListFilterBar({ filters, onChange, total, hideUserRating = false
                             className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                           >
                             {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                              <option key={n} value={n}>{n}</option>
+                              <option key={n} value={n}>
+                                {n}
+                              </option>
                             ))}
                           </select>
                           <span className="text-muted-foreground text-sm">to</span>
@@ -293,7 +302,9 @@ export function ListFilterBar({ filters, onChange, total, hideUserRating = false
                             className="flex-1 h-8 rounded-md border border-input bg-transparent px-2 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
                           >
                             {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                              <option key={n} value={n}>{n}</option>
+                              <option key={n} value={n}>
+                                {n}
+                              </option>
                             ))}
                           </select>
                         </div>

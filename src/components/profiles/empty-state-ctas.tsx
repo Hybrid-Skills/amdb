@@ -17,7 +17,7 @@ export function EmptyStateCTAs({ stats }: EmptyStateCTAsProps) {
   if (!hasWatched) {
     ctas.push({
       label: 'Add your first title',
-      description: 'Start tracking movies, shows, or anime you\'ve watched.',
+      description: "Start tracking movies, shows, or anime you've watched.",
       icon: '🎬',
       href: '/',
     });
@@ -57,7 +57,9 @@ export function EmptyStateCTAs({ stats }: EmptyStateCTAsProps) {
             <p className="font-bold text-white group-hover:text-white text-sm">{cta.label}</p>
             <p className="text-xs text-white/40 mt-0.5">{cta.description}</p>
           </div>
-          <span className="ml-auto text-white/20 group-hover:text-white/50 transition-colors">→</span>
+          <span className="ml-auto text-white/20 group-hover:text-white/50 transition-colors">
+            →
+          </span>
         </Link>
       ))}
     </div>

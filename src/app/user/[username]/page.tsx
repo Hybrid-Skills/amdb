@@ -15,14 +15,14 @@ export default async function UserProfilePage({ params }: Props) {
   const session = await getServerSession(authOptions);
   const resolvedParams = await params;
   const username = resolvedParams.username;
-  
+
   // Find user by username (case-insensitive findFirst for vanity URLs)
   const profileUser = await prisma.user.findFirst({
-    where: { 
-      username: { 
-        equals: username, 
-        mode: 'insensitive' 
-      } 
+    where: {
+      username: {
+        equals: username,
+        mode: 'insensitive',
+      },
     },
     select: {
       id: true,
@@ -38,7 +38,7 @@ export default async function UserProfilePage({ params }: Props) {
 
   // Fetch stats and rated items
   const stats = await getProfileStats(profileUser.id);
-  
+
   // Fetch rated items for the "List" tab
   const ratedItems = await prisma.userContent.findMany({
     where: {
@@ -74,7 +74,7 @@ export default async function UserProfilePage({ params }: Props) {
       }}
       isOwner={isOwner}
       stats={stats}
-      ratedItems={ratedItems.map(item => ({
+      ratedItems={ratedItems.map((item) => ({
         id: item.content.id,
         title: item.content.title,
         year: item.content.year,

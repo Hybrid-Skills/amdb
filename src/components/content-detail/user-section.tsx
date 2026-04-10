@@ -32,7 +32,6 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-
 export function UserContentSection({ data }: UserContentSectionProps) {
   const { status } = useSession();
   const [userState, setUserState] = React.useState<UserState>('loading');
@@ -142,20 +141,29 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   }
 
   async function handleShare() {
-    const ratingSource = data.omdbRatings?.find(r => r.Source === 'Internet Movie Database') ? 'IMDb' : data.malScore ? 'MAL' : 'TMDB';
-    const ratingVal = data.omdbRatings?.find(r => r.Source === 'Internet Movie Database')?.Value.split('/')[0] || data.malScore || data.tmdbRating || 'N/A';
-    const typeLabel = data.contentType === 'MOVIE' ? 'movie' : data.contentType === 'TV_SHOW' ? 'TV show' : 'anime';
+    const ratingSource = data.omdbRatings?.find((r) => r.Source === 'Internet Movie Database')
+      ? 'IMDb'
+      : data.malScore
+        ? 'MAL'
+        : 'TMDB';
+    const ratingVal =
+      data.omdbRatings?.find((r) => r.Source === 'Internet Movie Database')?.Value.split('/')[0] ||
+      data.malScore ||
+      data.tmdbRating ||
+      'N/A';
+    const typeLabel =
+      data.contentType === 'MOVIE' ? 'movie' : data.contentType === 'TV_SHOW' ? 'TV show' : 'anime';
     const url = window.location.href;
     const title = data.title;
 
-    let text = "";
+    let text = '';
     if (userState === 'new') {
       text = `Found this ${typeLabel} with ⭐ ${ratingVal} ${ratingSource}. Add ${title} to your watch list here`;
     } else if (userState === 'planned') {
       text = `I am planning to watch ${title}. This ${typeLabel} has an ${ratingSource.toLowerCase()} rating of ${ratingVal}. You should add it to your list as well`;
     } else if (userState === 'rated' && userContent.userRating) {
       const r = userContent.userRating;
-      const adj = r >= 9 ? "solid " : r >= 7 ? "decent " : r >= 5 ? "passable " : "";
+      const adj = r >= 9 ? 'solid ' : r >= 7 ? 'decent ' : r >= 5 ? 'passable ' : '';
       text = `I watched ${title}, it's a ${adj}${r}/10. Add it to your list here`;
     } else {
       text = `Check out ${title} on AMDB`;
@@ -190,25 +198,28 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   };
 
   // Pre-populate the modal with data we already have — avoids redundant /api/content fetch
-  const prefetchedContent = React.useMemo(() => ({
-    ...modalItem,
-    backdropUrl: data.backdropUrl,
-    tagline: data.tagline,
-    genres: data.genres,
-    runtimeMins: data.runtimeMins,
-    adult: data.adult,
-    networks: data.networks,
-    first_air_date: data.firstAirDate,
-    last_air_date: data.lastAirDate,
-    number_of_seasons: data.numberOfSeasons,
-    number_of_episodes: data.numberOfEpisodes,
-    episode_run_time: data.episodeRuntime ? [data.episodeRuntime] : [],
-    videos: { results: data.videos },
-    similar: { results: data.similar },
-    cast: data.cast,
-    watchProviders: data.watchProviders,
-    omdbRatings: data.omdbRatings,
-  }), [data.id]);
+  const prefetchedContent = React.useMemo(
+    () => ({
+      ...modalItem,
+      backdropUrl: data.backdropUrl,
+      tagline: data.tagline,
+      genres: data.genres,
+      runtimeMins: data.runtimeMins,
+      adult: data.adult,
+      networks: data.networks,
+      first_air_date: data.firstAirDate,
+      last_air_date: data.lastAirDate,
+      number_of_seasons: data.numberOfSeasons,
+      number_of_episodes: data.numberOfEpisodes,
+      episode_run_time: data.episodeRuntime ? [data.episodeRuntime] : [],
+      videos: { results: data.videos },
+      similar: { results: data.similar },
+      cast: data.cast,
+      watchProviders: data.watchProviders,
+      omdbRatings: data.omdbRatings,
+    }),
+    [data.id],
+  );
 
   return (
     <>
@@ -227,8 +238,10 @@ export function UserContentSection({ data }: UserContentSectionProps) {
             <div className="flex items-center gap-2.5 ml-1">
               <Star className="w-5 h-5 text-yellow-500 fill-yellow-500 shrink-0" />
               <div className="flex items-baseline gap-2">
-                <span className="text-lg font-black text-white leading-none">{userContent.userRating}</span>
-                <span 
+                <span className="text-lg font-black text-white leading-none">
+                  {userContent.userRating}
+                </span>
+                <span
                   className="text-xs font-bold uppercase tracking-tight"
                   style={{ color: ratingColor(userContent.userRating) }}
                 >
@@ -253,7 +266,9 @@ export function UserContentSection({ data }: UserContentSectionProps) {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="text-sm font-medium"
-                style={{ color: activeRating ? ratingColor(activeRating) : 'rgba(255,255,255,0.3)' }}
+                style={{
+                  color: activeRating ? ratingColor(activeRating) : 'rgba(255,255,255,0.3)',
+                }}
               >
                 {activeRating ? RATING_LABELS[activeRating] : 'Not rated yet'}
               </motion.span>
@@ -262,87 +277,100 @@ export function UserContentSection({ data }: UserContentSectionProps) {
         </div>
 
         <div className="min-h-[32px] md:min-h-[44px]">
-        <AnimatePresence mode="wait">
-          {userState === 'loading' && (
-            <motion.div
-              key="loading"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="flex gap-1.5"
-            >
-              {Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="flex-1 h-8 md:h-11 rounded-md bg-white/10 animate-pulse" />
-              ))}
-            </motion.div>
-          )}
+          <AnimatePresence mode="wait">
+            {userState === 'loading' && (
+              <motion.div
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex gap-1.5"
+              >
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 h-8 md:h-11 rounded-md bg-white/10 animate-pulse"
+                  />
+                ))}
+              </motion.div>
+            )}
 
-          {userState === 'new' && (
-            <motion.div
-              key="new"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col gap-3"
-            >
-              <RatingPicker
-                value={null}
-                onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
-                onActiveRating={setActiveRating}
-              />
-              <div className="hidden md:flex gap-3 flex-wrap">
-                <button
-                  onClick={handlePlan}
-                  disabled={planLoading}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white font-bold text-sm hover:bg-white/15 transition-all active:scale-95 disabled:opacity-50"
-                >
-                  <Bookmark className="w-4 h-4" />
-                  {planLoading ? 'Saving…' : 'Plan to Watch'}
-                </button>
-              </div>
-            </motion.div>
-          )}
+            {userState === 'new' && (
+              <motion.div
+                key="new"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col gap-3"
+              >
+                <RatingPicker
+                  value={null}
+                  onChange={(r) =>
+                    requireAuth(() => {
+                      setPendingRating(r);
+                      setModalOpen(true);
+                    })
+                  }
+                  onActiveRating={setActiveRating}
+                />
+                <div className="hidden md:flex gap-3 flex-wrap">
+                  <button
+                    onClick={handlePlan}
+                    disabled={planLoading}
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white/10 border border-white/10 text-white font-bold text-sm hover:bg-white/15 transition-all active:scale-95 disabled:opacity-50"
+                  >
+                    <Bookmark className="w-4 h-4" />
+                    {planLoading ? 'Saving…' : 'Plan to Watch'}
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
-          {userState === 'planned' && (
-            <motion.div
-              key="planned"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col gap-3"
-            >
-              <RatingPicker
-                value={null}
-                onChange={(r) => requireAuth(() => { setPendingRating(r); setModalOpen(true); })}
-                onActiveRating={setActiveRating}
-              />
-              <div className="hidden md:flex gap-3 flex-wrap items-center">
-                <button
-                  onClick={handleRemovePlan}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 font-bold text-sm hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all active:scale-95 group"
-                >
-                  <BookmarkCheck className="w-4 h-4" />
-                  <span className="group-hover:hidden">Planned</span>
-                  <span className="hidden group-hover:inline">Remove</span>
-                </button>
-              </div>
-            </motion.div>
-          )}
+            {userState === 'planned' && (
+              <motion.div
+                key="planned"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col gap-3"
+              >
+                <RatingPicker
+                  value={null}
+                  onChange={(r) =>
+                    requireAuth(() => {
+                      setPendingRating(r);
+                      setModalOpen(true);
+                    })
+                  }
+                  onActiveRating={setActiveRating}
+                />
+                <div className="hidden md:flex gap-3 flex-wrap items-center">
+                  <button
+                    onClick={handleRemovePlan}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/15 border border-blue-500/30 text-blue-400 font-bold text-sm hover:bg-red-500/10 hover:border-red-500/30 hover:text-red-400 transition-all active:scale-95 group"
+                  >
+                    <BookmarkCheck className="w-4 h-4" />
+                    <span className="group-hover:hidden">Planned</span>
+                    <span className="hidden group-hover:inline">Remove</span>
+                  </button>
+                </div>
+              </motion.div>
+            )}
 
-          {userState === 'rated' && (
-            <motion.div
-              key="rated"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0 }}
-              className="flex flex-col gap-4"
-            >
-              <p className="text-white/60 text-sm italic leading-relaxed max-w-lg">
-                {userContent.notes || "No review notes left"}
-              </p>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {userState === 'rated' && (
+              <motion.div
+                key="rated"
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="flex flex-col gap-4"
+              >
+                <p className="text-white/60 text-sm italic leading-relaxed max-w-lg">
+                  {userContent.notes || 'No review notes left'}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
@@ -356,7 +384,10 @@ export function UserContentSection({ data }: UserContentSectionProps) {
           initialWatchStatus={userContent.watchStatus}
           prefetchedContent={prefetchedContent}
           startInEditMode={userState === 'rated'}
-          onClose={() => { setModalOpen(false); setPendingRating(null); }}
+          onClose={() => {
+            setModalOpen(false);
+            setPendingRating(null);
+          }}
           onSuccess={() => {
             setModalOpen(false);
             setPendingRating(null);

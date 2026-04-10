@@ -1,7 +1,10 @@
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 async function main() {
-  const rows = await prisma.content.findMany({ select: { genreNames: true }, where: { genreNames: { not: null } } });
+  const rows = await prisma.content.findMany({
+    select: { genreNames: true },
+    where: { genreNames: { not: null } },
+  });
   const all = new Set<string>();
   for (const r of rows) {
     if (!r.genreNames) continue;
@@ -9,4 +12,6 @@ async function main() {
   }
   console.log([...all].sort().join('\n'));
 }
-main().catch(console.error).finally(() => prisma.$disconnect());
+main()
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());

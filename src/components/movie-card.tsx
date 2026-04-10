@@ -3,7 +3,27 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Star, Tv, Film, Clock, Pencil, Trash2, Bookmark, CheckCircle2, Loader2, Award, Trophy, Heart, History, Eye, Waves, Cpu, Clapperboard, Zap, Search } from 'lucide-react';
+import {
+  Star,
+  Tv,
+  Film,
+  Clock,
+  Pencil,
+  Trash2,
+  Bookmark,
+  CheckCircle2,
+  Loader2,
+  Award,
+  Trophy,
+  Heart,
+  History,
+  Eye,
+  Waves,
+  Cpu,
+  Clapperboard,
+  Zap,
+  Search,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Badge } from './ui/badge';
 import { buildContentUrl } from '@/lib/slug';
@@ -38,11 +58,11 @@ export interface MovieCardProps {
   malId?: number;
   recommendationReason?: string | null;
   recommendationLabel?: string | null;
-  
+
   // Tab variants
   variant?: 'WATCHED' | 'PLANNED' | 'RECOMMENDED';
   layout?: 'vertical' | 'horizontal';
-  
+
   // Actions
   onEdit?: () => void;
   onDelete?: () => void;
@@ -86,76 +106,79 @@ const CONTENT_ICONS: Record<ContentType, React.ReactNode> = {
   ),
 };
 
-const LABEL_CONFIG: Record<string, { label: string, icon: React.ReactNode, color: string, bg: string, border: string }> = {
-  UNDERRATED: { 
-    label: 'Underrated', 
-    icon: <Search className="w-3 h-3" />, 
-    color: 'text-cyan-400', 
-    bg: 'bg-cyan-500/10', 
-    border: 'border-cyan-500/20' 
+const LABEL_CONFIG: Record<
+  string,
+  { label: string; icon: React.ReactNode; color: string; bg: string; border: string }
+> = {
+  UNDERRATED: {
+    label: 'Underrated',
+    icon: <Search className="w-3 h-3" />,
+    color: 'text-cyan-400',
+    bg: 'bg-cyan-500/10',
+    border: 'border-cyan-500/20',
   },
-  CRITICALLY_ACCLAIMED: { 
-    label: 'Critically Acclaimed', 
-    icon: <Award className="w-3 h-3" />, 
-    color: 'text-amber-400', 
-    bg: 'bg-amber-500/10', 
-    border: 'border-amber-500/20' 
+  CRITICALLY_ACCLAIMED: {
+    label: 'Critically Acclaimed',
+    icon: <Award className="w-3 h-3" />,
+    color: 'text-amber-400',
+    bg: 'bg-amber-500/10',
+    border: 'border-amber-500/20',
   },
-  AWARD_WINNING: { 
-    label: 'Award Winning', 
-    icon: <Trophy className="w-3 h-3" />, 
-    color: 'text-yellow-400', 
-    bg: 'bg-yellow-500/10', 
-    border: 'border-yellow-500/20' 
+  AWARD_WINNING: {
+    label: 'Award Winning',
+    icon: <Trophy className="w-3 h-3" />,
+    color: 'text-yellow-400',
+    bg: 'bg-yellow-500/10',
+    border: 'border-yellow-500/20',
   },
-  FAN_FAVORITE: { 
-    label: 'Fan Favorite', 
-    icon: <Heart className="w-3 h-3" />, 
-    color: 'text-rose-400', 
-    bg: 'bg-rose-500/10', 
-    border: 'border-rose-500/20' 
+  FAN_FAVORITE: {
+    label: 'Fan Favorite',
+    icon: <Heart className="w-3 h-3" />,
+    color: 'text-rose-400',
+    bg: 'bg-rose-500/10',
+    border: 'border-rose-500/20',
   },
-  CULT_CLASSIC: { 
-    label: 'Cult Classic', 
-    icon: <History className="w-3 h-3" />, 
-    color: 'text-violet-400', 
-    bg: 'bg-violet-500/10', 
-    border: 'border-violet-500/20' 
+  CULT_CLASSIC: {
+    label: 'Cult Classic',
+    icon: <History className="w-3 h-3" />,
+    color: 'text-violet-400',
+    bg: 'bg-violet-500/10',
+    border: 'border-violet-500/20',
   },
-  VISUAL_SPECTACLE: { 
-    label: 'Visual Spectacle', 
-    icon: <Eye className="w-3 h-3" />, 
-    color: 'text-blue-400', 
-    bg: 'bg-blue-500/10', 
-    border: 'border-blue-500/20' 
+  VISUAL_SPECTACLE: {
+    label: 'Visual Spectacle',
+    icon: <Eye className="w-3 h-3" />,
+    color: 'text-blue-400',
+    bg: 'bg-blue-500/10',
+    border: 'border-blue-500/20',
   },
-  IMMERSIVE_SOUND: { 
-    label: 'Immersive Sound', 
-    icon: <Waves className="w-3 h-3" />, 
-    color: 'text-emerald-400', 
-    bg: 'bg-emerald-500/10', 
-    border: 'border-emerald-500/20' 
+  IMMERSIVE_SOUND: {
+    label: 'Immersive Sound',
+    icon: <Waves className="w-3 h-3" />,
+    color: 'text-emerald-400',
+    bg: 'bg-emerald-500/10',
+    border: 'border-emerald-500/20',
   },
-  TECHNICAL_MASTERY: { 
-    label: 'Technical Mastery', 
-    icon: <Cpu className="w-3 h-3" />, 
-    color: 'text-slate-400', 
-    bg: 'bg-slate-500/10', 
-    border: 'border-slate-500/20' 
+  TECHNICAL_MASTERY: {
+    label: 'Technical Mastery',
+    icon: <Cpu className="w-3 h-3" />,
+    color: 'text-slate-400',
+    bg: 'bg-slate-500/10',
+    border: 'border-slate-500/20',
   },
-  DIRECTORIAL_DEBUT: { 
-    label: 'Directorial Debut', 
-    icon: <Clapperboard className="w-3 h-3" />, 
-    color: 'text-teal-400', 
-    bg: 'bg-teal-500/10', 
-    border: 'border-teal-500/20' 
+  DIRECTORIAL_DEBUT: {
+    label: 'Directorial Debut',
+    icon: <Clapperboard className="w-3 h-3" />,
+    color: 'text-teal-400',
+    bg: 'bg-teal-500/10',
+    border: 'border-teal-500/20',
   },
-  GENRE_DEFINING: { 
-    label: 'Genre Defining', 
-    icon: <Zap className="w-3 h-3" />, 
-    color: 'text-orange-400', 
-    bg: 'bg-orange-500/10', 
-    border: 'border-orange-500/20' 
+  GENRE_DEFINING: {
+    label: 'Genre Defining',
+    icon: <Zap className="w-3 h-3" />,
+    color: 'text-orange-400',
+    bg: 'bg-orange-500/10',
+    border: 'border-orange-500/20',
   },
 };
 
@@ -195,7 +218,7 @@ export function MovieCard({
     const existing = window.history.state ?? {};
     window.history.replaceState(
       { ...existing, _amdb: { ...existing._amdb, scroll: window.scrollY } },
-      ''
+      '',
     );
     const url = buildContentUrl(contentType, title, id);
     router.push(url);
@@ -208,20 +231,20 @@ export function MovieCard({
       whileHover={{ scale: 1.02 }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className={cn("relative z-0 hover:z-20 h-full", isHorizontal && "col-span-1 md:col-span-2")}
+      className={cn('relative z-0 hover:z-20 h-full', isHorizontal && 'col-span-1 md:col-span-2')}
     >
       <div
         className={cn(
-          "relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group flex",
-          isHorizontal ? "flex-row" : "flex-col"
+          'relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group flex',
+          isHorizontal ? 'flex-row' : 'flex-col',
         )}
         onClick={handleCardClick}
       >
         {/* ── Poster/Banner Section ── */}
-        <div 
+        <div
           className={cn(
-            "relative overflow-hidden shrink-0",
-            isHorizontal ? "w-[120px] sm:w-[150px] aspect-[2/3]" : "aspect-[2/3] w-full"
+            'relative overflow-hidden shrink-0',
+            isHorizontal ? 'w-[120px] sm:w-[150px] aspect-[2/3]' : 'aspect-[2/3] w-full',
           )}
         >
           {isEnriching ? (
@@ -293,71 +316,97 @@ export function MovieCard({
 
         {/* ── Info/Content Section ── */}
         <div className="flex flex-col flex-1 min-h-0 bg-card overflow-hidden">
-          <div className={cn("flex-1 min-w-0", isHorizontal ? "p-3 sm:p-4" : "p-2")}>
-            <div className={cn("flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap", isHorizontal ? "mb-1" : "mb-0")}>
-              <p className={cn("font-extrabold leading-tight line-clamp-2", isHorizontal ? "text-[15px] sm:text-base" : "text-[13px]")}>
-                {title}
-                {year && (
-                  <span className="opacity-70 font-bold ml-1.5 text-[0.9em]">
-                    ({year})
-                  </span>
+          <div className={cn('flex-1 min-w-0', isHorizontal ? 'p-3 sm:p-4' : 'p-2')}>
+            <div
+              className={cn(
+                'flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap',
+                isHorizontal ? 'mb-1' : 'mb-0',
+              )}
+            >
+              <p
+                className={cn(
+                  'font-extrabold leading-tight line-clamp-2',
+                  isHorizontal ? 'text-[15px] sm:text-base' : 'text-[13px]',
                 )}
+              >
+                {title}
+                {year && <span className="opacity-70 font-bold ml-1.5 text-[0.9em]">({year})</span>}
               </p>
             </div>
 
             {/* Correct Metadata Row Position (Between Title and Reason) */}
             {isHorizontal && (
-               <div className="flex items-center gap-2.5 my-2 flex-nowrap overflow-hidden">
-                 {recommendationLabel && LABEL_CONFIG[recommendationLabel] && (
-                   <div className={cn(
-                     "inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-tight shadow-sm whitespace-nowrap shrink-0",
-                     LABEL_CONFIG[recommendationLabel].bg,
-                     LABEL_CONFIG[recommendationLabel].color,
-                     LABEL_CONFIG[recommendationLabel].border
-                   )}>
-                     {LABEL_CONFIG[recommendationLabel].icon}
-                     {LABEL_CONFIG[recommendationLabel].label}
-                   </div>
-                 )}
-                 {/* Runtime removed from here - now on poster */}
-               </div>
+              <div className="flex items-center gap-2.5 my-2 flex-nowrap overflow-hidden">
+                {recommendationLabel && LABEL_CONFIG[recommendationLabel] && (
+                  <div
+                    className={cn(
+                      'inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-tight shadow-sm whitespace-nowrap shrink-0',
+                      LABEL_CONFIG[recommendationLabel].bg,
+                      LABEL_CONFIG[recommendationLabel].color,
+                      LABEL_CONFIG[recommendationLabel].border,
+                    )}
+                  >
+                    {LABEL_CONFIG[recommendationLabel].icon}
+                    {LABEL_CONFIG[recommendationLabel].label}
+                  </div>
+                )}
+                {/* Runtime removed from here - now on poster */}
+              </div>
             )}
 
             {/* Recommendation Reason */}
             {recommendationReason && (
-              <p className={cn(
-                "text-[12px] text-muted-foreground/90 italic leading-snug",
-                isHorizontal ? "line-clamp-5" : "line-clamp-2"
-              )}>
+              <p
+                className={cn(
+                  'text-[12px] text-muted-foreground/90 italic leading-snug',
+                  isHorizontal ? 'line-clamp-5' : 'line-clamp-2',
+                )}
+              >
                 {recommendationReason}
               </p>
             )}
           </div>
- 
+
           {/* Bottom Action Area (Always flush) */}
           {isHorizontal ? (
             isEnriching ? (
               <div className="flex items-center justify-center gap-2 px-2 py-1.5 bg-secondary/5 border-t border-border shrink-0 min-h-[36px] animate-pulse">
                 <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />
-                <span className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">Fetching details...</span>
+                <span className="text-[10px] font-bold uppercase tracking-tight text-muted-foreground">
+                  Fetching details...
+                </span>
               </div>
             ) : (
               <div className="flex items-stretch border-t border-border shrink-0 min-h-[36px]">
-                 <button 
-                   onClick={(e) => { e.stopPropagation(); onSecondaryAction?.(); }}
-                   disabled={isSecondaryLoading}
-                   className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all border-r border-border min-w-0"
-                 >
-                   {isSecondaryLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Bookmark className="w-3.5 h-3.5"/>}
-                   <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">Plan</span>
-                 </button>
-                 <button
-                   onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }}
-                   className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all min-w-0"
-                 >
-                   <Star className="w-3.5 h-3.5"/>
-                   <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">Rate</span>
-                 </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onSecondaryAction?.();
+                  }}
+                  disabled={isSecondaryLoading}
+                  className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all border-r border-border min-w-0"
+                >
+                  {isSecondaryLoading ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Bookmark className="w-3.5 h-3.5" />
+                  )}
+                  <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">
+                    Plan
+                  </span>
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onViewDetails?.();
+                  }}
+                  className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all min-w-0"
+                >
+                  <Star className="w-3.5 h-3.5" />
+                  <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">
+                    Rate
+                  </span>
+                </button>
               </div>
             )
           ) : variant === 'WATCHED' ? (
@@ -376,14 +425,16 @@ export function MovieCard({
                 </span>
               </div>
               <button
-                onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit?.();
+                }}
                 className="p-1 hover:bg-black/10 rounded-md transition-colors"
               >
                 <Pencil className="w-4 h-4 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0" />
               </button>
             </div>
           ) : null}
-
         </div>
       </div>
     </motion.div>

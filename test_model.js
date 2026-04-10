@@ -3,13 +3,13 @@ const { GoogleGenerativeAI } = require('@google/generative-ai');
 async function testModel(modelName) {
   const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
   console.log(`Testing model: ${modelName}`);
-  
+
   try {
-    const model = genAI.getGenerativeModel({ 
+    const model = genAI.getGenerativeModel({
       model: modelName,
       generationConfig: {
-        responseMimeType: 'application/json'
-      }
+        responseMimeType: 'application/json',
+      },
     });
 
     const prompt = 'Return a list of 2 movies in JSON format with title and year.';

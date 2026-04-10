@@ -35,57 +35,59 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
         ? ((omdbEnrichment.data as any).Ratings ?? [])
         : (stored.omdbRatings ?? []);
 
-      const jikanEnrichment = type === 'ANIME'
-        ? stored.enrichments.find((e) => e.source === 'jikan')
-        : null;
+      const jikanEnrichment =
+        type === 'ANIME' ? stored.enrichments.find((e) => e.source === 'jikan') : null;
       const malScore = jikanEnrichment
         ? Number(Number((jikanEnrichment.data as any).score ?? 0).toFixed(1)) || null
         : null;
 
-      return NextResponse.json({
-        // Identity
-        id: stored.id,
-        tmdbId: stored.tmdbId,
-        malId: stored.malId,
-        imdbId: stored.imdbId,
-        contentType: stored.contentType,
-        // Core
-        title: stored.title,
-        originalTitle: stored.originalTitle,
-        year: stored.year,
-        overview: stored.overview,
-        tagline: stored.tagline,
-        status: stored.status,
-        adult: stored.adult,
-        // Images
-        posterUrl: stored.posterUrl,
-        backdropUrl: stored.backdropUrl,
-        // Ratings
-        tmdbRating: stored.tmdbRating,
-        tmdbVoteCount: stored.tmdbVoteCount,
-        omdbRatings,
-        malScore,
-        // Genres (TMDB array format — modal reads g.name)
-        genres: stored.genres,
-        genreNames: stored.genreNames,
-        // Runtime — both DB name and TMDB array format the modal reads
-        runtimeMins: stored.runtimeMins,
-        episode_run_time: stored.episodeRuntime ? [stored.episodeRuntime] : [],
-        // TV metadata — use TMDB field names the modal reads
-        number_of_seasons: stored.seasons,
-        number_of_episodes: stored.episodes,
-        networks: stored.networks,
-        // Languages — stored as raw TMDB spoken_languages array (has english_name)
-        spoken_languages: stored.languages,
-        language: stored.language,
-        // Financials
-        revenue: stored.revenue,
-        // Certification
-        ageCertification: stored.ageCertification,
-        _quick: true,
-      }, {
-        headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' },
-      });
+      return NextResponse.json(
+        {
+          // Identity
+          id: stored.id,
+          tmdbId: stored.tmdbId,
+          malId: stored.malId,
+          imdbId: stored.imdbId,
+          contentType: stored.contentType,
+          // Core
+          title: stored.title,
+          originalTitle: stored.originalTitle,
+          year: stored.year,
+          overview: stored.overview,
+          tagline: stored.tagline,
+          status: stored.status,
+          adult: stored.adult,
+          // Images
+          posterUrl: stored.posterUrl,
+          backdropUrl: stored.backdropUrl,
+          // Ratings
+          tmdbRating: stored.tmdbRating,
+          tmdbVoteCount: stored.tmdbVoteCount,
+          omdbRatings,
+          malScore,
+          // Genres (TMDB array format — modal reads g.name)
+          genres: stored.genres,
+          genreNames: stored.genreNames,
+          // Runtime — both DB name and TMDB array format the modal reads
+          runtimeMins: stored.runtimeMins,
+          episode_run_time: stored.episodeRuntime ? [stored.episodeRuntime] : [],
+          // TV metadata — use TMDB field names the modal reads
+          number_of_seasons: stored.seasons,
+          number_of_episodes: stored.episodes,
+          networks: stored.networks,
+          // Languages — stored as raw TMDB spoken_languages array (has english_name)
+          spoken_languages: stored.languages,
+          language: stored.language,
+          // Financials
+          revenue: stored.revenue,
+          // Certification
+          ageCertification: stored.ageCertification,
+          _quick: true,
+        },
+        {
+          headers: { 'Cache-Control': 's-maxage=3600, stale-while-revalidate=86400' },
+        },
+      );
     }
 
     // ── Full path: DB first, TMDB only if cache is stale ────────────────────
@@ -95,16 +97,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
     });
 
     // Shared TTL constants (used for both TMDB and OMDB below)
-    const ONE_WEEK_MS  = 7  * 24 * 60 * 60 * 1000;
+    const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
     const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
     const contentYear = storedContent?.year ?? null;
-    const cacheTtl = contentYear && (new Date().getFullYear() - contentYear) > 1
-      ? ONE_MONTH_MS : ONE_WEEK_MS;
+    const cacheTtl =
+      contentYear && new Date().getFullYear() - contentYear > 1 ? ONE_MONTH_MS : ONE_WEEK_MS;
     const tmdbTtl = cacheTtl;
 
     const cachedTmdb = storedContent?.enrichments?.find((e) => e.source === 'tmdb');
-    const tmdbFresh = cachedTmdb &&
-      (Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < tmdbTtl);
+    const tmdbFresh = cachedTmdb && Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < tmdbTtl;
 
     let raw: any;
     let fetchedFreshTmdb = false;
@@ -118,11 +119,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
       fetchedFreshTmdb = true;
       // Persist to enrichment cache if we have a DB record
       if (storedContent?.id) {
-        await prisma.contentEnrichment.upsert({
-          where: { contentId_source: { contentId: storedContent.id, source: 'tmdb' } },
-          update: { data: raw, fetchedAt: new Date() },
-          create: { contentId: storedContent.id, source: 'tmdb', data: raw },
-        }).catch(e => console.error('Failed to persist TMDB modal cache:', e));
+        await prisma.contentEnrichment
+          .upsert({
+            where: { contentId_source: { contentId: storedContent.id, source: 'tmdb' } },
+            update: { data: raw, fetchedAt: new Date() },
+            create: { contentId: storedContent.id, source: 'tmdb', data: raw },
+          })
+          .catch((e) => console.error('Failed to persist TMDB modal cache:', e));
       }
     }
 
@@ -135,28 +138,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
         patch.posterUrl = tmdbImageUrl(raw.poster_path);
       if (!storedContent.originalTitle && (raw.original_title ?? raw.original_name))
         patch.originalTitle = raw.original_title ?? raw.original_name;
-      if (!storedContent.overview && raw.overview)
-        patch.overview = raw.overview;
-      if (!storedContent.tagline && raw.tagline)
-        patch.tagline = raw.tagline;
-      if (!storedContent.status && raw.status)
-        patch.status = raw.status;
-      if (!storedContent.imdbId && raw.imdb_id)
-        patch.imdbId = raw.imdb_id;
-      if (!storedContent.runtimeMins && raw.runtime)
-        patch.runtimeMins = raw.runtime;
+      if (!storedContent.overview && raw.overview) patch.overview = raw.overview;
+      if (!storedContent.tagline && raw.tagline) patch.tagline = raw.tagline;
+      if (!storedContent.status && raw.status) patch.status = raw.status;
+      if (!storedContent.imdbId && raw.imdb_id) patch.imdbId = raw.imdb_id;
+      if (!storedContent.runtimeMins && raw.runtime) patch.runtimeMins = raw.runtime;
       if (!storedContent.episodeRuntime && raw.episode_run_time?.[0])
         patch.episodeRuntime = raw.episode_run_time[0];
       if (!storedContent.tmdbRating && raw.vote_average)
         patch.tmdbRating = Number(raw.vote_average.toFixed(1));
-      if (!storedContent.tmdbVoteCount && raw.vote_count)
-        patch.tmdbVoteCount = raw.vote_count;
+      if (!storedContent.tmdbVoteCount && raw.vote_count) patch.tmdbVoteCount = raw.vote_count;
       if (!storedContent.language && raw.spoken_languages?.[0]?.english_name)
         patch.language = raw.spoken_languages[0].english_name;
-      if (!storedContent.revenue && raw.revenue)
-        patch.revenue = raw.revenue;
-      if (!storedContent.seasons && raw.number_of_seasons)
-        patch.seasons = raw.number_of_seasons;
+      if (!storedContent.revenue && raw.revenue) patch.revenue = raw.revenue;
+      if (!storedContent.seasons && raw.number_of_seasons) patch.seasons = raw.number_of_seasons;
       if (!storedContent.episodes && raw.number_of_episodes)
         patch.episodes = raw.number_of_episodes;
       // Json fields: check for empty arrays
@@ -169,18 +164,24 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
       if ((!storedNetworks || storedNetworks.length === 0) && (raw.networks?.length ?? 0) > 0)
         patch.networks = raw.networks;
       const storedLanguages = storedContent.languages as any[];
-      if ((!storedLanguages || storedLanguages.length === 0) && (raw.spoken_languages?.length ?? 0) > 0)
+      if (
+        (!storedLanguages || storedLanguages.length === 0) &&
+        (raw.spoken_languages?.length ?? 0) > 0
+      )
         patch.languages = raw.spoken_languages;
       if (!storedContent.ageCertification) {
-        const cert = type === 'TV_SHOW' || type === 'ANIME'
-          ? (raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'IN')?.rating
-            ?? raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US')?.rating
-            ?? null)
-          : (raw.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'IN')
-              ?.release_dates?.find((d: any) => d.certification)?.certification
-            ?? raw.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US')
-              ?.release_dates?.find((d: any) => d.certification)?.certification
-            ?? null);
+        const cert =
+          type === 'TV_SHOW' || type === 'ANIME'
+            ? (raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'IN')?.rating ??
+              raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US')?.rating ??
+              null)
+            : (raw.release_dates?.results
+                ?.find((r: any) => r.iso_3166_1 === 'IN')
+                ?.release_dates?.find((d: any) => d.certification)?.certification ??
+              raw.release_dates?.results
+                ?.find((r: any) => r.iso_3166_1 === 'US')
+                ?.release_dates?.find((d: any) => d.certification)?.certification ??
+              null);
         if (cert) patch.ageCertification = cert;
       }
       if (Object.keys(patch).length > 0) {
@@ -252,8 +253,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
     const omdbTtl = cacheTtl;
 
     const omdbEnrichment = storedContent?.enrichments?.find((e) => e.source === 'omdb');
-    const omdbFresh = omdbEnrichment &&
-      (Date.now() - new Date(omdbEnrichment.fetchedAt).getTime() < omdbTtl);
+    const omdbFresh =
+      omdbEnrichment && Date.now() - new Date(omdbEnrichment.fetchedAt).getTime() < omdbTtl;
 
     if (omdbFresh && omdbEnrichment) {
       omdbRatings = (omdbEnrichment.data as Record<string, any>).Ratings ?? [];
@@ -267,17 +268,20 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
           if (omdbData.Ratings) {
             omdbRatings = omdbData.Ratings;
             if (storedContent?.id) {
-              await prisma.contentEnrichment.upsert({
-                where: { contentId_source: { contentId: storedContent.id, source: 'omdb' } },
-                update: { data: omdbData, fetchedAt: new Date() },
-                create: { contentId: storedContent.id, source: 'omdb', data: omdbData },
-              }).catch(e => console.error('Failed to persist OMDB data in API:', e));
+              await prisma.contentEnrichment
+                .upsert({
+                  where: { contentId_source: { contentId: storedContent.id, source: 'omdb' } },
+                  update: { data: omdbData, fetchedAt: new Date() },
+                  create: { contentId: storedContent.id, source: 'omdb', data: omdbData },
+                })
+                .catch((e) => console.error('Failed to persist OMDB data in API:', e));
             }
           }
         }
       } catch (e) {
         console.error('OMDB fetch error in detail API:', e);
-        if (omdbEnrichment) omdbRatings = (omdbEnrichment.data as Record<string, any>).Ratings ?? [];
+        if (omdbEnrichment)
+          omdbRatings = (omdbEnrichment.data as Record<string, any>).Ratings ?? [];
       }
     }
 

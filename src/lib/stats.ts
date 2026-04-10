@@ -82,9 +82,9 @@ async function computeProfileStats(userId: string): Promise<ProfileStats> {
   const emptyType: ContentTypeStats = { count: 0, totalMins: 0 };
 
   const watched = {
-    MOVIE:   emptyType,
+    MOVIE: emptyType,
     TV_SHOW: emptyType,
-    ANIME:   emptyType,
+    ANIME: emptyType,
     totalCount: 0,
     totalMins: 0,
     avgRating: null as number | null,
@@ -111,9 +111,9 @@ async function computeProfileStats(userId: string): Promise<ProfileStats> {
   }
 
   const planned = {
-    MOVIE:   { count: 0, totalMins: 0 },
+    MOVIE: { count: 0, totalMins: 0 },
     TV_SHOW: { count: 0, totalMins: 0 },
-    ANIME:   { count: 0, totalMins: 0 },
+    ANIME: { count: 0, totalMins: 0 },
     totalCount: 0,
     estimatedMins: 0,
   };
@@ -133,9 +133,8 @@ async function computeProfileStats(userId: string): Promise<ProfileStats> {
 }
 
 export function getProfileStats(userId: string): Promise<ProfileStats> {
-  return unstable_cache(
-    () => computeProfileStats(userId),
-    [`user-stats-${userId}`],
-    { revalidate: 60, tags: [`user-stats-${userId}`] }
-  )();
+  return unstable_cache(() => computeProfileStats(userId), [`user-stats-${userId}`], {
+    revalidate: 60,
+    tags: [`user-stats-${userId}`],
+  })();
 }

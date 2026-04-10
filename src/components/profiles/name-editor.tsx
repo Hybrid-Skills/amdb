@@ -22,7 +22,11 @@ export function NameEditor({ name, onUpdate }: NameEditorProps) {
 
   async function handleSave() {
     const trimmed = value.trim();
-    if (!trimmed || trimmed === name) { setEditing(false); setValue(name); return; }
+    if (!trimmed || trimmed === name) {
+      setEditing(false);
+      setValue(name);
+      return;
+    }
     setSaving(true);
     onUpdate(trimmed); // optimistic
     setEditing(false);
@@ -53,11 +57,18 @@ export function NameEditor({ name, onUpdate }: NameEditorProps) {
           ref={inputRef}
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          onKeyDown={(e) => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') handleCancel(); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') handleSave();
+            if (e.key === 'Escape') handleCancel();
+          }}
           maxLength={30}
           className="text-2xl font-black bg-transparent border-b border-white/30 focus:border-white outline-none text-white w-full max-w-[200px]"
         />
-        <button onClick={handleSave} disabled={saving} className="p-1 text-green-400 hover:text-green-300">
+        <button
+          onClick={handleSave}
+          disabled={saving}
+          className="p-1 text-green-400 hover:text-green-300"
+        >
           <Check className="w-4 h-4" />
         </button>
         <button onClick={handleCancel} className="p-1 text-white/40 hover:text-white">
@@ -68,10 +79,7 @@ export function NameEditor({ name, onUpdate }: NameEditorProps) {
   }
 
   return (
-    <button
-      onClick={() => setEditing(true)}
-      className="group flex items-center gap-2 text-left"
-    >
+    <button onClick={() => setEditing(true)} className="group flex items-center gap-2 text-left">
       <h1 className="text-2xl font-black text-white">{name}</h1>
       <Pencil className="w-4 h-4 text-white/20 group-hover:text-white/60 transition-colors" />
     </button>

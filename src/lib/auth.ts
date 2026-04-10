@@ -43,12 +43,15 @@ export const authOptions: NextAuthOptions = {
       }
 
       // If we don't have the custom fields in the token yet, or if it's an explicit update
-      if (trigger === 'update' || (token.id && (!token.avatarColor || !token.username || !token.name))) {
+      if (
+        trigger === 'update' ||
+        (token.id && (!token.avatarColor || !token.username || !token.name))
+      ) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
           select: { name: true, email: true, username: true, avatarColor: true, avatarEmoji: true },
         });
-        
+
         if (dbUser) {
           let currentUsername = dbUser.username;
 
@@ -57,7 +60,7 @@ export const authOptions: NextAuthOptions = {
             // Take prefix before @ and clean up invalid characters
             const prefix = dbUser.email.split('@')[0];
             const baseUsername = prefix.replace(/[^a-zA-Z0-9._-]/g, '') || 'user';
-            
+
             let finalUsername = baseUsername;
             let isTaken = true;
             let attempts = 0;
