@@ -313,10 +313,9 @@ export function ProfileOverviewCard({
           <div className="space-y-3 animate-in fade-in duration-700">
             <div className="flex items-end justify-between text-[10px] font-bold uppercase tracking-widest">
               <div className="text-white/30 flex items-center gap-2">
-                Progression
                 {nextTier && (
-                  <span className="text-[8px] bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5">
-                    Next: {nextTier.name}
+                  <span className="text-[8px] bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5 font-black">
+                    Next Level: {nextTier.name} {nextTier.emoji}
                   </span>
                 )}
               </div>
