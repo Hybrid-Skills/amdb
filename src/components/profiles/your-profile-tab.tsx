@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { Check, ChevronDown, Lock } from 'lucide-react';
-import { AVATAR_EMOJIS, TIERS, type Tier } from '@/lib/gamification';
+import { AVATAR_EMOJIS, type Tier } from '@/lib/gamification';
+import { AWARDS } from '@/lib/awards';
 import { writeProfileCookie } from '@/lib/profile-cookie';
 
 const AVATAR_COLORS = [
@@ -21,10 +22,11 @@ interface Profile {
 interface YourProfileTabProps {
   profile: Profile;
   userTier: Tier;
+  unlockedAwardIds: Set<string>;
   onUpdate: (updates: Partial<Pick<Profile, 'name' | 'avatarColor' | 'avatarEmoji'>>) => void;
 }
 
-export function YourProfileTab({ profile, userTier, onUpdate }: YourProfileTabProps) {
+export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }: YourProfileTabProps) {
   const [name, setName] = React.useState(profile.name);
   const [nameSaving, setNameSaving] = React.useState(false);
   const [nameSaved, setNameSaved] = React.useState(false);
@@ -189,14 +191,14 @@ export function YourProfileTab({ profile, userTier, onUpdate }: YourProfileTabPr
             {profile.name.charAt(0).toUpperCase()}
           </button>
 
-          {sortedEmojis.map(({ emoji, requiredTier }) => {
-            const locked = requiredTier > userTier.level;
-            const tierData = TIERS.find((t) => t.level === requiredTier);
+          {sortedEmojis.map(({ emoji, awardId }) => {
+            const locked = !unlockedAwardIds.has(awardId);
+            const award = AWARDS.find((a) => a.id === awardId);
             return (
               <div key={emoji} className="flex flex-col items-center gap-0.5">
                 <button
                   onClick={() => !locked && handleEmojiSelect(emoji)}
-                  title={locked ? `Unlocks at ${tierData?.name ?? ''} (score ${tierData?.minScore ?? ''}+)` : emoji}
+                  title={locked ? `Unlock "${award?.name ?? awardId}" to use this` : emoji}
                   className={`relative w-full aspect-square rounded-xl flex items-center justify-center text-2xl transition-all
                     ${locked ? 'cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer'}
                     ${profile.avatarEmoji === emoji ? 'bg-white/15 ring-2 ring-white/40' : ''}
@@ -207,9 +209,9 @@ export function YourProfileTab({ profile, userTier, onUpdate }: YourProfileTabPr
                     <Lock className="absolute bottom-1 right-1 w-3 h-3 text-white/60" />
                   )}
                 </button>
-                {locked && tierData && (
+                {locked && award && (
                   <span className="text-[9px] text-white/20 text-center leading-tight">
-                    Score {tierData.minScore}+
+                    {award.icon} {award.name}
                   </span>
                 )}
               </div>

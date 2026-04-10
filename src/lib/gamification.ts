@@ -29,40 +29,41 @@ export function getNextTier(current: Tier): Tier | null {
 
 export interface AvatarEmoji {
   emoji: string;
-  requiredTier: number;
+  awardId: string; // award that unlocks this emoji
 }
 
+// Each emoji is unlocked by a specific award. Some awards unlock 2 emojis.
 export const AVATAR_EMOJIS: AvatarEmoji[] = [
-  // Tier 1 — free
-  { emoji: '🍿', requiredTier: 1 },
-  { emoji: '🎬', requiredTier: 1 },
-  { emoji: '📽️', requiredTier: 1 },
-  { emoji: '🎞️', requiredTier: 1 },
-  { emoji: '⭐', requiredTier: 1 },
-  { emoji: '🌙', requiredTier: 1 },
-  // Tier 2
-  { emoji: '🎭', requiredTier: 2 },
-  { emoji: '🎪', requiredTier: 2 },
-  { emoji: '🔥', requiredTier: 2 },
-  { emoji: '🌊', requiredTier: 2 },
-  { emoji: '🦊', requiredTier: 2 },
-  { emoji: '🐺', requiredTier: 2 },
-  // Tier 3
-  { emoji: '🐉', requiredTier: 3 },
-  { emoji: '🧙', requiredTier: 3 },
-  { emoji: '🤖', requiredTier: 3 },
-  { emoji: '👾', requiredTier: 3 },
-  { emoji: '🌸', requiredTier: 3 },
-  { emoji: '🦋', requiredTier: 3 },
-  // Tier 4
-  { emoji: '🦸', requiredTier: 4 },
-  { emoji: '🎮', requiredTier: 4 },
-  { emoji: '🐙', requiredTier: 4 },
-  { emoji: '🦁', requiredTier: 4 },
-  // Tier 5
-  { emoji: '🌟', requiredTier: 5 },
-  { emoji: '💫', requiredTier: 5 },
-  { emoji: '🎯', requiredTier: 5 },
-  // Tier 6
-  { emoji: '👑', requiredTier: 6 },
+  // Milestone
+  { emoji: '🍿', awardId: 'first_step' },       // Add your first title
+  { emoji: '⭐', awardId: 'enthusiast' },         // Score 5
+  { emoji: '🎭', awardId: 'cinephile' },          // Score 20
+  { emoji: '🌸', awardId: 'film_scholar' },       // Score 50
+  { emoji: '🌟', awardId: 'auteur' },             // Score 100 (double: also 🎯)
+  { emoji: '🎯', awardId: 'auteur' },             // Score 100 (double)
+  { emoji: '💫', awardId: 'legendary' },          // Score 200 (double: also 👑)
+  { emoji: '👑', awardId: 'legendary' },          // Score 200 (double)
+  // Movies
+  { emoji: '🎬', awardId: 'silver_screen' },     // First movie
+  { emoji: '🎞️', awardId: 'movie_buff' },        // 10 movies
+  { emoji: '📽️', awardId: 'film_fanatic' },      // 50 movies
+  { emoji: '🦸', awardId: 'cineaste' },           // 100 movies
+  // TV
+  { emoji: '📺', awardId: 'pilot' },              // First TV show
+  { emoji: '🎪', awardId: 'binge_watcher' },     // 10 TV shows
+  { emoji: '🐺', awardId: 'series_stalker' },    // 50 TV shows
+  // Anime
+  { emoji: '🐉', awardId: 'otaku_initiate' },    // First anime
+  { emoji: '🔥', awardId: 'otaku' },              // 5 anime
+  { emoji: '🌊', awardId: 'weeb' },               // 20 anime
+  { emoji: '🎮', awardId: 'anime_connoisseur' }, // 50 anime
+  { emoji: '🧙', awardId: 'anime_legend' },      // 100 anime
+  // Reviews
+  { emoji: '🌙', awardId: 'first_opinion' },     // First review
+  { emoji: '🦊', awardId: 'critic' },             // 10 reviews
+  { emoji: '🦋', awardId: 'roger_ebert' },       // 50 reviews
+  // Watch time
+  { emoji: '🤖', awardId: 'weekend_warrior' },   // 24h watch time
+  { emoji: '👾', awardId: 'screen_addict' },     // 100h watch time
+  { emoji: '🦁', awardId: 'couch_legend' },      // 500h watch time
 ];

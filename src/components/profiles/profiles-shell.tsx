@@ -10,6 +10,7 @@ import { StatisticsTab } from './statistics-tab';
 import { AwardsTab } from './awards-tab';
 import { writeProfileCookie } from '@/lib/profile-cookie';
 import { getTier } from '@/lib/gamification';
+import { AWARDS } from '@/lib/awards';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Drawer, DrawerContent, DrawerTitle } from '@/components/ui/drawer';
@@ -96,6 +97,10 @@ export function ProfilesShell({ profiles, initialStats, initialActiveId }: Profi
   }
 
   const tier = getTier(stats.score);
+  const unlockedAwardIds = React.useMemo(
+    () => new Set(AWARDS.filter((a) => a.isUnlocked(stats)).map((a) => a.id)),
+    [stats]
+  );
 
   const deleteModalContent = (
     <div className="p-6 space-y-4">
@@ -185,6 +190,7 @@ export function ProfilesShell({ profiles, initialStats, initialActiveId }: Profi
             <YourProfileTab
               profile={activeProfile}
               userTier={tier}
+              unlockedAwardIds={unlockedAwardIds}
               onUpdate={handleProfileUpdate}
             />
           )}
