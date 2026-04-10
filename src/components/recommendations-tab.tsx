@@ -65,6 +65,8 @@ interface RecommendationsTabProps {
   profileId: string;
   onSelect: (item: SearchResult) => void;
   refreshTrigger?: number;
+  initialPage?: number;
+  onPageChange?: (p: number) => void;
 }
 
 
@@ -195,12 +197,12 @@ function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
 
 // ─── RecommendationsTab ───────────────────────────────────────────────────────
 
-export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: RecommendationsTabProps) {
+export function RecommendationsTab({ profileId, onSelect, refreshTrigger, initialPage = 1, onPageChange }: RecommendationsTabProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const isLargeDesktop = useMediaQuery('(min-width: 1024px)');
   const [historyItems, setHistoryItems]     = React.useState<HistoryEntry[]>([]);
   const [historyLoading, setHistoryLoading] = React.useState(true);
-  const [historyPage, setHistoryPage]       = React.useState(1);
+  const [historyPage, setHistoryPage]       = React.useState(initialPage);
   const [historyTotalPages, setHistoryTotalPages] = React.useState(0);
   const [historyTotal, setHistoryTotal]           = React.useState(0);
   const [filters, setFilters]                     = React.useState<ListFilters>(DEFAULT_FILTERS);
@@ -220,6 +222,11 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
     if (latest > 50 && !isFABCollapsed) setIsFABCollapsed(true);
     else if (latest <= 50 && isFABCollapsed) setIsFABCollapsed(false);
   });
+
+  function goToHistoryPage(p: number) {
+    onPageChange?.(p);
+    fetchHistory(p, filters);
+  }
 
   async function fetchHistory(page: number, f: ListFilters) {
     setHistoryLoading(true);
@@ -251,7 +258,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
 
   React.useEffect(() => {
     if (profileId) {
-      fetchHistory(1, filters);
+      fetchHistory(initialPage, filters);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, filters, refreshTrigger]);
@@ -522,7 +529,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
             variant="outline"
             size="sm"
             disabled={historyPage === 1}
-            onClick={() => fetchHistory(historyPage - 1, filters)}
+            onClick={() => goToHistoryPage(historyPage - 1)}
           >
             Prev
           </Button>
@@ -533,7 +540,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger }: Reco
             variant="outline"
             size="sm"
             disabled={historyPage === historyTotalPages}
-            onClick={() => fetchHistory(historyPage + 1, filters)}
+            onClick={() => goToHistoryPage(historyPage + 1)}
           >
             Next
           </Button>

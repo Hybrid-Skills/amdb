@@ -496,10 +496,12 @@ export function Dashboard(_: DashboardProps) {
 
           {/* ── Recommendations Tab ── */}
           {activeTab === 'recommendations' && (
-            <RecommendationsTab 
-              profileId={activeProfileId} 
-              onSelect={handleSearchSelect} 
+            <RecommendationsTab
+              profileId={activeProfileId}
+              onSelect={handleSearchSelect}
               refreshTrigger={recommendationsRefreshTrigger}
+              initialPage={window.history.state?._amdb?.tab === 'recommendations' ? (window.history.state._amdb.page ?? 1) : 1}
+              onPageChange={(p) => saveNavState('recommendations', p)}
             />
           )}
         </div>
