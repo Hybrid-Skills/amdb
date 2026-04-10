@@ -312,6 +312,9 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger, initia
             });
             // Remove from pending once enriched
             setPendingRecs((prev) => prev.filter(p => p.title !== raw.title));
+          } else if (enrichRes.status === 409) {
+            // Already in watched/planned list — silently discard
+            setPendingRecs((prev) => prev.filter(p => p.title !== raw.title));
           }
         } catch (e) {
           console.error('Enrichment failed for', raw.title, e);

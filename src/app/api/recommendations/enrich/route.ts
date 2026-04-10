@@ -122,7 +122,19 @@ export async function POST(req: Request) {
       });
     }
 
-    // 5. Create UserContent entry (RECOMMENDED status)
+    // 5. Guard: skip if already in user's watched or planned list
+    const existing = await prisma.userContent.findUnique({
+      where: { profileId_contentId: { profileId, contentId: content.id } },
+      select: { id: true, listStatus: true },
+    });
+    if (existing && existing.listStatus !== 'RECOMMENDED') {
+      return NextResponse.json(
+        { error: 'already_in_list', listStatus: existing.listStatus },
+        { status: 409 }
+      );
+    }
+
+    // 6. Create UserContent entry (RECOMMENDED status)
     const userContent = await prisma.userContent.upsert({
       where: {
         profileId_contentId: { profileId, contentId: content.id }
