@@ -13,12 +13,14 @@ interface Props {
 
 export default async function UserProfilePage({ params }: Props) {
   const session = await getServerSession(authOptions);
+  const resolvedParams = await params;
+  const username = resolvedParams.username;
   
   // Find user by username (case-insensitive findFirst for vanity URLs)
   const profileUser = await prisma.user.findFirst({
     where: { 
       username: { 
-        equals: params.username, 
+        equals: username, 
         mode: 'insensitive' 
       } 
     },

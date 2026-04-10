@@ -7,6 +7,11 @@ export interface Tier {
   glow?: boolean;
 }
 
+export const AVATAR_COLORS = [
+  '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
+  '#f97316', '#eab308', '#22c55e', '#06b6d4',
+];
+
 export const TIERS: Tier[] = [
   { level: 1, name: 'Casual Viewer', emoji: '🍿', color: '#6b7280', minScore: 0 },
   { level: 2, name: 'Enthusiast',    emoji: '🎬', color: '#3b82f6', minScore: 5 },
