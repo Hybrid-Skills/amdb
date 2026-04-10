@@ -191,7 +191,12 @@ export function MovieCard({
   const certLabel = ageCertification ?? (adult ? '18+' : null);
 
   const handleCardClick = () => {
-    sessionStorage.setItem('dashboard_scroll', String(window.scrollY));
+    // Persist scroll into the current history entry so back nav restores it
+    const existing = window.history.state ?? {};
+    window.history.replaceState(
+      { ...existing, _amdb: { ...existing._amdb, scroll: window.scrollY } },
+      ''
+    );
     const url = buildContentUrl(contentType, title, id);
     router.push(url);
   };

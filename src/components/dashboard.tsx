@@ -73,18 +73,15 @@ export function Dashboard(_: DashboardProps) {
   const [recommendationsRefreshTrigger, setRecommendationsRefreshTrigger] = React.useState(0);
   const [addTitleOpen, setAddTitleOpen] = React.useState(false);
 
-  // Sync tab + page to URL so browser back restores correct state
-  function syncUrl(tab: DashTab, p?: number) {
-    const params = new URLSearchParams(window.location.search);
-    params.set('tab', tab);
-    if (p && p > 1) params.set('page', String(p));
-    else params.delete('page');
-    window.history.replaceState(null, '', '?' + params.toString());
+  // Keep history state in sync so back navigation restores tab + page
+  function saveNavState(tab: DashTab, p: number) {
+    const existing = window.history.state ?? {};
+    window.history.replaceState({ ...existing, _amdb: { tab, page: p } }, '');
   }
 
   function handleTabChange(tab: DashTab) {
     setActiveTab(tab);
-    syncUrl(tab);
+    saveNavState(tab, 1);
   }
 
   const [listItems, setListItems] = React.useState<ListItem[]>([]);
@@ -125,27 +122,31 @@ export function Dashboard(_: DashboardProps) {
       setTotalPages(data.totalPages);
       setTotal(data.total);
       setPage(p);
-      syncUrl('watched', p);
+      saveNavState('watched', p);
     }
     setListLoading(false);
   }
 
-  // Read tab from URL on mount (page is handled in the profile/list effect below)
+  // On mount: restore tab from history state (set by back navigation)
   React.useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const tabParam = params.get('tab') as DashTab | null;
-    if (tabParam && ['watched', 'planned', 'recommendations'].includes(tabParam)) {
-      setActiveTab(tabParam);
+    const saved = window.history.state?._amdb;
+    if (saved?.tab && ['watched', 'planned', 'recommendations'].includes(saved.tab)) {
+      setActiveTab(saved.tab);
     }
   }, []);
 
   // Restore scroll position after list loads
   React.useEffect(() => {
     if (listLoading) return;
-    const saved = sessionStorage.getItem('dashboard_scroll');
-    if (saved) {
-      window.scrollTo(0, parseInt(saved, 10));
-      sessionStorage.removeItem('dashboard_scroll');
+    const scroll = window.history.state?._amdb?.scroll;
+    if (scroll) {
+      window.scrollTo(0, scroll);
+      // Clear scroll from state so it doesn't re-apply on filter changes
+      const existing = window.history.state ?? {};
+      window.history.replaceState(
+        { ...existing, _amdb: { ...existing._amdb, scroll: undefined } },
+        ''
+      );
     }
   }, [listLoading]);
 
@@ -155,14 +156,14 @@ export function Dashboard(_: DashboardProps) {
   // On mount: fire profiles + list in parallel using cookie profileId
   React.useEffect(() => {
     const cookieProfileId = readProfileCookie()?.id ?? null;
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlTab = urlParams.get('tab') as DashTab | null;
-    const urlPage = parseInt(urlParams.get('page') ?? '1', 10);
-    const isWatchedTab = !urlTab || urlTab === 'watched';
+    const savedNav = window.history.state?._amdb;
+    const savedTab = savedNav?.tab as DashTab | undefined;
+    const savedPage: number = savedNav?.page ?? 1;
+    const isWatchedTab = !savedTab || savedTab === 'watched';
 
     // Only prefetch the watched list on mount; planned/recs fetch themselves
     const listPromise = cookieProfileId && isWatchedTab
-      ? fetchList(cookieProfileId, urlPage, filters)
+      ? fetchList(cookieProfileId, savedPage, filters)
       : Promise.resolve();
     if (cookieProfileId && isWatchedTab) {
       prefetchedProfileId.current = cookieProfileId;
@@ -488,8 +489,8 @@ export function Dashboard(_: DashboardProps) {
             <PlannedTab
               profileId={activeProfileId}
               onSelect={handleSearchSelect}
-              initialPage={parseInt(new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('page') ?? '1', 10)}
-              onPageChange={(p) => syncUrl('planned', p)}
+              initialPage={window.history.state?._amdb?.tab === 'planned' ? (window.history.state._amdb.page ?? 1) : 1}
+              onPageChange={(p) => saveNavState('planned', p)}
             />
           )}
 
