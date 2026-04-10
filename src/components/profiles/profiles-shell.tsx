@@ -4,11 +4,10 @@ import * as React from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { ProfileSwitcherBar } from './profile-switcher-bar';
-import { AvatarEditor } from './avatar-editor';
-import { NameEditor } from './name-editor';
-import { StatsDashboard } from './stats-dashboard';
 import { GamificationBadge } from './gamification-badge';
-import { EmptyStateCTAs } from './empty-state-ctas';
+import { YourProfileTab } from './your-profile-tab';
+import { StatisticsTab } from './statistics-tab';
+import { AwardsTab } from './awards-tab';
 import { writeProfileCookie } from '@/lib/profile-cookie';
 import { getTier } from '@/lib/gamification';
 import type { ProfileStats } from '@/lib/stats';
@@ -27,10 +26,19 @@ interface ProfilesShellProps {
   initialActiveId: string;
 }
 
+type Tab = 'profile' | 'stats' | 'awards';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'profile', label: 'Your Profile' },
+  { id: 'stats', label: 'Statistics' },
+  { id: 'awards', label: 'Awards' },
+];
+
 export function ProfilesShell({ profiles, initialStats, initialActiveId }: ProfilesShellProps) {
   const [activeId, setActiveId] = React.useState(initialActiveId);
   const [stats, setStats] = React.useState<ProfileStats>(initialStats);
   const [statsLoading, setStatsLoading] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<Tab>('profile');
 
   // Local profile state for optimistic updates
   const [localProfiles, setLocalProfiles] = React.useState<Profile[]>(profiles);
@@ -48,21 +56,26 @@ export function ProfilesShell({ profiles, initialStats, initialActiveId }: Profi
     }
   }
 
-  function handleAvatarUpdate(color: string, emoji: string | null) {
+  function handleProfileUpdate(updates: Partial<Pick<Profile, 'name' | 'avatarColor' | 'avatarEmoji'>>) {
     setLocalProfiles((prev) =>
-      prev.map((p) => p.id === activeId ? { ...p, avatarColor: color, avatarEmoji: emoji } : p)
+      prev.map((p) => p.id === activeId ? { ...p, ...updates } : p)
     );
-    if (activeProfile) {
-      writeProfileCookie({ ...activeProfile, avatarColor: color, avatarEmoji: emoji });
-    }
+    const updated = { ...activeProfile!, ...updates };
+    writeProfileCookie({ ...updated, avatarEmoji: updated.avatarEmoji ?? null });
   }
 
-  function handleNameUpdate(name: string) {
-    setLocalProfiles((prev) =>
-      prev.map((p) => p.id === activeId ? { ...p, name } : p)
-    );
-    if (activeProfile) {
-      writeProfileCookie({ ...activeProfile, name });
+  function handleProfileDelete() {
+    const remaining = localProfiles.filter((p) => p.id !== activeId);
+    setLocalProfiles(remaining);
+    if (remaining.length > 0) {
+      const next = remaining.find((p) => p.isDefault) ?? remaining[0];
+      setActiveId(next.id);
+      writeProfileCookie({ ...next, avatarEmoji: next.avatarEmoji ?? null });
+      setStatsLoading(true);
+      fetch(`/api/profiles/${next.id}/stats`)
+        .then((r) => r.ok ? r.json() : null)
+        .then((d) => { if (d) setStats(d); })
+        .finally(() => setStatsLoading(false));
     }
   }
 
@@ -80,7 +93,7 @@ export function ProfilesShell({ profiles, initialStats, initialActiveId }: Profi
         </div>
       </header>
 
-      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 pt-6 space-y-5">
         {/* Profile switcher */}
         <ProfileSwitcherBar
           profiles={localProfiles}
@@ -88,40 +101,49 @@ export function ProfilesShell({ profiles, initialStats, initialActiveId }: Profi
           onSwitch={handleProfileSwitch}
         />
 
-        {/* Profile identity */}
-        {activeProfile && (
-          <div className="flex items-center gap-4">
-            <AvatarEditor
-              name={activeProfile.name}
-              avatarColor={activeProfile.avatarColor}
-              avatarEmoji={activeProfile.avatarEmoji}
-              userTier={tier}
-              profileId={activeProfile.id}
-              onUpdate={handleAvatarUpdate}
-            />
-            <div>
-              <NameEditor
-                name={activeProfile.name}
-                profileId={activeProfile.id}
-                onUpdate={handleNameUpdate}
-              />
-              <p className="text-sm text-white/40 mt-0.5">
-                {activeProfile.isDefault ? 'Default profile' : 'Profile'}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Gamification */}
+        {/* Gamification badge */}
         <GamificationBadge score={stats.score} />
 
-        {/* Stats */}
-        <div className={`transition-opacity duration-300 ${statsLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
-          <StatsDashboard stats={stats} />
+        {/* Tabs */}
+        <div className="flex gap-1 bg-white/5 rounded-xl p-1">
+          {TABS.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTab(tab.id)}
+              className={`flex-1 py-2 px-3 rounded-lg text-sm font-semibold transition-all ${
+                activeTab === tab.id
+                  ? 'bg-white text-black'
+                  : 'text-white/50 hover:text-white'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </div>
 
-        {/* Empty state CTAs */}
-        <EmptyStateCTAs stats={stats} />
+        {/* Tab content */}
+        <div className={`transition-opacity duration-200 ${statsLoading ? 'opacity-40 pointer-events-none' : 'opacity-100'}`}>
+          {activeTab === 'profile' && activeProfile && (
+            <YourProfileTab
+              profile={activeProfile}
+              userTier={tier}
+              totalProfiles={localProfiles.length}
+              onUpdate={handleProfileUpdate}
+              onDelete={handleProfileDelete}
+            />
+          )}
+
+          {activeTab === 'stats' && activeProfile && (
+            <StatisticsTab
+              stats={stats}
+              profileId={activeProfile.id}
+            />
+          )}
+
+          {activeTab === 'awards' && (
+            <AwardsTab stats={stats} />
+          )}
+        </div>
       </div>
     </div>
   );
