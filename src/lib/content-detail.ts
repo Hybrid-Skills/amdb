@@ -136,7 +136,7 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
       raw = await getTmdbCommon(
         tmdbId,
         'movie',
-        'credits,videos,keywords,external_ids,release_dates,watch/providers',
+        'credits,videos,keywords,external_ids,release_dates,watch/providers,similar',
       );
       // Persist for 2 weeks
       await prisma.contentEnrichment.upsert({
@@ -336,7 +336,7 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
       raw = await getTmdbCommon(
         tmdbId,
         'tv',
-        'credits,videos,keywords,external_ids,content_ratings,watch/providers',
+        'credits,videos,keywords,external_ids,content_ratings,watch/providers,similar',
       );
       // Persist for 2 weeks
       await prisma.contentEnrichment.upsert({
@@ -518,7 +518,7 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
       raw = await getTmdbCommon(
         tmdbId,
         'tv',
-        'credits,videos,keywords,external_ids,content_ratings,watch/providers',
+        'credits,videos,keywords,external_ids,content_ratings,watch/providers,similar',
       );
       // Persist for 2 weeks
       await prisma.contentEnrichment.upsert({
