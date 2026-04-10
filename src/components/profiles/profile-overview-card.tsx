@@ -28,9 +28,6 @@ interface ProfileOverviewCardProps {
   }) => Promise<void>;
 }
 
-  onUpdate: (updates: { name: string; username: string; avatarColor: string; avatarEmoji: string | null }) => Promise<void>;
-}
-
 export function ProfileOverviewCard({
   user,
   score,
