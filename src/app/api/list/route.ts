@@ -8,7 +8,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { getJikanDetails, searchJikan } from '@/lib/jikan';
-import { generateShortId } from '@/lib/id';
+import { getShortDescription } from '@/lib/utils/text';
 import { z } from 'zod';
 import type { ContentType, Prisma, WatchStatus } from '@prisma/client';
 import { buildGenreNames } from '@/lib/genres';
@@ -225,6 +225,7 @@ export async function POST(req: Request) {
           backdropUrl: tmdbImageUrl(raw.backdrop_path, 'w1280'),
           overview: raw.overview,
           tagline: raw.tagline ?? null,
+          shortDescription: getShortDescription(raw.overview),
           genres: raw.genres ?? [],
           genreNames: buildGenreNames(raw.genres),
           runtimeMins: raw.runtime ?? null,
@@ -290,7 +291,10 @@ export async function POST(req: Request) {
                 }),
                 prisma.content.update({
                   where: { id: content.id },
-                  data: { omdbRatings: omdbData.Ratings ?? [] },
+                  data: { 
+                    omdbRatings: omdbData.Ratings ?? [],
+                    shortDescription: omdbData.Plot && omdbData.Plot !== 'N/A' ? omdbData.Plot : content.shortDescription
+                  },
                 }),
               ]);
             }

@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { getJikanDetails, searchJikan } from '@/lib/jikan';
-import { generateShortId } from '@/lib/id';
+import { getShortDescription } from '@/lib/utils/text';
 import { z } from 'zod';
 import type { ContentType, Prisma } from '@prisma/client';
 import { buildGenreNames } from '@/lib/genres';
@@ -77,6 +77,7 @@ export async function POST(req: Request) {
         backdropUrl: tmdbImageUrl(raw.backdrop_path, 'w1280'),
         overview: raw.overview,
         tagline: raw.tagline ?? null,
+        shortDescription: getShortDescription(raw.overview),
         genres: raw.genres ?? [],
         runtimeMins: raw.runtime ?? null,
         status: raw.status ?? null,
@@ -108,6 +109,7 @@ export async function POST(req: Request) {
         backdropUrl: null,
         overview: raw.synopsis,
         tagline: null,
+        shortDescription: getShortDescription(raw.synopsis),
         genres: raw.genres.map((g) => ({ id: g.mal_id, name: g.name })),
         runtimeMins: typeof raw.duration === 'number' ? raw.duration : null,
         status: raw.status,
@@ -175,11 +177,19 @@ export async function POST(req: Request) {
         if (omdbRes.ok) {
           const omdbData = await omdbRes.json();
           if (omdbData.Response === 'True') {
-            await prisma.contentEnrichment.upsert({
-              where: { contentId_source: { contentId: content.id, source: 'omdb' } },
-              create: { contentId: content.id, source: 'omdb', data: omdbData },
-              update: { data: omdbData, fetchedAt: new Date() },
-            });
+            await Promise.all([
+              prisma.contentEnrichment.upsert({
+                where: { contentId_source: { contentId: content.id, source: 'omdb' } },
+                create: { contentId: content.id, source: 'omdb', data: omdbData },
+                update: { data: omdbData, fetchedAt: new Date() },
+              }),
+              prisma.content.update({
+                where: { id: content.id },
+                data: { 
+                  shortDescription: omdbData.Plot && omdbData.Plot !== 'N/A' ? omdbData.Plot : content.shortDescription 
+                },
+              })
+            ]);
           }
         }
       } catch (e) {

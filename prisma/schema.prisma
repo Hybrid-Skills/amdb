@@ -79,6 +79,7 @@ model Content {
   tmdbRating       Decimal?            @db.Decimal(3, 1)
   tmdbVoteCount    Int?
   language         String?
+  shortDescription String?
   createdAt        DateTime            @default(now())
   updatedAt        DateTime            @updatedAt
   adult            Boolean?            @default(false)

@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { generateShortId } from '@/lib/id';
 import { buildGenreNames } from '@/lib/genres';
+import { getShortDescription } from '@/lib/utils/text';
 import { ContentType } from '@prisma/client';
 
 export async function POST(req: Request) {
@@ -107,6 +108,8 @@ export async function POST(req: Request) {
       backdropUrl: tmdbImageUrl(details.backdrop_path, 'w1280'),
       tmdbRating: details.vote_average,
       overview: details.overview,
+      tagline: details.tagline ?? null,
+      shortDescription: getShortDescription(details.overview),
       ageCertification,
       runtimeMins,
       episodeRuntime,
@@ -159,6 +162,36 @@ export async function POST(req: Request) {
         recommendationLabel: (label as any) || null,
       },
     });
+
+    // ── OMDB enrichment if we have an IMDB ID ────────────────────────────
+    const imdbId = (details as any).imdb_id ?? (details as any).external_ids?.imdb_id;
+    if (imdbId && process.env.OMDB_API_KEY) {
+      try {
+        const omdbRes = await fetch(
+          `https://www.omdbapi.com/?apikey=${process.env.OMDB_API_KEY}&i=${imdbId}`,
+        );
+        if (omdbRes.ok) {
+          const omdbData = await omdbRes.json();
+          if (omdbData.Response === 'True') {
+            await Promise.all([
+              prisma.contentEnrichment.upsert({
+                where: { contentId_source: { contentId: content.id, source: 'omdb' } },
+                create: { contentId: content.id, source: 'omdb', data: omdbData },
+                update: { data: omdbData, fetchedAt: new Date() },
+              }),
+              prisma.content.update({
+                where: { id: content.id },
+                data: {
+                  shortDescription: omdbData.Plot && omdbData.Plot !== 'N/A' ? omdbData.Plot : content.shortDescription
+                }
+              })
+            ]);
+          }
+        }
+      } catch (e) {
+        console.error('OMDB enrichment error in enrich:', e);
+      }
+    }
 
     return NextResponse.json({
       ...userContent,
