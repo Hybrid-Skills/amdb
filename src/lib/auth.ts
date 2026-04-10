@@ -83,7 +83,7 @@ export const authOptions: NextAuthOptions = {
             currentUsername = updated.username;
           }
 
-          token.name = dbUser.name ?? null;
+          token.name = dbUser.name ?? token.name ?? null;
           token.username = currentUsername ?? null;
           token.avatarColor = dbUser.avatarColor ?? '#6366f1';
           token.avatarEmoji = dbUser.avatarEmoji ?? null;

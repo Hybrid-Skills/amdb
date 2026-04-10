@@ -29,7 +29,8 @@ export default async function ProfilesPage() {
     <ProfilesShell
       user={{
         id: user.id,
-        name: user.username ?? user.name ?? 'My Profile',
+        name: user.name ?? 'My Profile',
+        username: user.username,
         avatarColor: user.avatarColor,
         avatarEmoji: user.avatarEmoji,
       }}
