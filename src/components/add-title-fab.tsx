@@ -68,7 +68,7 @@ function SearchSheet({
 
   const inner = (
     <div className="flex flex-col">
-      <div className="px-4 pt-2 pb-2">
+      <div className="px-4 pt-4 pb-2">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/40" />
           <input
@@ -135,7 +135,7 @@ function SearchSheet({
   if (isDesktop) {
     return (
       <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-        <DialogContent className="max-w-md bg-zinc-950 border-white/10 text-white p-0 overflow-hidden">
+        <DialogContent className="max-w-md bg-zinc-950 border-white/10 text-white p-0 overflow-hidden [&>button]:hidden">
           <DialogTitle className="sr-only">Add a title</DialogTitle>
           {inner}
         </DialogContent>
