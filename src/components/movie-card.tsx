@@ -287,9 +287,9 @@ export function MovieCard({
 
         {/* ── Info/Content Section ── */}
         <div className="flex flex-col flex-1 min-h-0 bg-card overflow-hidden">
-          <div className={cn("flex-1 min-w-0 p-3", isHorizontal && "sm:p-4")}>
-            <div className="flex items-center justify-between gap-2 mb-1 flex-wrap sm:flex-nowrap">
-              <p className="font-extrabold text-[15px] sm:text-base leading-tight line-clamp-2">
+          <div className={cn("flex-1 min-w-0", isHorizontal ? "p-3 sm:p-4" : "p-2")}>
+            <div className={cn("flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap", isHorizontal ? "mb-1" : "mb-0")}>
+              <p className={cn("font-extrabold leading-tight line-clamp-2", isHorizontal ? "text-[15px] sm:text-base" : "text-[13px]")}>
                 {title}
                 {year && (
                   <span className="opacity-70 font-bold ml-1.5 text-[0.9em]">
@@ -340,64 +340,44 @@ export function MovieCard({
                  <button 
                    onClick={(e) => { e.stopPropagation(); onSecondaryAction?.(); }}
                    disabled={isSecondaryLoading}
-                   className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-secondary/10 hover:bg-secondary/20 text-foreground transition-all border-r border-border hover:text-primary min-w-0"
+                   className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all border-r border-border min-w-0"
                  >
                    {isSecondaryLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin"/> : <Bookmark className="w-3.5 h-3.5"/>}
-                   <span className="text-xs font-bold uppercase tracking-tight whitespace-nowrap">Plan</span>
+                   <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">Plan</span>
                  </button>
-                 <button 
-                   onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }} 
-                   className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-primary hover:bg-primary/90 text-primary-foreground transition-all min-w-0"
+                 <button
+                   onClick={(e) => { e.stopPropagation(); onViewDetails?.(); }}
+                   className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all min-w-0"
                  >
                    <Star className="w-3.5 h-3.5"/>
-                   <span className="text-xs font-bold uppercase tracking-tight whitespace-nowrap">Rate</span>
+                   <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">Rate</span>
                  </button>
               </div>
             )
-          ) : (
-            /* Vertical Unified CTA - Clicking navigates by bubbling up */
-            <div 
-              className={cn(
-                "px-3 py-2.5 flex items-center justify-between transition-all group/cta shrink-0 rounded-b-xl",
-                variant === 'WATCHED' 
-                  ? "bg-secondary/40 hover:bg-secondary/60 text-foreground" 
-                  : "bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20"
-              )}
-            >
-              {variant === 'WATCHED' ? (
-                <>
-                   <div className="flex items-center gap-1.5 min-w-0">
-                    <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
-                    <span className="text-xs font-bold truncate uppercase tracking-tight whitespace-nowrap">
-                      <span className="text-foreground">{userRating}</span>
-                      <span 
-                        className="font-bold ml-1.5"
-                        style={{ color: getRatingColor(userRating ?? 0) }}
-                      >
-                        {RATING_LABELS[Math.round(userRating ?? 0)]}
-                      </span>
-                    </span>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEdit?.();
-                    }}
-                    className="p-1 hover:bg-black/10 rounded-md transition-colors"
+          ) : variant === 'WATCHED' ? (
+            /* Vertical Watched CTA */
+            <div className="px-2 py-1.5 flex items-center justify-between transition-all group/cta shrink-0 rounded-b-xl bg-secondary/40 hover:bg-secondary/60 text-foreground">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Star className="w-3.5 h-3.5 text-yellow-500 fill-yellow-500 shrink-0" />
+                <span className="text-xs font-bold truncate uppercase tracking-tight whitespace-nowrap">
+                  <span className="text-foreground">{userRating}</span>
+                  <span
+                    className="font-bold ml-1.5"
+                    style={{ color: getRatingColor(userRating ?? 0) }}
                   >
-                    <Pencil className="w-4 h-4 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0" />
-                  </button>
-                </>
-              ) : (
-                 <div className="flex items-center justify-between w-full">
-                  <span className="text-xs font-bold uppercase tracking-tight whitespace-nowrap">
-                    Rate
+                    {RATING_LABELS[Math.round(userRating ?? 0)]}
                   </span>
-                  <Star className="w-3.5 h-3.5 shrink-0" />
-                </div>
-              )}
+                </span>
+              </div>
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit?.(); }}
+                className="p-1 hover:bg-black/10 rounded-md transition-colors"
+              >
+                <Pencil className="w-4 h-4 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0" />
+              </button>
             </div>
-          )}
+          ) : null}
+
         </div>
       </div>
     </motion.div>
