@@ -44,12 +44,22 @@ export async function POST(req: Request) {
 
     const tmdbId = data.id;
     const isTv = data.media_type === 'tv';
-    const contentType: ContentType = isTv ? ContentType.TV_SHOW : ContentType.MOVIE;
+
+    // Determine contentType — re-evaluate TV → ANIME using full details genres
+    let contentType: ContentType = isTv ? ContentType.TV_SHOW : ContentType.MOVIE;
 
     // 2. Fetch Full Details for Certification and Runtime
-    const details = isTv 
-      ? await tmdb.tvDetails(tmdbId) 
+    const details = isTv
+      ? await tmdb.tvDetails(tmdbId)
       : await tmdb.movieDetails(tmdbId);
+
+    if (isTv) {
+      const genreIds = (details.genres ?? []).map((g: any) => g.id);
+      const isJapanese =
+        (details as any).original_language === 'ja' ||
+        ((details as any).origin_country ?? []).includes('JP');
+      if (isJapanese && genreIds.includes(16)) contentType = ContentType.ANIME;
+    }
 
     // Extract Certification (IN Priority, US Fallback)
     let ageCertification = null;
