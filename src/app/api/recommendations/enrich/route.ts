@@ -11,14 +11,14 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { profileId, title, year, reason, label } = await req.json();
-  if (!profileId || !title) {
-    return NextResponse.json({ error: 'profileId and title required' }, { status: 400 });
+  const userId = session.user.id;
+  const { title, year, reason, label } = await req.json();
+  if (!title) {
+    return NextResponse.json({ error: 'title required' }, { status: 400 });
   }
 
   try {
     // 1. Search TMDB using typed endpoints (movie + tv) in parallel with year hint
-    // This avoids searchMulti ambiguity (which also returns people) and enables year filtering
     const [movieSearch, tvSearch] = await Promise.all([
       tmdb.searchMovies(title, 1, year || undefined),
       tmdb.searchTv(title, 1, year || undefined),
@@ -70,10 +70,10 @@ export async function POST(req: Request) {
     } else {
       const inRelease = details.release_dates?.results.find((r: any) => r.iso_3166_1 === 'IN');
       const usRelease = details.release_dates?.results.find((r: any) => r.iso_3166_1 === 'US');
-      
+
       const inCert = inRelease?.release_dates.find((rd: any) => rd.certification)?.certification;
       const usCert = usRelease?.release_dates.find((rd: any) => rd.certification)?.certification;
-      
+
       ageCertification = inCert || usCert || null;
     }
 
@@ -89,7 +89,7 @@ export async function POST(req: Request) {
     // 4. Create or Update Content with rich metadata
     const contentData = {
       contentType,
-      title: details.title ?? details.name ?? 'Untitled', 
+      title: details.title ?? details.name ?? 'Untitled',
       year: details.release_date
           ? new Date(details.release_date).getFullYear()
           : details.first_air_date
@@ -124,7 +124,7 @@ export async function POST(req: Request) {
 
     // 5. Guard: skip if already in user's watched or planned list
     const existing = await prisma.userContent.findUnique({
-      where: { profileId_contentId: { profileId, contentId: content.id } },
+      where: { userId_contentId: { userId, contentId: content.id } },
       select: { id: true, listStatus: true },
     });
     if (existing && existing.listStatus !== 'RECOMMENDED') {
@@ -137,14 +137,14 @@ export async function POST(req: Request) {
     // 6. Create UserContent entry (RECOMMENDED status)
     const userContent = await prisma.userContent.upsert({
       where: {
-        profileId_contentId: { profileId, contentId: content.id }
+        userId_contentId: { userId, contentId: content.id }
       },
       update: {
         recommendationReason: reason || null,
         recommendationLabel: label as any || null,
       },
       create: {
-        profileId,
+        userId,
         contentId: content.id,
         listStatus: 'RECOMMENDED',
         recommendationReason: reason || null,

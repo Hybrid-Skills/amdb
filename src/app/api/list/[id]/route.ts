@@ -22,10 +22,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const { id } = await params;
 
   const item = await prisma.userContent.findFirst({
-    where: { id },
-    include: { profile: true },
+    where: { id, userId: session.user.id },
   });
-  if (!item || item.profile.userId !== session.user.id) {
+  if (!item) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
@@ -49,14 +48,13 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
 
   const item = await prisma.userContent.findFirst({
-    where: { id },
-    include: { profile: true },
+    where: { id, userId: session.user.id },
   });
-  if (!item || item.profile.userId !== session.user.id) {
+  if (!item) {
     return NextResponse.json({ error: 'Not found' }, { status: 404 });
   }
 
   await prisma.userContent.delete({ where: { id } });
-  revalidateTag(`profile-stats-${item.profileId}`);
+  revalidateTag(`user-stats-${session.user.id}`);
   return new NextResponse(null, { status: 204 });
 }

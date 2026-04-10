@@ -30,13 +30,12 @@ interface WatchlistEntry {
 }
 
 interface PlannedTabProps {
-  profileId: string;
   onSelect: (item: SearchResult) => void;
   initialPage?: number;
   onPageChange?: (p: number) => void;
 }
 
-export function PlannedTab({ profileId, onSelect, initialPage = 1, onPageChange }: PlannedTabProps) {
+export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedTabProps) {
   const [items, setItems] = React.useState<WatchlistEntry[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [page, setPage] = React.useState(initialPage);
@@ -49,7 +48,6 @@ export function PlannedTab({ profileId, onSelect, initialPage = 1, onPageChange 
     setLoading(true);
     try {
       const params = new URLSearchParams({
-        profileId,
         page: String(p),
         sortBy: f.sortBy,
         sortOrder: f.sortOrder,
@@ -75,11 +73,9 @@ export function PlannedTab({ profileId, onSelect, initialPage = 1, onPageChange 
   }
 
   React.useEffect(() => {
-    if (profileId) {
-      fetchWatchlist(initialPage, filters);
-    }
+    fetchWatchlist(initialPage, filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileId, filters]);
+  }, [filters]);
 
   function goToPage(p: number) {
     setPage(p);

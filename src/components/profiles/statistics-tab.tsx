@@ -7,14 +7,13 @@ import type { ProfileStats } from '@/lib/stats';
 
 interface StatisticsTabProps {
   stats: ProfileStats;
-  profileId: string;
 }
 
-export function StatisticsTab({ stats, profileId }: StatisticsTabProps) {
+export function StatisticsTab({ stats }: StatisticsTabProps) {
   return (
     <div className="space-y-6">
       <EmptyStateCTAs stats={stats} />
-      <ActivityChart profileId={profileId} />
+      <ActivityChart />
       <StatsDashboard stats={stats} />
     </div>
   );

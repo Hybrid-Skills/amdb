@@ -7,7 +7,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { ContentDetail } from '@/lib/content-detail';
 import { AddToListModal } from '@/components/add-to-list-modal';
 import { RatingPicker, RATING_LABELS, ratingColor } from '@/components/rating-picker';
-import { readProfileCookie, writeProfileCookie, clearProfileCookie } from '@/lib/profile-cookie';
 import { SignInPrompt } from '@/components/sign-in-prompt';
 
 type UserState = 'loading' | 'new' | 'planned' | 'rated';
@@ -50,40 +49,15 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   const [pendingRating, setPendingRating] = React.useState<number | null>(null);
   const [activeRating, setActiveRating] = React.useState<number | null>(null);
 
-  const [profileId, setProfileId] = React.useState<string | null>(() => readProfileCookie()?.id ?? null);
-
-  // Derive profile from session + cookie
+  // status drives the check — authenticated = session.user.id available
   React.useEffect(() => {
     if (status === 'unauthenticated') {
-      clearProfileCookie();
-      setProfileId(null);
+      setUserState('new');
       return;
     }
     if (status !== 'authenticated') return; // still loading
 
-    const stored = readProfileCookie();
-    if (stored) {
-      setProfileId(stored.id);
-      return;
-    }
-    // Authenticated but no cookie — fetch to get profile id
-    fetch('/api/profiles')
-      .then((r) => r.ok ? r.json() : null)
-      .then((profiles) => {
-        if (!profiles?.length) return;
-        const profile = profiles.find((p: any) => p.isDefault) ?? profiles[0];
-        writeProfileCookie(profile);
-        setProfileId(profile.id);
-      })
-      .catch(() => {});
-  }, [status]);
-
-  React.useEffect(() => {
-    if (!profileId) {
-      setUserState('new');
-      return;
-    }
-    const params = new URLSearchParams({ profileId });
+    const params = new URLSearchParams();
     if (data.tmdbId) params.set('tmdbId', String(data.tmdbId));
     if (data.malId) params.set('malId', String(data.malId));
 
@@ -107,10 +81,10 @@ export function UserContentSection({ data }: UserContentSectionProps) {
         }
       })
       .catch(() => setUserState('new'));
-  }, [profileId, data.tmdbId, data.malId]);
+  }, [status, data.tmdbId, data.malId]);
 
   function requireAuth(action: () => void) {
-    if (!profileId) {
+    if (status !== 'authenticated') {
       setSignInOpen(true);
       return;
     }
@@ -137,7 +111,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
         const res = await fetch('/api/watchlist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profileId, contentId, contentType: data.contentType }),
+          body: JSON.stringify({ contentId, contentType: data.contentType }),
         });
         if (res.ok) {
           const result = await res.json();
@@ -377,7 +351,6 @@ export function UserContentSection({ data }: UserContentSectionProps) {
         <AddToListModal
           key={data.tmdbId ?? data.malId ?? 'detail'}
           item={modalItem as any}
-          profileId={profileId ?? ''}
           initialRating={pendingRating ?? userContent.userRating ?? undefined}
           initialNotes={userContent.notes}
           initialWatchStatus={userContent.watchStatus}
@@ -388,7 +361,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
             setModalOpen(false);
             setPendingRating(null);
             // Re-check state after rating
-            const params = new URLSearchParams({ profileId: profileId! });
+            const params = new URLSearchParams();
             if (data.tmdbId) params.set('tmdbId', String(data.tmdbId));
             if (data.malId) params.set('malId', String(data.malId));
             fetch(`/api/list/check?${params}`)

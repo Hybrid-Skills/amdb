@@ -10,8 +10,8 @@ export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const userId = session.user.id;
   const { searchParams } = new URL(req.url);
-  const profileId = searchParams.get('profileId');
   const contentType = searchParams.get('contentType');
   const sortBy = searchParams.get('sortBy') || 'addedAt';
   const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
@@ -21,15 +21,8 @@ export async function GET(req: Request) {
   const page  = Math.max(1, Number(searchParams.get('page') ?? '1'));
   const limit = 18;
 
-  if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
-
-  const profile = await prisma.profile.findFirst({
-    where: { id: profileId, userId: session.user.id },
-  });
-  if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-  const where: any = { 
-    profileId, 
+  const where: any = {
+    userId,
     listStatus: 'RECOMMENDED',
     content: {}
   };

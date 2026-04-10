@@ -5,11 +5,10 @@ import { Pencil, Check, X } from 'lucide-react';
 
 interface NameEditorProps {
   name: string;
-  profileId: string;
   onUpdate: (name: string) => void;
 }
 
-export function NameEditor({ name, profileId, onUpdate }: NameEditorProps) {
+export function NameEditor({ name, onUpdate }: NameEditorProps) {
   const [editing, setEditing] = React.useState(false);
   const [value, setValue] = React.useState(name);
   const [saving, setSaving] = React.useState(false);
@@ -26,10 +25,10 @@ export function NameEditor({ name, profileId, onUpdate }: NameEditorProps) {
     onUpdate(trimmed); // optimistic
     setEditing(false);
     try {
-      const res = await fetch(`/api/profiles/${profileId}`, {
+      const res = await fetch('/api/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed }),
+        body: JSON.stringify({ username: trimmed }),
       });
       if (!res.ok) throw new Error();
     } catch {

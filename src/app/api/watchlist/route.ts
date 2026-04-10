@@ -7,13 +7,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/watchlist?profileId=&page=
+// GET /api/watchlist?page=
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const userId = session.user.id;
   const { searchParams } = new URL(req.url);
-  const profileId = searchParams.get('profileId');
   const contentType = searchParams.get('contentType');
   const sortBy = searchParams.get('sortBy') || 'addedAt';
   const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
@@ -24,15 +24,8 @@ export async function GET(req: Request) {
   const page  = Math.max(1, Number(searchParams.get('page') ?? '1'));
   const limit = 18;
 
-  if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
-
-  const profile = await prisma.profile.findFirst({
-    where: { id: profileId, userId: session.user.id },
-  });
-  if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-
-  const where: any = { 
-    profileId, 
+  const where: any = {
+    userId,
     listStatus: 'PLANNED',
     content: {}
   };
@@ -117,18 +110,14 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { profileId, contentId, contentType } = await req.json();
-  if (!profileId || !contentId || !contentType) {
+  const userId = session.user.id;
+  const { contentId, contentType } = await req.json();
+  if (!contentId || !contentType) {
     return NextResponse.json(
-      { error: 'profileId, contentId, contentType required' },
+      { error: 'contentId, contentType required' },
       { status: 400 },
     );
   }
-
-  const profile = await prisma.profile.findFirst({
-    where: { id: profileId, userId: session.user.id },
-  });
-  if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const content = await prisma.content.findUnique({
     where: { id: contentId },
@@ -138,7 +127,7 @@ export async function POST(req: Request) {
 
   // Check if an entry already exists
   const existing = await prisma.userContent.findUnique({
-    where: { profileId_contentId: { profileId, contentId } },
+    where: { userId_contentId: { userId, contentId } },
     select: { id: true, listStatus: true },
   });
 
@@ -161,8 +150,8 @@ export async function POST(req: Request) {
 
   // No entry yet — create PLANNED
   const entry = await prisma.userContent.create({
-    data: { profileId, contentId, listStatus: 'PLANNED' },
+    data: { userId, contentId, listStatus: 'PLANNED' },
   });
-  revalidateTag(`profile-stats-${profileId}`);
+  revalidateTag(`user-stats-${userId}`);
   return NextResponse.json({ id: entry.id });
 }

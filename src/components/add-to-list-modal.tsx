@@ -61,7 +61,6 @@ export interface SearchResult {
 
 interface AddToListModalProps {
   item: SearchResult | null;
-  profileId: string;
   onClose: () => void;
   onSuccess?: () => void;
   initialWatchStatus?: string | null;
@@ -95,7 +94,6 @@ function ratingColor(r: number): string {
 
 export function AddToListModal({
   item,
-  profileId,
   onClose,
   onSuccess,
   initialRating,
@@ -207,7 +205,7 @@ export function AddToListModal({
     setCheckingExistence(true);
     let cancelled = false;
 
-    const params = new URLSearchParams({ profileId });
+    const params = new URLSearchParams();
     if (item.tmdbId) params.set('tmdbId', String(item.tmdbId));
     if (item.malId) params.set('malId', String(item.malId));
 
@@ -231,14 +229,13 @@ export function AddToListModal({
       .finally(() => { if (!cancelled) setCheckingExistence(false); });
 
     return () => { cancelled = true; };
-  }, [item?.tmdbId, item?.malId, profileId, initialRating]);
+  }, [item?.tmdbId, item?.malId, initialRating]);
 
   async function handleSubmit() {
     if (!item || !rating) return;
     setSubmitting(true);
     try {
       const body: Record<string, unknown> = {
-        profileId,
         tmdbId: item.tmdbId ?? item.malId,
         contentType: item.contentType,
         userRating: rating,
@@ -291,7 +288,7 @@ export function AddToListModal({
       const res = await fetch('/api/watchlist', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, contentId, contentType: item.contentType }),
+        body: JSON.stringify({ contentId, contentType: item.contentType }),
       });
       if (res.ok) {
         onClose();

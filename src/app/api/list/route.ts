@@ -19,7 +19,6 @@ const SORT_FIELDS = ['addedAt', 'userRating', 'tmdbRating', 'title', 'year'] as 
 type SortField = (typeof SORT_FIELDS)[number];
 
 const addSchema = z.object({
-  profileId: z.string().cuid(),
   tmdbId: z.number().int().positive(),
   contentType: z.enum(['MOVIE', 'TV_SHOW', 'ANIME']),
   userRating: z.number().int().min(1).max(10),
@@ -37,8 +36,8 @@ export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
+  const userId = session.user.id;
   const { searchParams } = new URL(req.url);
-  const profileId = searchParams.get('profileId');
   const page = Math.max(1, Number(searchParams.get('page') ?? '1'));
   const limit = 24;
 
@@ -53,12 +52,9 @@ export async function GET(req: Request) {
   const watchStatus = searchParams.get('watchStatus'); // comma-separated
   const genres = searchParams.get('genres'); // comma-separated genre names
 
-  if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
-
   // Build where clause
   const where: Prisma.UserContentWhereInput = {
-    profileId,
-    profile: { userId: session.user.id }, // Security: ensure profile belongs to user
+    userId,
     listStatus: 'WATCHED',
     ...(minRating > 1 || maxRating < 10
       ? { userRating: { gte: minRating, lte: maxRating } }
@@ -175,8 +171,8 @@ export async function POST(req: Request) {
   const parsed = addSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
+  const userId = session.user.id;
   const {
-    profileId,
     tmdbId,
     contentType,
     userRating,
@@ -187,11 +183,6 @@ export async function POST(req: Request) {
     endDate,
     episodeCount,
   } = parsed.data;
-
-  const profile = await prisma.profile.findFirst({
-    where: { id: profileId, userId: session.user.id },
-  });
-  if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   let content = await prisma.content.findFirst({
     where: { tmdbId },
@@ -329,12 +320,12 @@ export async function POST(req: Request) {
       };
 
   const userContent = await prisma.userContent.upsert({
-    where: { profileId_contentId: { profileId, contentId: content.id } },
-    create: { profileId, contentId: content.id, listStatus: 'WATCHED', userRating, notes, ...serialFields },
+    where: { userId_contentId: { userId, contentId: content.id } },
+    create: { userId, contentId: content.id, listStatus: 'WATCHED', userRating, notes, ...serialFields },
     update: { listStatus: 'WATCHED', userRating, notes, ...serialFields, updatedAt: new Date() },
     include: { content: true },
   });
 
-  revalidateTag(`profile-stats-${profileId}`);
+  revalidateTag(`user-stats-${userId}`);
   return NextResponse.json(userContent, { status: 201 });
 }

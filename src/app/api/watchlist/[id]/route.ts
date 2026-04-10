@@ -12,12 +12,12 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   const { id } = await params;
 
   const entry = await prisma.userContent.findFirst({
-    where: { id, listStatus: 'PLANNED', profile: { userId: session.user.id } },
-    select: { id: true, profileId: true },
+    where: { id, listStatus: 'PLANNED', userId: session.user.id },
+    select: { id: true },
   });
   if (!entry) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   await prisma.userContent.delete({ where: { id } });
-  revalidateTag(`profile-stats-${entry.profileId}`);
+  revalidateTag(`user-stats-${session.user.id}`);
   return NextResponse.json({ success: true });
 }

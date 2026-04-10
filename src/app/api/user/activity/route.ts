@@ -1,6 +1,4 @@
-// Deprecated: use /api/user/activity instead
 import { NextResponse } from 'next/server';
-import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -40,6 +38,7 @@ export async function GET(req: Request) {
     ORDER BY date ASC
   `;
 
+  // Build full date range with zeros for missing days
   const days = period === '7d' ? 7 : period === '30d' ? 30 : period === '3m' ? 90 : 365;
   const dateMap: Record<string, { MOVIE: number; TV_SHOW: number; ANIME: number }> = {};
 

@@ -4,26 +4,24 @@ import * as React from 'react';
 import { Check, ChevronDown, Lock } from 'lucide-react';
 import { AVATAR_EMOJIS, type Tier } from '@/lib/gamification';
 import { AWARDS } from '@/lib/awards';
-import { writeProfileCookie } from '@/lib/profile-cookie';
 
 const AVATAR_COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
   '#f97316', '#eab308', '#22c55e', '#06b6d4',
 ];
 
-interface Profile {
+interface UserData {
   id: string;
   name: string;
   avatarColor: string;
   avatarEmoji: string | null;
-  isDefault: boolean;
 }
 
 interface YourProfileTabProps {
-  profile: Profile;
+  profile: UserData;
   userTier: Tier;
   unlockedAwardIds: Set<string>;
-  onUpdate: (updates: Partial<Pick<Profile, 'name' | 'avatarColor' | 'avatarEmoji'>>) => void;
+  onUpdate: (updates: Partial<Pick<UserData, 'name' | 'avatarColor' | 'avatarEmoji'>>) => void;
 }
 
 export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }: YourProfileTabProps) {
@@ -33,7 +31,7 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
   const [colorOpen, setColorOpen] = React.useState(false);
   const colorRef = React.useRef<HTMLDivElement>(null);
 
-  // Sync if profile changes (profile switch)
+  // Sync if profile changes
   React.useEffect(() => { setName(profile.name); }, [profile.name]);
 
   // Close color dropdown on outside click
@@ -54,10 +52,10 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
     setNameSaving(true);
     onUpdate({ name: trimmed });
     try {
-      await fetch(`/api/profiles/${profile.id}`, {
+      await fetch('/api/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: trimmed }),
+        body: JSON.stringify({ username: trimmed }),
       });
       setNameSaved(true);
       setTimeout(() => setNameSaved(false), 2000);
@@ -72,8 +70,7 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
   async function handleColorSelect(color: string) {
     setColorOpen(false);
     onUpdate({ avatarColor: color });
-    writeProfileCookie({ ...profile, avatarColor: color });
-    await fetch(`/api/profiles/${profile.id}`, {
+    await fetch('/api/user', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ avatarColor: color }),
@@ -82,8 +79,7 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
 
   async function handleEmojiSelect(emoji: string | null) {
     onUpdate({ avatarEmoji: emoji });
-    writeProfileCookie({ ...profile, avatarEmoji: emoji });
-    await fetch(`/api/profiles/${profile.id}`, {
+    await fetch('/api/user', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ avatarEmoji: emoji }),

@@ -62,7 +62,6 @@ interface PendingRecommendation {
 }
 
 interface RecommendationsTabProps {
-  profileId: string;
   onSelect: (item: SearchResult) => void;
   refreshTrigger?: number;
   initialPage?: number;
@@ -197,7 +196,7 @@ function RecommendModal({ open, onClose, onGenerate }: GenerateModalProps) {
 
 // ─── RecommendationsTab ───────────────────────────────────────────────────────
 
-export function RecommendationsTab({ profileId, onSelect, refreshTrigger, initialPage = 1, onPageChange }: RecommendationsTabProps) {
+export function RecommendationsTab({ onSelect, refreshTrigger, initialPage = 1, onPageChange }: RecommendationsTabProps) {
   const isDesktop = useMediaQuery('(min-width: 768px)');
   const isLargeDesktop = useMediaQuery('(min-width: 1024px)');
   const [historyItems, setHistoryItems]     = React.useState<HistoryEntry[]>([]);
@@ -232,7 +231,6 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger, initia
     setHistoryLoading(true);
     try {
       const params = new URLSearchParams({
-        profileId,
         page: String(page),
         sortBy: f.sortBy,
         sortOrder: f.sortOrder,
@@ -257,11 +255,9 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger, initia
   }
 
   React.useEffect(() => {
-    if (profileId) {
-      fetchHistory(initialPage, filters);
-    }
+    fetchHistory(initialPage, filters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profileId, filters, refreshTrigger]);
+  }, [filters, refreshTrigger]);
 
   async function handleGenerate(types: ContentType[], genres: string[], model: ModelId, specialInstructions?: string) {
     setShowGenerateModal(false);
@@ -273,7 +269,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger, initia
       const res = await fetch('/api/recommendations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, contentTypes: types, genres, model, specialInstructions }),
+        body: JSON.stringify({ contentTypes: types, genres, model, specialInstructions }),
       });
       
       // 2. Phase 2: Getting Recommendations
@@ -302,7 +298,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger, initia
           const enrichRes = await fetch('/api/recommendations/enrich', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ profileId, title: raw.title, year: raw.year, reason: raw.reason, label: raw.label }),
+            body: JSON.stringify({ title: raw.title, year: raw.year, reason: raw.reason, label: raw.label }),
           });
           const enrichedData = await enrichRes.json();
           if (enrichRes.ok) {
@@ -345,7 +341,7 @@ export function RecommendationsTab({ profileId, onSelect, refreshTrigger, initia
       const res = await fetch(`/api/watchlist`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profileId, contentId: entry.content.id, contentType: entry.content.contentType }),
+        body: JSON.stringify({ contentId: entry.content.id, contentType: entry.content.contentType }),
       });
       if (res.ok) {
         setHistoryItems((prev) => prev.filter((e) => e.id !== entry.id));

@@ -11,9 +11,9 @@ export async function POST(_req: Request, { params }: { params: Promise<{ id: st
 
   const { id } = await params;
 
-  // Verify ownership via profile join
+  // Verify ownership
   const entry = await prisma.userContent.findFirst({
-    where: { id, listStatus: 'RECOMMENDED', profile: { userId: session.user.id } },
+    where: { id, listStatus: 'RECOMMENDED', userId: session.user.id },
     select: { id: true },
   });
   if (!entry) return NextResponse.json({ error: 'Not found' }, { status: 404 });

@@ -20,9 +20,7 @@ const PERIODS: { value: Period; label: string }[] = [
   { value: '1y', label: '1Y' },
 ];
 
-interface ActivityChartProps {
-  profileId: string;
-}
+interface ActivityChartProps {}
 
 type DataPoint = { date: string; MOVIE: number; TV_SHOW: number; ANIME: number };
 
@@ -57,18 +55,18 @@ function sample(data: DataPoint[], period: Period): DataPoint[] {
   return data;
 }
 
-export function ActivityChart({ profileId }: ActivityChartProps) {
+export function ActivityChart({}: ActivityChartProps) {
   const [period, setPeriod] = React.useState<Period>('7d');
   const [data, setData] = React.useState<DataPoint[]>([]);
   const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
     setLoading(true);
-    fetch(`/api/profiles/${profileId}/activity?period=${period}`)
+    fetch(`/api/user/activity?period=${period}`)
       .then((r) => r.ok ? r.json() : [])
       .then((d) => { setData(d); setLoading(false); })
       .catch(() => setLoading(false));
-  }, [profileId, period]);
+  }, [period]);
 
   const displayData = sample(data, period).map((d) => ({
     ...d,

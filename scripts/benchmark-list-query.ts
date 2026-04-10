@@ -8,13 +8,13 @@ const prisma = new PrismaClient();
 const RUNS = 5;
 
 async function getIds() {
-  const watched = await prisma.userContent.findFirst({ where: { listStatus: 'WATCHED' }, select: { profileId: true } });
-  const planned = await prisma.userContent.findFirst({ where: { listStatus: 'PLANNED' }, select: { profileId: true } });
-  const rec     = await prisma.userContent.findFirst({ where: { listStatus: 'RECOMMENDED' }, select: { profileId: true } });
+  const watched = await prisma.userContent.findFirst({ where: { listStatus: 'WATCHED' }, select: { userId: true } });
+  const planned = await prisma.userContent.findFirst({ where: { listStatus: 'PLANNED' }, select: { userId: true } });
+  const rec     = await prisma.userContent.findFirst({ where: { listStatus: 'RECOMMENDED' }, select: { userId: true } });
   return {
-    watchedProfileId: watched?.profileId ?? null,
-    plannedProfileId: planned?.profileId ?? null,
-    recProfileId:     rec?.profileId ?? null,
+    watchedUserId: watched?.userId ?? null,
+    plannedUserId: planned?.userId ?? null,
+    recUserId:     rec?.userId ?? null,
   };
 }
 
@@ -35,14 +35,14 @@ async function bench(label: string, fn: () => Promise<any>) {
 }
 
 async function main() {
-  const { watchedProfileId, plannedProfileId, recProfileId } = await getIds();
+  const { watchedUserId, plannedUserId, recUserId } = await getIds();
   console.log();
 
   // ── Watched (already optimized) ──────────────────────────────────────────
-  if (watchedProfileId) {
+  if (watchedUserId) {
     await bench('WATCHED — default (addedAt desc)', () =>
       prisma.userContent.findMany({
-        where: { profileId: watchedProfileId, listStatus: 'WATCHED' },
+        where: { userId: watchedUserId, listStatus: 'WATCHED' },
         select: {
           id: true, userRating: true, watchStatus: true, notes: true, addedAt: true,
           content: {
@@ -62,7 +62,7 @@ async function main() {
 
     await bench('WATCHED — sorted by tmdbRating + MOVIE filter', () =>
       prisma.userContent.findMany({
-        where: { profileId: watchedProfileId, listStatus: 'WATCHED', content: { contentType: 'MOVIE' } },
+        where: { userId: watchedUserId, listStatus: 'WATCHED', content: { contentType: 'MOVIE' } },
         select: {
           id: true, userRating: true, watchStatus: true, notes: true, addedAt: true,
           content: {
@@ -82,10 +82,10 @@ async function main() {
   }
 
   // ── Planned ───────────────────────────────────────────────────────────────
-  if (plannedProfileId) {
+  if (plannedUserId) {
     await bench('PLANNED — default', () =>
       prisma.userContent.findMany({
-        where: { profileId: plannedProfileId, listStatus: 'PLANNED' },
+        where: { userId: plannedUserId, listStatus: 'PLANNED' },
         select: {
           id: true, listStatus: true, addedAt: true, watchStatus: true,
           content: {
@@ -102,10 +102,10 @@ async function main() {
   }
 
   // ── Recommendations ───────────────────────────────────────────────────────
-  if (recProfileId) {
+  if (recUserId) {
     await bench('RECOMMENDATIONS — default', () =>
       prisma.userContent.findMany({
-        where: { profileId: recProfileId, listStatus: 'RECOMMENDED' },
+        where: { userId: recUserId, listStatus: 'RECOMMENDED' },
         select: {
           id: true, listStatus: true, addedAt: true, userRating: true,
           recommendationReason: true, recommendationLabel: true,

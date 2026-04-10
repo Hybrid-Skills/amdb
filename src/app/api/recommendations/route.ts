@@ -63,23 +63,19 @@ export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { profileId, contentTypes, genres, model: requestedModel, specialInstructions } = await req.json();
-  
+  const { contentTypes, genres, model: requestedModel, specialInstructions } = await req.json();
+
   // Safety Wrapper: Truncate and sanitize special instructions
   const sanitizedInstructions = (specialInstructions || '')
     .slice(0, 300)
     .replace(/[<>]/g, '') // Prevent XML tag injection or closing the sandbox
     .trim();
 
-  if (!profileId || !process.env.GEMINI_API_KEY) {
-    return NextResponse.json({ error: 'Missing credentials or profileId' }, { status: 400 });
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: 'Missing Gemini API key' }, { status: 400 });
   }
 
-  const profile = await prisma.profile.findFirst({
-    where: { id: profileId, userId: session.user.id },
-  });
-  if (!profile) return NextResponse.json({ error: 'Profile not found' }, { status: 404 });
-
+  const userId = session.user.id;
   const model: AllowedModel = ALLOWED_MODELS.has(requestedModel)
     ? (requestedModel as AllowedModel)
     : 'gemini-3.1-flash-lite-preview';
@@ -92,9 +88,9 @@ export async function POST(req: Request) {
   let contentText = '';
   try {
     // 1. Fetch personalization data + Exclusion list
-    const allProfileItems = await prisma.userContent.findMany({
+    const allUserItems = await prisma.userContent.findMany({
       where: {
-        profileId,
+        userId,
         content: selectedTypes.length > 0
           ? { contentType: { in: selectedTypes } }
           : undefined,
@@ -106,11 +102,11 @@ export async function POST(req: Request) {
       take: 50,
     });
 
-    const watchedItems = allProfileItems.filter((i) => i.listStatus === 'WATCHED');
-    const plannedItems = allProfileItems.filter((i) => i.listStatus === 'PLANNED');
+    const watchedItems = allUserItems.filter((i) => i.listStatus === 'WATCHED');
+    const plannedItems = allUserItems.filter((i) => i.listStatus === 'PLANNED');
     const highRated = watchedItems.filter((i) => (i.userRating ?? 0) >= 7).slice(0, 15);
     const lowerRated = watchedItems.filter((i) => i.userRating != null && i.userRating < 7).slice(0, 5);
-    const exclusionList = allProfileItems.map((i) => `"${i.content.title}"`).join(', ');
+    const exclusionList = allUserItems.map((i) => `"${i.content.title}"`).join(', ');
 
     const typeLabel = selectedTypes.length === 0
       ? 'movie, TV show, or anime'

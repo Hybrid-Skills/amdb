@@ -40,7 +40,7 @@ type PlannedRow = {
   estimatedMins: number;
 };
 
-async function computeProfileStats(profileId: string): Promise<ProfileStats> {
+async function computeProfileStats(userId: string): Promise<ProfileStats> {
   const [watchedRows, plannedRows] = await Promise.all([
     prisma.$queryRaw<WatchedRow[]>`
       SELECT
@@ -57,7 +57,7 @@ async function computeProfileStats(profileId: string): Promise<ProfileStats> {
         COUNT(CASE WHEN uc."userRating" IS NOT NULL AND uc."notes" IS NOT NULL AND uc."notes" != '' THEN 1 END)::int AS "reviewCount"
       FROM "UserContent" uc
       JOIN "Content" c ON c.id = uc."contentId"
-      WHERE uc."profileId" = ${profileId}
+      WHERE uc."userId" = ${userId}
         AND uc."listStatus" = 'WATCHED'
       GROUP BY c."contentType"
     `,
@@ -73,7 +73,7 @@ async function computeProfileStats(profileId: string): Promise<ProfileStats> {
         ), 0)::int AS "estimatedMins"
       FROM "UserContent" uc
       JOIN "Content" c ON c.id = uc."contentId"
-      WHERE uc."profileId" = ${profileId}
+      WHERE uc."userId" = ${userId}
         AND uc."listStatus" = 'PLANNED'
       GROUP BY c."contentType"
     `,
@@ -132,10 +132,10 @@ async function computeProfileStats(profileId: string): Promise<ProfileStats> {
   };
 }
 
-export function getProfileStats(profileId: string): Promise<ProfileStats> {
+export function getProfileStats(userId: string): Promise<ProfileStats> {
   return unstable_cache(
-    () => computeProfileStats(profileId),
-    [`profile-stats-${profileId}`],
-    { revalidate: 60, tags: [`profile-stats-${profileId}`] }
+    () => computeProfileStats(userId),
+    [`user-stats-${userId}`],
+    { revalidate: 60, tags: [`user-stats-${userId}`] }
   )();
 }

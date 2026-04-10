@@ -1,3 +1,4 @@
+// Deprecated: profiles merged into User. PATCH now updates User fields.
 import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
@@ -6,47 +7,45 @@ import { z } from 'zod';
 
 const updateSchema = z.object({
   name: z.string().min(1).max(30).optional(),
-  avatarColor: z
-    .string()
-    .regex(/^#[0-9a-fA-F]{6}$/)
-    .optional(),
+  avatarColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   avatarEmoji: z.string().max(2).nullable().optional(),
 });
 
-async function getProfile(profileId: string, userId: string) {
-  return prisma.profile.findFirst({ where: { id: profileId, userId } });
-}
-
-export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(req: Request) {
   const session = await getServerSession(authOptions);
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { id } = await params;
-  const profile = await getProfile(id, session.user.id);
-  if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  const updated = await prisma.profile.update({
-    where: { id },
-    data: parsed.data,
+  const data: Record<string, any> = {};
+  if (parsed.data.name !== undefined) data.username = parsed.data.name;
+  if (parsed.data.avatarColor !== undefined) data.avatarColor = parsed.data.avatarColor;
+  if (parsed.data.avatarEmoji !== undefined) data.avatarEmoji = parsed.data.avatarEmoji;
+
+  const updated = await prisma.user.update({
+    where: { id: session.user.id },
+    data,
+    select: {
+      id: true,
+      name: true,
+      username: true,
+      avatarColor: true,
+      avatarEmoji: true,
+    },
   });
 
-  return NextResponse.json(updated);
+  return NextResponse.json({
+    id: updated.id,
+    name: updated.username ?? updated.name ?? 'My Profile',
+    avatarColor: updated.avatarColor,
+    avatarEmoji: updated.avatarEmoji,
+    isDefault: true,
+  });
 }
 
-export async function DELETE(_req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await getServerSession(authOptions);
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
-  const { id } = await params;
-  const profile = await getProfile(id, session.user.id);
-  if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  if (profile.isDefault)
-    return NextResponse.json({ error: 'Cannot delete default profile' }, { status: 400 });
-
-  await prisma.profile.delete({ where: { id } });
-  return new NextResponse(null, { status: 204 });
+export async function DELETE() {
+  // Profiles no longer exist as separate entities; deletion is not applicable
+  return NextResponse.json({ error: 'Profiles have been merged into user accounts' }, { status: 410 });
 }

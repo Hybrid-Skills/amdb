@@ -8,19 +8,17 @@ export async function GET(req: Request) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
-  const profileId = searchParams.get('profileId');
   const tmdbId = searchParams.get('tmdbId');
   const malId = searchParams.get('malId');
 
-  if (!profileId) return NextResponse.json({ error: 'profileId required' }, { status: 400 });
   if (!tmdbId && !malId)
     return NextResponse.json({ error: 'tmdbId or malId required' }, { status: 400 });
 
-  // Auth and data fetch in one round-trip
+  const userId = session.user.id;
+
   const existing = await prisma.userContent.findFirst({
     where: {
-      profileId,
-      profile: { userId: session.user.id }, // Security check merged
+      userId,
       content: {
         OR: [
           ...(tmdbId ? [{ tmdbId: parseInt(tmdbId) }] : []),
@@ -46,14 +44,6 @@ export async function GET(req: Request) {
       },
     },
   });
-
-  if (!existing && profileId) {
-    // We still need to verify the profile exists/belongs to user if no content found
-    const profile = await prisma.profile.findFirst({
-      where: { id: profileId, userId: session.user.id },
-    });
-    if (!profile) return NextResponse.json({ error: 'Not found' }, { status: 404 });
-  }
 
   const isWatched = existing?.listStatus === 'WATCHED';
   const isPlanned = existing?.listStatus === 'PLANNED';

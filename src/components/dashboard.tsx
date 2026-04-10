@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { Button } from './ui/button';
 import { ProfileDropdown } from './profile-dropdown';
-import { type Profile } from './profile-selector';
 import Image from 'next/image';
 import { SearchBar } from './search-bar';
 import { AddToListModal, type SearchResult } from './add-to-list-modal';
@@ -14,8 +13,8 @@ import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-
 import { AnimatePresence, motion } from 'framer-motion';
 import { List, Sparkles, Bookmark } from 'lucide-react';
 import { EmptyStateIllustration } from './ui/empty-state-illustration';
-import { readProfileCookie, writeProfileCookie } from '@/lib/profile-cookie';
 import { AddTitleFAB } from './add-title-fab';
+import { useSession } from 'next-auth/react';
 
 type DashTab = 'watched' | 'planned' | 'recommendations';
 
@@ -59,8 +58,7 @@ interface DashboardProps {
 }
 
 export function Dashboard(_: DashboardProps) {
-  const [profiles, setProfiles] = React.useState<Profile[]>([]);
-  const [activeProfileId, setActiveProfileId] = React.useState<string>('');
+  const { data: session } = useSession();
   const [activeTab, setActiveTab] = React.useState<DashTab>('watched');
 
   const [selectedItem, setSelectedItem] = React.useState<SearchResult | null>(null);
@@ -93,18 +91,9 @@ export function Dashboard(_: DashboardProps) {
   const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
   const [debouncedFilters, setDebouncedFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
 
-  async function fetchProfiles() {
-    const res = await fetch('/api/profiles');
-    if (res.ok) {
-      const data = await res.json();
-      setProfiles(data);
-    }
-  }
-
-  async function fetchList(profileId: string, p: number, f: ListFilters, force = false) {
+  async function fetchList(p: number, f: ListFilters, force = false) {
     setListLoading(true);
     const params = new URLSearchParams({
-      profileId,
       page: String(p),
       sortBy: f.sortBy,
       sortOrder: f.sortOrder,
@@ -141,7 +130,6 @@ export function Dashboard(_: DashboardProps) {
     const scroll = window.history.state?._amdb?.scroll;
     if (scroll) {
       window.scrollTo(0, scroll);
-      // Clear scroll from state so it doesn't re-apply on filter changes
       const existing = window.history.state ?? {};
       window.history.replaceState(
         { ...existing, _amdb: { ...existing._amdb, scroll: undefined } },
@@ -150,45 +138,23 @@ export function Dashboard(_: DashboardProps) {
     }
   }, [listLoading]);
 
-  // Track which profileId was already fetched on mount to avoid double-fetch
-  const prefetchedProfileId = React.useRef<string | null>(null);
-
-  // On mount: fire profiles + list in parallel using cookie profileId
+  // Fetch list once session is ready, restoring saved page
+  const hasFetched = React.useRef(false);
   React.useEffect(() => {
-    const cookieProfileId = readProfileCookie()?.id ?? null;
+    if (!session?.user?.id || hasFetched.current) return;
+    hasFetched.current = true;
     const savedNav = window.history.state?._amdb;
     const savedTab = savedNav?.tab as DashTab | undefined;
     const savedPage: number = savedNav?.page ?? 1;
     const isWatchedTab = !savedTab || savedTab === 'watched';
 
-    // Only prefetch the watched list on mount; planned/recs fetch themselves
-    const listPromise = cookieProfileId && isWatchedTab
-      ? fetchList(cookieProfileId, savedPage, filters)
-      : Promise.resolve();
-    if (cookieProfileId && isWatchedTab) {
-      prefetchedProfileId.current = cookieProfileId;
-    } else if (!isWatchedTab) {
+    if (isWatchedTab) {
+      fetchList(savedPage, filters);
+    } else {
       setListLoading(false);
     }
-
-    fetch('/api/profiles')
-      .then((r) => r.json() as Promise<Profile[]>)
-      .then((data) => {
-        setProfiles(data);
-        const resolved =
-          (cookieProfileId && data.find((p) => p.id === cookieProfileId)) ??
-          data.find((p) => p.isDefault) ??
-          data[0];
-        if (resolved) {
-          writeProfileCookie(resolved);
-          setActiveProfileId(resolved.id);
-        }
-      })
-      .catch(() => setListLoading(false));
-
-    void listPromise;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.user?.id]);
 
   // Debounce filter changes — 500ms
   React.useEffect(() => {
@@ -196,17 +162,15 @@ export function Dashboard(_: DashboardProps) {
     return () => clearTimeout(t);
   }, [filters]);
 
-  // Fetch list on profile or debounced filter change
+  // Fetch list on debounced filter change (skip first run)
+  const filterChangeCount = React.useRef(0);
   React.useEffect(() => {
-    if (!activeProfileId) return;
-    // Skip initial fetch if mount already handled this profileId with default filters
-    if (prefetchedProfileId.current === activeProfileId) {
-      prefetchedProfileId.current = null;
-      return;
-    }
-    fetchList(activeProfileId, 1, debouncedFilters);
+    if (!session?.user?.id) return;
+    filterChangeCount.current += 1;
+    if (filterChangeCount.current <= 1) return; // skip initial
+    fetchList(1, debouncedFilters);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeProfileId, debouncedFilters]);
+  }, [debouncedFilters]);
 
   function handleFiltersChange(f: ListFilters) {
     setFilters(f);
@@ -216,7 +180,6 @@ export function Dashboard(_: DashboardProps) {
     setListItems((prev) => prev.filter((i) => i.id !== id));
     setDeleteConfirmId(null);
     await fetch(`/api/list/${id}`, { method: 'DELETE' });
-    fetchProfiles();
   }
 
   function handleSearchSelect(item: any) {
@@ -291,10 +254,7 @@ export function Dashboard(_: DashboardProps) {
 
             {/* Profile Dropdown */}
             <div className="flex items-center gap-2 shrink-0">
-              <ProfileDropdown
-                initialProfiles={profiles}
-                onProfileSwitch={(p) => setActiveProfileId(p.id)}
-              />
+              <ProfileDropdown />
             </div>
           </div>
         </div>
@@ -452,7 +412,7 @@ export function Dashboard(_: DashboardProps) {
                         variant="outline"
                         size="sm"
                         disabled={page === 1}
-                        onClick={() => fetchList(activeProfileId, page - 1, debouncedFilters)}
+                        onClick={() => fetchList(page - 1, debouncedFilters)}
                       >
                         Previous
                       </Button>
@@ -463,7 +423,7 @@ export function Dashboard(_: DashboardProps) {
                         variant="outline"
                         size="sm"
                         disabled={page === totalPages}
-                        onClick={() => fetchList(activeProfileId, page + 1, debouncedFilters)}
+                        onClick={() => fetchList(page + 1, debouncedFilters)}
                       >
                         Next
                       </Button>
@@ -487,7 +447,6 @@ export function Dashboard(_: DashboardProps) {
           {/* ── Planned Tab ── */}
           {activeTab === 'planned' && (
             <PlannedTab
-              profileId={activeProfileId}
               onSelect={handleSearchSelect}
               initialPage={window.history.state?._amdb?.tab === 'planned' ? (window.history.state._amdb.page ?? 1) : 1}
               onPageChange={(p) => saveNavState('planned', p)}
@@ -497,7 +456,6 @@ export function Dashboard(_: DashboardProps) {
           {/* ── Recommendations Tab ── */}
           {activeTab === 'recommendations' && (
             <RecommendationsTab
-              profileId={activeProfileId}
               onSelect={handleSearchSelect}
               refreshTrigger={recommendationsRefreshTrigger}
               initialPage={window.history.state?._amdb?.tab === 'recommendations' ? (window.history.state._amdb.page ?? 1) : 1}
@@ -529,7 +487,6 @@ export function Dashboard(_: DashboardProps) {
       <AddToListModal
         key={selectedItem ? (selectedItem.tmdbId ?? selectedItem.malId ?? 'new') : 'empty'}
         item={selectedItem}
-        profileId={activeProfileId}
         initialRating={selectedItemMeta.rating}
         initialNotes={selectedItemMeta.notes}
         initialWatchStatus={selectedItemMeta.watchStatus}
@@ -539,7 +496,7 @@ export function Dashboard(_: DashboardProps) {
           setSelectedItemMeta({});
         }}
         onSuccess={() => {
-          fetchList(activeProfileId, 1, filters, true);
+          fetchList(1, filters, true);
           setRecommendationsRefreshTrigger((t) => t + 1);
         }}
       />

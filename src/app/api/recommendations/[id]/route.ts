@@ -15,11 +15,10 @@ export async function DELETE(
   const { id } = await params;
 
   try {
-    // Ensure the recommendation belongs to a profile owned by the user
     const entry = await prisma.userContent.findFirst({
       where: {
         id,
-        profile: { userId: session.user.id },
+        userId: session.user.id,
         listStatus: 'RECOMMENDED',
       },
     });
