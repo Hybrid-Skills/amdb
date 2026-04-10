@@ -92,15 +92,15 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
 
   // Sort emojis: currently selected first, then rest in original order
   const sortedEmojis = React.useMemo(() => {
-    if (!profile.avatarEmoji) return AVATAR_EMOJIS;
-    const idx = AVATAR_EMOJIS.findIndex((e) => e.emoji === profile.avatarEmoji);
-    if (idx <= 0) return AVATAR_EMOJIS;
-    return [
-      AVATAR_EMOJIS[idx],
-      ...AVATAR_EMOJIS.slice(0, idx),
-      ...AVATAR_EMOJIS.slice(idx + 1),
-    ];
-  }, [profile.avatarEmoji]);
+    const unlocked = AVATAR_EMOJIS.filter((e) => unlockedAwardIds.has(e.awardId));
+    const locked = AVATAR_EMOJIS.filter((e) => !unlockedAwardIds.has(e.awardId));
+    const combined = [...unlocked, ...locked];
+    // Move currently selected to front
+    if (!profile.avatarEmoji) return combined;
+    const idx = combined.findIndex((e) => e.emoji === profile.avatarEmoji);
+    if (idx <= 0) return combined;
+    return [combined[idx], ...combined.slice(0, idx), ...combined.slice(idx + 1)];
+  }, [profile.avatarEmoji, unlockedAwardIds]);
 
   return (
     <div className="space-y-6">
