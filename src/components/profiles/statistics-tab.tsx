@@ -14,8 +14,8 @@ export function StatisticsTab({ stats, profileId }: StatisticsTabProps) {
   return (
     <div className="space-y-6">
       <EmptyStateCTAs stats={stats} />
-      <StatsDashboard stats={stats} />
       <ActivityChart profileId={profileId} />
+      <StatsDashboard stats={stats} />
     </div>
   );
 }

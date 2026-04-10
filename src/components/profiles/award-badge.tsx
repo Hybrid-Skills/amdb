@@ -100,9 +100,9 @@ export function AwardBadge({ award, unlocked }: AwardBadgeProps) {
         <p className={`text-[11px] font-bold leading-tight ${unlocked ? 'text-white' : 'text-white/30'}`}>
           {award.name}
         </p>
-        {!unlocked && (
-          <p className="text-[10px] text-white/20 mt-0.5 leading-tight">{award.unlockHint}</p>
-        )}
+        <p className={`text-[10px] mt-0.5 leading-tight ${unlocked ? 'text-white/40' : 'text-white/20'}`}>
+          {award.unlockHint}
+        </p>
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 'use client';
 
-import { getTier, getNextTier, TIERS, type Tier } from '@/lib/gamification';
+import { getTier, getNextTier } from '@/lib/gamification';
 
 interface GamificationBadgeProps {
   score: number;
@@ -53,21 +53,6 @@ export function GamificationBadge({ score }: GamificationBadgeProps) {
         <p className="text-xs text-cyan-400/60">You&apos;ve reached the highest tier 👑</p>
       )}
 
-      {/* All tiers */}
-      <div className="flex gap-2 mt-4">
-        {TIERS.map((t: Tier) => (
-          <div
-            key={t.level}
-            title={`${t.name} (${t.minScore}+)`}
-            className={`w-7 h-7 rounded-full flex items-center justify-center text-sm transition-all ${
-              t.level <= tier.level ? 'opacity-100' : 'opacity-20 grayscale'
-            }`}
-            style={{ backgroundColor: t.level <= tier.level ? t.color + '33' : undefined }}
-          >
-            {t.emoji}
-          </div>
-        ))}
-      </div>
     </div>
   );
 }

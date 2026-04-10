@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Trash2, Check } from 'lucide-react';
+import { Check, ChevronDown, Lock } from 'lucide-react';
 import { AVATAR_EMOJIS, TIERS, type Tier } from '@/lib/gamification';
 import { writeProfileCookie } from '@/lib/profile-cookie';
 
@@ -21,20 +21,30 @@ interface Profile {
 interface YourProfileTabProps {
   profile: Profile;
   userTier: Tier;
-  totalProfiles: number;
   onUpdate: (updates: Partial<Pick<Profile, 'name' | 'avatarColor' | 'avatarEmoji'>>) => void;
-  onDelete: () => void;
 }
 
-export function YourProfileTab({ profile, userTier, totalProfiles, onUpdate, onDelete }: YourProfileTabProps) {
+export function YourProfileTab({ profile, userTier, onUpdate }: YourProfileTabProps) {
   const [name, setName] = React.useState(profile.name);
   const [nameSaving, setNameSaving] = React.useState(false);
   const [nameSaved, setNameSaved] = React.useState(false);
-  const [deleteConfirm, setDeleteConfirm] = React.useState(false);
-  const [deleting, setDeleting] = React.useState(false);
+  const [colorOpen, setColorOpen] = React.useState(false);
+  const colorRef = React.useRef<HTMLDivElement>(null);
 
   // Sync if profile changes (profile switch)
   React.useEffect(() => { setName(profile.name); }, [profile.name]);
+
+  // Close color dropdown on outside click
+  React.useEffect(() => {
+    if (!colorOpen) return;
+    function handler(e: MouseEvent) {
+      if (colorRef.current && !colorRef.current.contains(e.target as Node)) {
+        setColorOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [colorOpen]);
 
   async function saveName() {
     const trimmed = name.trim();
@@ -58,6 +68,7 @@ export function YourProfileTab({ profile, userTier, totalProfiles, onUpdate, onD
   }
 
   async function handleColorSelect(color: string) {
+    setColorOpen(false);
     onUpdate({ avatarColor: color });
     writeProfileCookie({ ...profile, avatarColor: color });
     await fetch(`/api/profiles/${profile.id}`, {
@@ -77,28 +88,60 @@ export function YourProfileTab({ profile, userTier, totalProfiles, onUpdate, onD
     }).catch(() => onUpdate({ avatarEmoji: profile.avatarEmoji }));
   }
 
-  async function handleDelete() {
-    if (!deleteConfirm) { setDeleteConfirm(true); return; }
-    setDeleting(true);
-    try {
-      const res = await fetch(`/api/profiles/${profile.id}`, { method: 'DELETE' });
-      if (res.ok) onDelete();
-    } finally {
-      setDeleting(false);
-      setDeleteConfirm(false);
-    }
-  }
-
-  const canDelete = !profile.isDefault && totalProfiles > 1;
+  // Sort emojis: currently selected first, then rest in original order
+  const sortedEmojis = React.useMemo(() => {
+    if (!profile.avatarEmoji) return AVATAR_EMOJIS;
+    const idx = AVATAR_EMOJIS.findIndex((e) => e.emoji === profile.avatarEmoji);
+    if (idx <= 0) return AVATAR_EMOJIS;
+    return [
+      AVATAR_EMOJIS[idx],
+      ...AVATAR_EMOJIS.slice(0, idx),
+      ...AVATAR_EMOJIS.slice(idx + 1),
+    ];
+  }, [profile.avatarEmoji]);
 
   return (
     <div className="space-y-6">
-      {/* Name */}
+      {/* Name + color row */}
       <div>
         <label className="text-xs font-bold uppercase tracking-widest text-white/30 block mb-2">
           Display Name
         </label>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {/* Color picker trigger */}
+          <div ref={colorRef} className="relative shrink-0">
+            <button
+              onClick={() => setColorOpen((v) => !v)}
+              className="flex items-center gap-1.5 h-10 px-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+              title="Change background color"
+            >
+              <span
+                className="w-4 h-4 rounded-full shrink-0"
+                style={{ backgroundColor: profile.avatarColor }}
+              />
+              <ChevronDown className="w-3.5 h-3.5 text-white/40" />
+            </button>
+
+            {colorOpen && (
+              <div className="absolute top-full left-0 mt-1.5 z-50 bg-zinc-900 border border-white/10 rounded-xl p-3 shadow-xl">
+                <div className="grid grid-cols-4 gap-2">
+                  {AVATAR_COLORS.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => handleColorSelect(color)}
+                      className="relative w-8 h-8 rounded-full transition-all hover:scale-110"
+                      style={{ backgroundColor: color }}
+                    >
+                      {profile.avatarColor === color && (
+                        <Check className="absolute inset-0 m-auto w-4 h-4 text-white drop-shadow" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -109,12 +152,12 @@ export function YourProfileTab({ profile, userTier, totalProfiles, onUpdate, onD
             className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/20"
           />
           {nameSaved && (
-            <div className="flex items-center px-3 text-green-400 text-sm">
+            <div className="flex items-center px-1 text-green-400">
               <Check className="w-4 h-4" />
             </div>
           )}
         </div>
-        <p className="text-xs text-white/20 mt-1">Changes save on blur or Enter</p>
+        <p className="text-xs text-white/20 mt-1">Name saves on blur or Enter · Color picker on the left</p>
       </div>
 
       {/* Avatar preview */}
@@ -131,53 +174,38 @@ export function YourProfileTab({ profile, userTier, totalProfiles, onUpdate, onD
         </div>
       </div>
 
-      {/* Color picker */}
-      <div>
-        <label className="text-xs font-bold uppercase tracking-widest text-white/30 block mb-3">
-          Background Color
-        </label>
-        <div className="flex gap-3 flex-wrap">
-          {AVATAR_COLORS.map((color) => (
-            <button
-              key={color}
-              onClick={() => handleColorSelect(color)}
-              className={`w-9 h-9 rounded-full transition-all ${profile.avatarColor === color ? 'ring-2 ring-white ring-offset-2 ring-offset-black scale-110' : 'hover:scale-105'}`}
-              style={{ backgroundColor: color }}
-            />
-          ))}
-        </div>
-      </div>
-
       {/* Emoji grid */}
       <div>
         <label className="text-xs font-bold uppercase tracking-widest text-white/30 block mb-3">
           Avatar Icon
         </label>
-        <div className="grid grid-cols-6 gap-2">
+        <div className="grid grid-cols-5 gap-2">
           {/* Letter option */}
           <button
             onClick={() => handleEmojiSelect(null)}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center text-sm font-black text-white transition-all hover:bg-white/10 ${!profile.avatarEmoji ? 'bg-white/15 ring-2 ring-white/40' : ''}`}
+            className={`w-full aspect-square rounded-xl flex items-center justify-center text-base font-black text-white transition-all hover:bg-white/10 ${!profile.avatarEmoji ? 'bg-white/15 ring-2 ring-white/40' : ''}`}
             style={{ backgroundColor: profile.avatarEmoji ? undefined : profile.avatarColor }}
           >
             {profile.name.charAt(0).toUpperCase()}
           </button>
 
-          {AVATAR_EMOJIS.map(({ emoji, requiredTier }) => {
+          {sortedEmojis.map(({ emoji, requiredTier }) => {
             const locked = requiredTier > userTier.level;
             const tierData = TIERS.find((t) => t.level === requiredTier);
             return (
               <div key={emoji} className="flex flex-col items-center gap-0.5">
                 <button
-                  disabled={locked}
-                  title={locked ? `Unlocks at ${tierData?.name ?? ''} (score ${tierData?.minScore ?? ''}+)` : emoji}
                   onClick={() => !locked && handleEmojiSelect(emoji)}
-                  className={`relative w-10 h-10 rounded-xl flex items-center justify-center text-xl transition-all
-                    ${locked ? 'opacity-30 grayscale cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer'}
+                  title={locked ? `Unlocks at ${tierData?.name ?? ''} (score ${tierData?.minScore ?? ''}+)` : emoji}
+                  className={`relative w-full aspect-square rounded-xl flex items-center justify-center text-2xl transition-all
+                    ${locked ? 'cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer'}
                     ${profile.avatarEmoji === emoji ? 'bg-white/15 ring-2 ring-white/40' : ''}
                   `}
                 >
-                  {locked ? '🔒' : emoji}
+                  <span className={locked ? 'grayscale opacity-30' : ''}>{emoji}</span>
+                  {locked && (
+                    <Lock className="absolute bottom-1 right-1 w-3 h-3 text-white/60" />
+                  )}
                 </button>
                 {locked && tierData && (
                   <span className="text-[9px] text-white/20 text-center leading-tight">
@@ -189,38 +217,6 @@ export function YourProfileTab({ profile, userTier, totalProfiles, onUpdate, onD
           })}
         </div>
       </div>
-
-      {/* Delete profile */}
-      {canDelete && (
-        <div className="pt-4 border-t border-white/5">
-          {deleteConfirm ? (
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-              <p className="text-sm text-red-400 flex-1">Delete this profile? This cannot be undone.</p>
-              <button
-                onClick={() => setDeleteConfirm(false)}
-                className="text-xs text-white/40 hover:text-white px-2 py-1"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="text-xs font-bold text-red-400 hover:text-red-300 bg-red-500/20 px-3 py-1 rounded-lg"
-              >
-                {deleting ? '...' : 'Delete'}
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={handleDelete}
-              className="flex items-center gap-2 text-sm text-red-400/60 hover:text-red-400 transition-colors"
-            >
-              <Trash2 className="w-4 h-4" />
-              Delete profile
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
 }
