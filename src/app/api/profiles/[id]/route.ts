@@ -10,6 +10,7 @@ const updateSchema = z.object({
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)
     .optional(),
+  avatarEmoji: z.string().max(2).nullable().optional(),
 });
 
 async function getProfile(profileId: string, userId: string) {

@@ -10,6 +10,7 @@ export interface Profile {
   id: string;
   name: string;
   avatarColor: string;
+  avatarEmoji?: string | null;
   isDefault: boolean;
   _count?: { userContent: number };
 }

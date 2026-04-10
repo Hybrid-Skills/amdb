@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -12,10 +13,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
 
   const entry = await prisma.userContent.findFirst({
     where: { id, listStatus: 'PLANNED', profile: { userId: session.user.id } },
-    select: { id: true },
+    select: { id: true, profileId: true },
   });
   if (!entry) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
   await prisma.userContent.delete({ where: { id } });
+  revalidateTag(`profile-stats-${entry.profileId}`);
   return NextResponse.json({ success: true });
 }

@@ -61,6 +61,7 @@ model Profile {
   userId      String
   name        String
   avatarColor String        @default("#6366f1")
+  avatarEmoji String?
   isDefault   Boolean       @default(false)
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt

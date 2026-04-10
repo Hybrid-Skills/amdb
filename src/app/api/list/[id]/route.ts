@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -56,5 +57,6 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   }
 
   await prisma.userContent.delete({ where: { id } });
+  revalidateTag(`profile-stats-${item.profileId}`);
   return new NextResponse(null, { status: 204 });
 }

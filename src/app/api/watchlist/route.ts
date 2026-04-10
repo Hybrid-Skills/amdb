@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 
 export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
@@ -162,5 +163,6 @@ export async function POST(req: Request) {
   const entry = await prisma.userContent.create({
     data: { profileId, contentId, listStatus: 'PLANNED' },
   });
+  revalidateTag(`profile-stats-${profileId}`);
   return NextResponse.json({ id: entry.id });
 }

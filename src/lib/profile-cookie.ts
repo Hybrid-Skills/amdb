@@ -5,6 +5,7 @@ export interface ProfileCookieData {
   id: string;
   name: string;
   avatarColor: string;
+  avatarEmoji?: string | null;
   isDefault: boolean;
 }
 
@@ -25,7 +26,7 @@ export function readProfileCookie(): ProfileCookieData | null {
 
 export function writeProfileCookie(p: ProfileCookieData) {
   document.cookie = `${COOKIE_NAME}=${encodeURIComponent(
-    JSON.stringify({ id: p.id, name: p.name, avatarColor: p.avatarColor, isDefault: p.isDefault }),
+    JSON.stringify({ id: p.id, name: p.name, avatarColor: p.avatarColor, avatarEmoji: p.avatarEmoji ?? null, isDefault: p.isDefault }),
   )}; path=/; max-age=${COOKIE_MAX_AGE}; SameSite=Lax`;
 }
 

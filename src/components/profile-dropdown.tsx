@@ -2,7 +2,8 @@
 
 import * as React from 'react';
 import { createPortal } from 'react-dom';
-import { ChevronDown, User, Plus, Check, X, LogOut, LogIn } from 'lucide-react';
+import { ChevronDown, User, Plus, Check, X, LogOut, LogIn, Settings } from 'lucide-react';
+import Link from 'next/link';
 import { signOut, useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
@@ -212,7 +213,7 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
                     className="w-10 h-10 rounded-lg flex items-center justify-center text-sm font-black text-white shrink-0 shadow-lg"
                     style={{ backgroundColor: activeProfile.avatarColor }}
                   >
-                    {activeProfile.name[0].toUpperCase()}
+                    {(activeProfile as any).avatarEmoji ?? activeProfile.name[0].toUpperCase()}
                   </div>
                   <div className="flex flex-col gap-0.5 overflow-hidden">
                     <div className="flex items-center gap-2 overflow-hidden">
@@ -234,6 +235,13 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
                 >
                   <User className="w-4 h-4" /> Switch Profile
                 </button>
+                <Link
+                  href="/profiles"
+                  onClick={() => setIsDropdownOpen(false)}
+                  className="w-full flex items-center gap-3 px-3 py-2 text-sm text-white/60 hover:text-white hover:bg-white/5 rounded-xl transition-colors text-left font-medium"
+                >
+                  <Settings className="w-4 h-4" /> Manage Profile
+                </Link>
                 <button
                   onClick={() => signOut()}
                   className="w-full flex items-center gap-3 px-3 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-xl transition-colors text-left font-medium"
@@ -271,10 +279,10 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
                     )}
                   >
                     <div
-                      className="w-7 h-7 rounded flex items-center justify-center text-[10px] font-black text-white shrink-0 shadow"
+                      className="w-7 h-7 rounded flex items-center justify-center text-sm font-black text-white shrink-0 shadow"
                       style={{ backgroundColor: p.avatarColor }}
                     >
-                      {p.name[0].toUpperCase()}
+                      {(p as any).avatarEmoji ?? p.name[0].toUpperCase()}
                     </div>
                     <span className="flex-1 font-medium">{p.name}</span>
                     {p.id === activeProfile.id && (
@@ -352,10 +360,10 @@ export function ProfileDropdown({ initialProfiles, onProfileSwitch, className }:
         )}
       >
         <div
-          className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-black text-white shadow-inner"
+          className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-black text-white shadow-inner"
           style={{ backgroundColor: activeProfile.avatarColor }}
         >
-          {activeProfile.name[0].toUpperCase()}
+          {(activeProfile as any).avatarEmoji ?? activeProfile.name[0].toUpperCase()}
         </div>
         <ChevronDown
           className={cn(

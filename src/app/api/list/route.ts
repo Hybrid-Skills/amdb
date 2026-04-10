@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { revalidateTag } from 'next/cache';
 
 export const preferredRegion = 'bom1';
 export const dynamic = 'force-dynamic';
@@ -334,5 +335,6 @@ export async function POST(req: Request) {
     include: { content: true },
   });
 
+  revalidateTag(`profile-stats-${profileId}`);
   return NextResponse.json(userContent, { status: 201 });
 }

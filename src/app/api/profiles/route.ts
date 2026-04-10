@@ -25,6 +25,7 @@ export async function GET() {
       id: true,
       name: true,
       avatarColor: true,
+      avatarEmoji: true,
       isDefault: true,
     },
     orderBy: [{ isDefault: 'desc' }, { createdAt: 'asc' }],
