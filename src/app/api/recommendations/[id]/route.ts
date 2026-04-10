@@ -5,14 +5,14 @@ import { prisma } from '@/lib/prisma';
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getServerSession(authOptions);
   if (!session) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { id } = params;
+  const { id } = await params;
 
   try {
     // Ensure the recommendation belongs to a profile owned by the user
