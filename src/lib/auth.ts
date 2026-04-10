@@ -36,27 +36,58 @@ export const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, user, trigger }) {
+      // Triggered on first sign-in
       if (user) {
         token.id = user.id;
-        // Fetch custom fields on first sign-in
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { username: true, avatarColor: true, avatarEmoji: true },
-        });
-        token.username = dbUser?.username ?? null;
-        token.avatarColor = dbUser?.avatarColor ?? '#6366f1';
-        token.avatarEmoji = dbUser?.avatarEmoji ?? null;
       }
-      // Re-fetch on explicit update trigger (after PATCH /api/user)
-      if (trigger === 'update') {
+
+      // If we don't have the custom fields in the token yet, or if it's an explicit update
+      if (trigger === 'update' || (token.id && (!token.avatarColor || !token.username))) {
         const dbUser = await prisma.user.findUnique({
-          where: { id: token.id },
-          select: { username: true, avatarColor: true, avatarEmoji: true },
+          where: { id: token.id as string },
+          select: { email: true, username: true, avatarColor: true, avatarEmoji: true },
         });
-        token.username = dbUser?.username ?? null;
-        token.avatarColor = dbUser?.avatarColor ?? '#6366f1';
-        token.avatarEmoji = dbUser?.avatarEmoji ?? null;
+        
+        if (dbUser) {
+          let currentUsername = dbUser.username;
+
+          // Auto-generate username if null (migration/pre-fill)
+          if (!currentUsername && dbUser.email) {
+            // Take prefix before @ and clean up invalid characters
+            const prefix = dbUser.email.split('@')[0];
+            const baseUsername = prefix.replace(/[^a-zA-Z0-9._-]/g, '') || 'user';
+            
+            let finalUsername = baseUsername;
+            let isTaken = true;
+            let attempts = 0;
+
+            while (isTaken && attempts < 5) {
+              const existing = await prisma.user.findFirst({
+                where: { username: { equals: finalUsername, mode: 'insensitive' } },
+              });
+              if (!existing) {
+                isTaken = false;
+              } else {
+                // Append random 3-char string on collision
+                finalUsername = `${baseUsername}_${Math.random().toString(36).substring(2, 5)}`;
+                attempts++;
+              }
+            }
+
+            // Persistence
+            const updated = await prisma.user.update({
+              where: { id: token.id as string },
+              data: { username: finalUsername },
+            });
+            currentUsername = updated.username;
+          }
+
+          token.username = currentUsername ?? null;
+          token.avatarColor = dbUser.avatarColor ?? '#6366f1';
+          token.avatarEmoji = dbUser.avatarEmoji ?? null;
+        }
       }
+
       return token;
     },
     async session({ session, token }) {

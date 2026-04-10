@@ -14,6 +14,7 @@ import type { ProfileStats } from '@/lib/stats';
 interface UserData {
   id: string;
   name: string;
+  username: string | null;
   avatarColor: string;
   avatarEmoji: string | null;
 }

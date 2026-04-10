@@ -3,6 +3,7 @@
 import * as React from 'react';
 import { Check, ChevronDown, Lock } from 'lucide-react';
 import { useSession } from 'next-auth/react';
+import { cn } from '@/lib/utils';
 import { AVATAR_EMOJIS, type Tier } from '@/lib/gamification';
 import { AWARDS } from '@/lib/awards';
 
@@ -14,6 +15,7 @@ const AVATAR_COLORS = [
 interface UserData {
   id: string;
   name: string;
+  username: string | null;
   avatarColor: string;
   avatarEmoji: string | null;
 }
@@ -22,19 +24,25 @@ interface YourProfileTabProps {
   profile: UserData;
   userTier: Tier;
   unlockedAwardIds: Set<string>;
-  onUpdate: (updates: Partial<Pick<UserData, 'name' | 'avatarColor' | 'avatarEmoji'>>) => void;
+  onUpdate: (updates: Partial<Pick<UserData, 'name' | 'username' | 'avatarColor' | 'avatarEmoji'>>) => void;
 }
 
 export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }: YourProfileTabProps) {
   const { update: updateSession } = useSession();
   const [name, setName] = React.useState(profile.name);
+  const [username, setUsername] = React.useState(profile.username ?? '');
   const [nameSaving, setNameSaving] = React.useState(false);
+  const [usernameSaving, setUsernameSaving] = React.useState(false);
   const [nameSaved, setNameSaved] = React.useState(false);
+  const [usernameError, setUsernameError] = React.useState<string | null>(null);
   const [colorOpen, setColorOpen] = React.useState(false);
   const colorRef = React.useRef<HTMLDivElement>(null);
 
   // Sync if profile changes
-  React.useEffect(() => { setName(profile.name); }, [profile.name]);
+  React.useEffect(() => { 
+    setName(profile.name); 
+    setUsername(profile.username ?? '');
+  }, [profile.name, profile.username]);
 
   // Close color dropdown on outside click
   React.useEffect(() => {
@@ -52,21 +60,60 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
     const trimmed = name.trim();
     if (!trimmed || trimmed === profile.name) return;
     setNameSaving(true);
-    onUpdate({ name: trimmed });
     try {
-      await fetch('/api/user', {
+      const res = await fetch('/api/user', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: trimmed }),
+        body: JSON.stringify({ name: trimmed }),
       });
+      if (!res.ok) throw new Error();
+      onUpdate({ name: trimmed });
       await updateSession();
       setNameSaved(true);
       setTimeout(() => setNameSaved(false), 2000);
     } catch {
-      onUpdate({ name: profile.name });
       setName(profile.name);
     } finally {
       setNameSaving(false);
+    }
+  }
+
+  async function saveUsername() {
+    const trimmed = username.trim();
+    if (!trimmed || trimmed === profile.username) {
+      setUsernameError(null);
+      return;
+    }
+
+    // Validation
+    const regex = /^[a-zA-Z0-9._-]+$/;
+    if (!regex.test(trimmed)) {
+      setUsernameError('Only letters, numbers, ., _, and - are allowed');
+      return;
+    }
+    setUsernameError(null);
+
+    setUsernameSaving(true);
+    try {
+      const res = await fetch('/api/user', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: trimmed }),
+      });
+      
+      if (res.status === 409) {
+        setUsernameError('Username already taken');
+        return;
+      }
+      
+      if (!res.ok) throw new Error();
+      
+      onUpdate({ username: trimmed });
+      await updateSession();
+    } catch {
+      setUsername(profile.username ?? '');
+    } finally {
+      setUsernameSaving(false);
     }
   }
 
@@ -106,74 +153,109 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
   return (
     <div className="space-y-6">
       {/* Name + color row */}
-      <div>
-        <label className="text-xs font-bold uppercase tracking-widest text-white/30 block mb-2">
-          Display Name
-        </label>
-        <div className="flex gap-2 items-center">
-          {/* Color picker trigger */}
-          <div ref={colorRef} className="relative shrink-0">
-            <button
-              onClick={() => setColorOpen((v) => !v)}
-              className="flex items-center gap-1.5 h-10 px-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-              title="Change background color"
-            >
-              <span
-                className="w-4 h-4 rounded-full shrink-0"
-                style={{ backgroundColor: profile.avatarColor }}
-              />
-              <ChevronDown className="w-3.5 h-3.5 text-white/40" />
-            </button>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="text-xs font-bold uppercase tracking-widest text-white/30 block mb-2">
+            Display Name
+          </label>
+          <div className="flex gap-2 items-center">
+            {/* Color picker trigger */}
+            <div ref={colorRef} className="relative shrink-0">
+              <button
+                onClick={() => setColorOpen((v) => !v)}
+                className="flex items-center gap-1.5 h-10 px-2.5 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+                title="Change background color"
+              >
+                <span
+                  className="w-4 h-4 rounded-full shrink-0"
+                  style={{ backgroundColor: profile.avatarColor }}
+                />
+                <ChevronDown className="w-3.5 h-3.5 text-white/40" />
+              </button>
 
-            {colorOpen && (
-              <div className="absolute top-full left-0 mt-1.5 z-50 bg-zinc-900 border border-white/10 rounded-xl p-4 shadow-xl">
-                <div className="grid grid-cols-4 gap-3">
-                  {AVATAR_COLORS.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => handleColorSelect(color)}
-                      className="relative w-9 h-9 rounded-full transition-all hover:scale-110"
-                      style={{ backgroundColor: color }}
-                    >
-                      {profile.avatarColor === color && (
-                        <Check className="absolute inset-0 m-auto w-4 h-4 text-white drop-shadow" />
-                      )}
-                    </button>
-                  ))}
+              {colorOpen && (
+                <div className="absolute top-full left-0 mt-1.5 z-50 bg-zinc-900 border border-white/10 rounded-xl p-4 shadow-xl">
+                  <div className="grid grid-cols-4 gap-3">
+                    {AVATAR_COLORS.map((color) => (
+                      <button
+                        key={color}
+                        onClick={() => handleColorSelect(color)}
+                        className="relative w-9 h-9 rounded-full transition-all hover:scale-110"
+                        style={{ backgroundColor: color }}
+                      >
+                        {profile.avatarColor === color && (
+                          <Check className="absolute inset-0 m-auto w-4 h-4 text-white drop-shadow" />
+                        )}
+                      </button>
+                    ))}
+                  </div>
                 </div>
+              )}
+            </div>
+
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onBlur={saveName}
+              onKeyDown={(e) => e.key === 'Enter' && saveName()}
+              maxLength={30}
+              placeholder="Your name"
+              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/20"
+            />
+            {nameSaved && (
+              <div className="flex items-center px-1 text-green-400">
+                <Check className="w-4 h-4" />
               </div>
             )}
           </div>
+          <p className="text-[10px] text-white/20 mt-1">Saves on blur or Enter</p>
+        </div>
 
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={saveName}
-            onKeyDown={(e) => e.key === 'Enter' && saveName()}
-            maxLength={30}
-            placeholder="Your name"
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 focus:ring-white/20 placeholder:text-white/20"
-          />
-          {nameSaved && (
-            <div className="flex items-center px-1 text-green-400">
-              <Check className="w-4 h-4" />
-            </div>
+        <div>
+          <label className="text-xs font-bold uppercase tracking-widest text-white/30 block mb-2">
+            Username Handle
+          </label>
+          <div className="relative">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20 text-sm">@</span>
+            <input
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              onBlur={saveUsername}
+              onKeyDown={(e) => e.key === 'Enter' && saveUsername()}
+              maxLength={30}
+              placeholder="username"
+              className={cn(
+                "w-full bg-white/5 border rounded-xl pl-8 pr-4 py-2.5 text-sm text-white focus:outline-none focus:ring-2 transition-all",
+                usernameError 
+                  ? "border-red-500/50 focus:ring-red-500/20" 
+                  : "border-white/10 focus:ring-white/20"
+              )}
+            />
+          </div>
+          {usernameError ? (
+            <p className="text-[10px] text-red-500 mt-1">{usernameError}</p>
+          ) : (
+            <p className="text-[10px] text-white/20 mt-1">Letters, numbers, ., _, -</p>
           )}
         </div>
-        <p className="text-xs text-white/20 mt-1">Name saves on blur or Enter · Color picker on the left</p>
       </div>
 
       {/* Avatar preview */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5">
         <div
-          className="w-16 h-16 rounded-full flex items-center justify-center text-3xl font-black text-white shrink-0"
+          className="w-16 h-16 rounded-2xl flex items-center justify-center text-3xl font-black text-white shrink-0 shadow-2xl"
           style={{ backgroundColor: profile.avatarColor }}
         >
-          {profile.avatarEmoji ?? profile.name.charAt(0).toUpperCase()}
+          {profile.avatarEmoji ?? (profile.username?.[0] ?? profile.name?.[0] ?? '?').toUpperCase()}
         </div>
-        <div>
-          <p className="text-sm font-bold text-white">{profile.name}</p>
-          <p className="text-xs text-white/40">{userTier.emoji} {userTier.name}</p>
+        <div className="overflow-hidden">
+          <p className="text-sm font-bold text-white truncate">{profile.name}</p>
+          <p className="text-xs text-white/40 truncate">@{profile.username ?? 'no-handle'}</p>
+          <div className="mt-1 flex items-center gap-1.5">
+            <span className="text-[10px] bg-white/5 px-1.5 py-0.5 rounded border border-white/10 text-white/60">
+              {userTier.emoji} {userTier.name}
+            </span>
+          </div>
         </div>
       </div>
 

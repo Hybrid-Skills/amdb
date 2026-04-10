@@ -7,7 +7,13 @@ import { z } from 'zod';
 export const dynamic = 'force-dynamic';
 
 const updateSchema = z.object({
-  username: z.string().min(1).max(30).optional(),
+  name: z.string().min(1).max(50).optional(),
+  username: z
+    .string()
+    .min(1)
+    .max(30)
+    .regex(/^[a-zA-Z0-9._-]+$/, 'Username can only contain letters, numbers, periods, underscores, and hyphens')
+    .optional(),
   avatarColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
   avatarEmoji: z.string().max(2).nullable().optional(),
 });
@@ -40,10 +46,13 @@ export async function PATCH(req: Request) {
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
 
-  // Check username uniqueness if being changed
+  // Check username uniqueness if being changed (case-insensitive)
   if (parsed.data.username) {
     const existing = await prisma.user.findFirst({
-      where: { username: parsed.data.username, NOT: { id: session.user.id } },
+      where: {
+        username: { equals: parsed.data.username, mode: 'insensitive' },
+        NOT: { id: session.user.id },
+      },
     });
     if (existing) return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
   }
