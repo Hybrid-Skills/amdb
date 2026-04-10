@@ -73,6 +73,20 @@ export function Dashboard(_: DashboardProps) {
   const [recommendationsRefreshTrigger, setRecommendationsRefreshTrigger] = React.useState(0);
   const [addTitleOpen, setAddTitleOpen] = React.useState(false);
 
+  // Sync tab + page to URL so browser back restores correct state
+  function syncUrl(tab: DashTab, p?: number) {
+    const params = new URLSearchParams(window.location.search);
+    params.set('tab', tab);
+    if (p && p > 1) params.set('page', String(p));
+    else params.delete('page');
+    window.history.replaceState(null, '', '?' + params.toString());
+  }
+
+  function handleTabChange(tab: DashTab) {
+    setActiveTab(tab);
+    syncUrl(tab);
+  }
+
   const [listItems, setListItems] = React.useState<ListItem[]>([]);
   const [listLoading, setListLoading] = React.useState(true);
   const [deleteConfirmId, setDeleteConfirmId] = React.useState<string | null>(null);
@@ -111,9 +125,29 @@ export function Dashboard(_: DashboardProps) {
       setTotalPages(data.totalPages);
       setTotal(data.total);
       setPage(p);
+      syncUrl('watched', p);
     }
     setListLoading(false);
   }
+
+  // Read tab from URL on mount (page is handled in the profile/list effect below)
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const tabParam = params.get('tab') as DashTab | null;
+    if (tabParam && ['watched', 'planned', 'recommendations'].includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, []);
+
+  // Restore scroll position after list loads
+  React.useEffect(() => {
+    if (listLoading) return;
+    const saved = sessionStorage.getItem('dashboard_scroll');
+    if (saved) {
+      window.scrollTo(0, parseInt(saved, 10));
+      sessionStorage.removeItem('dashboard_scroll');
+    }
+  }, [listLoading]);
 
   // Track which profileId was already fetched on mount to avoid double-fetch
   const prefetchedProfileId = React.useRef<string | null>(null);
@@ -121,10 +155,20 @@ export function Dashboard(_: DashboardProps) {
   // On mount: fire profiles + list in parallel using cookie profileId
   React.useEffect(() => {
     const cookieProfileId = readProfileCookie()?.id ?? null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlTab = urlParams.get('tab') as DashTab | null;
+    const urlPage = parseInt(urlParams.get('page') ?? '1', 10);
+    const isWatchedTab = !urlTab || urlTab === 'watched';
 
-    // Fire both in parallel if cookie exists
-    const listPromise = cookieProfileId ? fetchList(cookieProfileId, 1, filters) : Promise.resolve();
-    if (cookieProfileId) prefetchedProfileId.current = cookieProfileId;
+    // Only prefetch the watched list on mount; planned/recs fetch themselves
+    const listPromise = cookieProfileId && isWatchedTab
+      ? fetchList(cookieProfileId, urlPage, filters)
+      : Promise.resolve();
+    if (cookieProfileId && isWatchedTab) {
+      prefetchedProfileId.current = cookieProfileId;
+    } else if (!isWatchedTab) {
+      setListLoading(false);
+    }
 
     fetch('/api/profiles')
       .then((r) => r.json() as Promise<Profile[]>)
@@ -231,7 +275,7 @@ export function Dashboard(_: DashboardProps) {
                 {NAV_TABS.map(({ value, label, Icon }) => (
                   <button
                     key={value}
-                    onClick={() => setActiveTab(value)}
+                    onClick={() => handleTabChange(value)}
                     className={`flex items-center gap-1.5 px-4 py-1.5 rounded-full text-sm font-medium transition-all
                       ${activeTab === value
                         ? 'bg-white text-black shadow'
@@ -441,7 +485,12 @@ export function Dashboard(_: DashboardProps) {
 
           {/* ── Planned Tab ── */}
           {activeTab === 'planned' && (
-            <PlannedTab profileId={activeProfileId} onSelect={handleSearchSelect} />
+            <PlannedTab
+              profileId={activeProfileId}
+              onSelect={handleSearchSelect}
+              initialPage={parseInt(new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('page') ?? '1', 10)}
+              onPageChange={(p) => syncUrl('planned', p)}
+            />
           )}
 
           {/* ── Recommendations Tab ── */}
@@ -462,7 +511,7 @@ export function Dashboard(_: DashboardProps) {
             {NAV_TABS.map(({ value, shortLabel, Icon }) => (
               <button
                 key={value}
-                onClick={() => setActiveTab(value)}
+                onClick={() => handleTabChange(value)}
                 className={`rounded-full flex items-center justify-center gap-1.5 py-2 text-xs font-bold transition-all
                   ${activeTab === value ? 'bg-white text-black' : 'text-white/50'}`}
               >

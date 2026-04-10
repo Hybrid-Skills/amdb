@@ -191,6 +191,7 @@ export function MovieCard({
   const certLabel = ageCertification ?? (adult ? '18+' : null);
 
   const handleCardClick = () => {
+    sessionStorage.setItem('dashboard_scroll', String(window.scrollY));
     const url = buildContentUrl(contentType, title, id);
     router.push(url);
   };

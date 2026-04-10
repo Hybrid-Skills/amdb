@@ -32,12 +32,14 @@ interface WatchlistEntry {
 interface PlannedTabProps {
   profileId: string;
   onSelect: (item: SearchResult) => void;
+  initialPage?: number;
+  onPageChange?: (p: number) => void;
 }
 
-export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
+export function PlannedTab({ profileId, onSelect, initialPage = 1, onPageChange }: PlannedTabProps) {
   const [items, setItems] = React.useState<WatchlistEntry[]>([]);
   const [loading, setLoading] = React.useState(true);
-  const [page, setPage] = React.useState(1);
+  const [page, setPage] = React.useState(initialPage);
   const [totalPages, setTotalPages] = React.useState(0);
   const [total, setTotal] = React.useState(0);
   const [removing, setRemoving] = React.useState<Set<string>>(new Set());
@@ -74,10 +76,16 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
 
   React.useEffect(() => {
     if (profileId) {
-      fetchWatchlist(1, filters);
+      fetchWatchlist(initialPage, filters);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profileId, filters]);
+
+  function goToPage(p: number) {
+    setPage(p);
+    onPageChange?.(p);
+    fetchWatchlist(p, filters);
+  }
 
   async function handleRemove(entryId: string) {
     if (!confirm('Remove this title from your planned list?')) return;
@@ -185,7 +193,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
                 variant="outline"
                 size="sm"
                 disabled={page === 1}
-                onClick={() => fetchWatchlist(page - 1, filters)}
+                onClick={() => goToPage(page - 1)}
               >
                 Prev
               </Button>
@@ -196,7 +204,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
                 variant="outline"
                 size="sm"
                 disabled={page === totalPages}
-                onClick={() => fetchWatchlist(page + 1, filters)}
+                onClick={() => goToPage(page + 1)}
               >
                 Next
               </Button>
