@@ -2,8 +2,6 @@ import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { getProfileStats } from '@/lib/stats';
-import { ProfilesShell } from '@/components/profiles/profiles-shell';
 
 export default async function ProfilesPage() {
   const session = await getServerSession(authOptions);
@@ -23,18 +21,10 @@ export default async function ProfilesPage() {
 
   if (!user) redirect('/');
 
-  const stats = await getProfileStats(session.user.id);
+  if (user.username) {
+    redirect(`/user/${user.username}`);
+  }
 
-  return (
-    <ProfilesShell
-      user={{
-        id: user.id,
-        name: user.name ?? 'My Profile',
-        username: user.username,
-        avatarColor: user.avatarColor,
-        avatarEmoji: user.avatarEmoji,
-      }}
-      initialStats={stats}
-    />
-  );
+  // Fallback if no username exists (shouldn't happen with our auth flow)
+  redirect('/');
 }
