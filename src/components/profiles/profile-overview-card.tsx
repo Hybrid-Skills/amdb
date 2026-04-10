@@ -109,7 +109,7 @@ export function ProfileOverviewCard({
     >
       {/* Background glow based on tier color */}
       <div
-        className="absolute -top-24 -right-24 w-64 h-64 blur-[120px] opacity-20 transition-colors duration-1000"
+        className="absolute -top-24 -right-24 w-64 h-64 blur-[120px] opacity-20 transition-colors duration-1000 pointer-events-none"
         style={{ backgroundColor: tier.color }}
       />
 
@@ -133,8 +133,11 @@ export function ProfileOverviewCard({
                 </h2>
                 {!isEditing && isOwner && (
                   <button
-                    onClick={() => setIsEditing(true)}
-                    className="p-1.5 rounded-lg bg-white/5 text-white/30 hover:text-white hover:bg-white/10 transition-all ml-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                    }}
+                    className="p-2 sm:p-1.5 rounded-lg bg-white/10 sm:bg-white/5 text-white/50 sm:text-white/30 hover:text-white hover:bg-white/10 transition-all ml-1 relative z-10"
                     title="Edit Profile"
                   >
                     <Pencil className="w-4 h-4" />
@@ -170,7 +173,7 @@ export function ProfileOverviewCard({
                   {tier.name}
                 </span>
               </div>
-              <p className="hidden sm:block text-[10px] uppercase tracking-tighter text-white/20 font-bold">
+              <p className="text-[10px] uppercase tracking-tighter text-white/20 font-black">
                 Level {tier.level}
               </p>
             </div>
@@ -310,7 +313,7 @@ export function ProfileOverviewCard({
           <div className="space-y-3 animate-in fade-in duration-700">
             <div className="flex items-end justify-between text-[10px] font-bold uppercase tracking-widest">
               <div className="text-white/30 flex items-center gap-2">
-                Progression <span className="text-white/60">{Math.floor(progress)}%</span>
+                Progression
                 {nextTier && (
                   <span className="text-[8px] bg-white/5 px-1.5 py-0.5 rounded-md border border-white/5">
                     Next: {nextTier.name}

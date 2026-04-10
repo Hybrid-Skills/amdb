@@ -62,17 +62,15 @@ export function RatedListTab({
                     href={`/content/${item.id}`}
                     className="flex flex-col gap-0.5 group-hover:translate-x-1 transition-transform"
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-bold text-white leading-tight">
                         {item.title}
+                        {item.year && (
+                          <span className="text-white/30 font-medium ml-1.5 inline-block">({item.year})</span>
+                        )}
                       </span>
                       <ArrowRight className="w-3 h-3 text-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
-                    {item.year && (
-                      <span className="text-[10px] sm:text-xs text-white/30 font-medium tracking-wide">
-                        {item.year}
-                      </span>
-                    )}
                   </Link>
                 </td>
                 <td className="px-4 sm:px-6 py-4 text-right">
