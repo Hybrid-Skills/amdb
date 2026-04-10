@@ -8,6 +8,7 @@ import { MovieCard } from './movie-card';
 import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
 import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-bar';
+import { AddTitleFAB } from './add-title-fab';
 
 interface WatchlistEntry {
   id: string;
@@ -107,6 +108,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
   if (loading && page === 1) {
     return (
       <div className="space-y-4">
+        <AddTitleFAB onSelect={onSelect} />
         <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
           {Array.from({ length: 12 }).map((_, i) => (
@@ -125,6 +127,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <AddTitleFAB onSelect={onSelect} />
       <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
 
       {items.length === 0 ? (

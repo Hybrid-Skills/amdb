@@ -15,6 +15,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { List, Sparkles, Bookmark } from 'lucide-react';
 import { EmptyStateIllustration } from './ui/empty-state-illustration';
 import { readProfileCookie, writeProfileCookie } from '@/lib/profile-cookie';
+import { AddTitleFAB } from './add-title-fab';
 
 type DashTab = 'watched' | 'planned' | 'recommendations';
 
@@ -70,6 +71,7 @@ export function Dashboard(_: DashboardProps) {
   }>({});
   const [modalForceEdit, setModalForceEdit] = React.useState(false);
   const [recommendationsRefreshTrigger, setRecommendationsRefreshTrigger] = React.useState(0);
+  const [addTitleOpen, setAddTitleOpen] = React.useState(false);
 
   const [listItems, setListItems] = React.useState<ListItem[]>([]);
   const [listLoading, setListLoading] = React.useState(true);
@@ -310,10 +312,13 @@ export function Dashboard(_: DashboardProps) {
                           Search for a movie, show, or anime above and add more to start building your
                           collection.
                         </p>
-                        <div className="mt-4 flex items-center gap-2 text-xs text-purple-400/70 bg-purple-500/10 border border-purple-500/20 rounded-full px-4 py-2">
-                          <span>↑</span>
-                          <span>Use the search bar to add your first title</span>
-                        </div>
+                        <button
+                          onClick={() => setAddTitleOpen(true)}
+                          className="mt-4 flex items-center gap-2 text-sm font-bold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 px-5 py-2.5 rounded-full shadow-lg shadow-cyan-500/30 active:scale-95 transition-transform"
+                        >
+                          <span className="text-base leading-none">+</span>
+                          Add Title
+                        </button>
                       </>
                     );
                   })()}
@@ -422,6 +427,16 @@ export function Dashboard(_: DashboardProps) {
                 </>
               )}
             </>
+          )}
+
+          {/* ── Watched Tab FAB ── */}
+          {activeTab === 'watched' && !listLoading && (
+            <AddTitleFAB
+              onSelect={handleSearchSelect}
+              open={addTitleOpen}
+              onOpenChange={setAddTitleOpen}
+              showButton={listItems.length > 0}
+            />
           )}
 
           {/* ── Planned Tab ── */}
