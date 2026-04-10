@@ -5,6 +5,8 @@ import { prisma } from '@/lib/prisma';
 import { getProfileStats } from '@/lib/stats';
 import { ProfilePageShell } from '@/components/profiles/profile-page-shell';
 
+export const dynamic = 'force-dynamic';
+
 interface Props {
   params: { username: string };
 }
@@ -12,9 +14,14 @@ interface Props {
 export default async function UserProfilePage({ params }: Props) {
   const session = await getServerSession(authOptions);
   
-  // Find user by username
-  const profileUser = await prisma.user.findUnique({
-    where: { username: params.username },
+  // Find user by username (case-insensitive findFirst for vanity URLs)
+  const profileUser = await prisma.user.findFirst({
+    where: { 
+      username: { 
+        equals: params.username, 
+        mode: 'insensitive' 
+      } 
+    },
     select: {
       id: true,
       name: true,
