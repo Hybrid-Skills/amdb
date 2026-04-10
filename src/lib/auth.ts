@@ -20,6 +20,7 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
+    name?: string | null;
     username?: string | null;
     avatarColor?: string;
     avatarEmoji?: string | null;
@@ -42,10 +43,10 @@ export const authOptions: NextAuthOptions = {
       }
 
       // If we don't have the custom fields in the token yet, or if it's an explicit update
-      if (trigger === 'update' || (token.id && (!token.avatarColor || !token.username))) {
+      if (trigger === 'update' || (token.id && (!token.avatarColor || !token.username || !token.name))) {
         const dbUser = await prisma.user.findUnique({
           where: { id: token.id as string },
-          select: { email: true, username: true, avatarColor: true, avatarEmoji: true },
+          select: { name: true, email: true, username: true, avatarColor: true, avatarEmoji: true },
         });
         
         if (dbUser) {
@@ -82,6 +83,7 @@ export const authOptions: NextAuthOptions = {
             currentUsername = updated.username;
           }
 
+          token.name = dbUser.name ?? null;
           token.username = currentUsername ?? null;
           token.avatarColor = dbUser.avatarColor ?? '#6366f1';
           token.avatarEmoji = dbUser.avatarEmoji ?? null;
@@ -93,6 +95,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user && token.id) {
         session.user.id = token.id as string;
+        session.user.name = (token.name as string | null | undefined) ?? session.user.name;
         session.user.username = (token.username as string | null | undefined) ?? null;
         session.user.avatarColor = (token.avatarColor as string | undefined) ?? '#6366f1';
         session.user.avatarEmoji = (token.avatarEmoji as string | null | undefined) ?? null;
