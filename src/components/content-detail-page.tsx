@@ -47,7 +47,7 @@ export function ContentDetailPage({ data }: ContentDetailPageProps) {
       <DetailHero data={data} />
 
       {/* ── Body ── */}
-      <div className="max-w-6xl mx-auto px-4 md:px-8 pt-2 pb-8 md:py-10 flex flex-col gap-4 md:gap-14">
+      <div className="max-w-6xl mx-auto px-4 md:px-8 pt-2 pb-28 md:pb-10 md:pt-10 flex flex-col gap-4 md:gap-14">
         {/* Ratings row */}
         <RatingsRow data={data} />
 
