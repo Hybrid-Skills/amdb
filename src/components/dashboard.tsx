@@ -88,7 +88,7 @@ export function Dashboard(_: DashboardProps) {
     }
   }
 
-  async function fetchList(profileId: string, p: number, f: ListFilters) {
+  async function fetchList(profileId: string, p: number, f: ListFilters, force = false) {
     setListLoading(true);
     const params = new URLSearchParams({
       profileId,
@@ -102,7 +102,7 @@ export function Dashboard(_: DashboardProps) {
     if (f.watchStatus.length > 0) params.set('watchStatus', f.watchStatus.join(','));
     if (f.genres.length > 0) params.set('genres', f.genres.join(','));
 
-    const res = await fetch(`/api/list?${params}`, { cache: 'no-store' });
+    const res = await fetch(`/api/list?${params}`, { cache: force ? 'reload' : 'default' });
     if (res.ok) {
       const data = await res.json();
       setListItems(data.items);
@@ -472,7 +472,7 @@ export function Dashboard(_: DashboardProps) {
           setSelectedItemMeta({});
         }}
         onSuccess={() => {
-          fetchList(activeProfileId, 1, filters);
+          fetchList(activeProfileId, 1, filters, true);
           setRecommendationsRefreshTrigger((t) => t + 1);
         }}
       />

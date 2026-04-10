@@ -42,7 +42,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
   const [removing, setRemoving] = React.useState<Set<string>>(new Set());
   const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
 
-  async function fetchWatchlist(p: number, f: ListFilters) {
+  async function fetchWatchlist(p: number, f: ListFilters, force = false) {
     setLoading(true);
     try {
       const params = new URLSearchParams({
@@ -57,7 +57,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
       if (f.genres.length > 0) params.set('genres', f.genres.join(','));
       if (f.watchStatus.length > 0) params.set('watchStatuses', f.watchStatus.join(','));
       
-      const res = await fetch(`/api/watchlist?${params}`, { cache: 'no-store' });
+      const res = await fetch(`/api/watchlist?${params}`, { cache: force ? 'reload' : 'default' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setItems(data.items ?? []);
