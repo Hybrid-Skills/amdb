@@ -88,29 +88,46 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
       });
     }
 
-    // ── Full path: parallel TMDB + DB ────────────────────────────────────────
-    // 1. Parallelize TMDB fetch and internal DB check
-    const tmdbPromise =
-      type === 'TV_SHOW' || type === 'ANIME'
-        ? tmdb.tvDetails(id)
-        : tmdb.movieDetails(id);
-
-    const prismaPromise = prisma.content.findFirst({
+    // ── Full path: DB first, TMDB only if cache is stale ────────────────────
+    const storedContent = await prisma.content.findFirst({
       where: { tmdbId: id },
-      include: {
-        enrichments: {
-          where: { source: { in: ['omdb', 'jikan'] } },
-        },
-      },
+      include: { enrichments: { where: { source: { in: ['tmdb', 'omdb', 'jikan'] } } } },
     });
 
-    const [raw, storedContent] = await Promise.all([tmdbPromise, prismaPromise]);
+    // Shared TTL constants (used for both TMDB and OMDB below)
+    const ONE_WEEK_MS  = 7  * 24 * 60 * 60 * 1000;
+    const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+    const contentYear = storedContent?.year ?? null;
+    const cacheTtl = contentYear && (new Date().getFullYear() - contentYear) > 1
+      ? ONE_MONTH_MS : ONE_WEEK_MS;
+    const tmdbTtl = cacheTtl;
 
-    // Backfill any null fields on old DB records using fresh TMDB data.
-    // Awaited (not fire-and-forget) — serverless runtimes kill promises after
-    // the response is sent, so fire-and-forget never completes on Vercel.
-    // The TMDB fetch already dominates latency, so a small DB write adds ~20ms.
-    if (storedContent) {
+    const cachedTmdb = storedContent?.enrichments?.find((e) => e.source === 'tmdb');
+    const tmdbFresh = cachedTmdb &&
+      (Date.now() - new Date(cachedTmdb.fetchedAt).getTime() < tmdbTtl);
+
+    let raw: any;
+    let fetchedFreshTmdb = false;
+
+    if (tmdbFresh && cachedTmdb) {
+      raw = cachedTmdb.data;
+    } else {
+      raw = await (type === 'TV_SHOW' || type === 'ANIME'
+        ? tmdb.tvDetails(id)
+        : tmdb.movieDetails(id));
+      fetchedFreshTmdb = true;
+      // Persist to enrichment cache if we have a DB record
+      if (storedContent?.id) {
+        await prisma.contentEnrichment.upsert({
+          where: { contentId_source: { contentId: storedContent.id, source: 'tmdb' } },
+          update: { data: raw, fetchedAt: new Date() },
+          create: { contentId: storedContent.id, source: 'tmdb', data: raw },
+        }).catch(e => console.error('Failed to persist TMDB modal cache:', e));
+      }
+    }
+
+    // Backfill null Content fields — only worth doing when we have fresh TMDB data
+    if (storedContent && fetchedFreshTmdb) {
       const patch: Record<string, any> = {};
       if (!storedContent.backdropUrl && raw.backdrop_path)
         patch.backdropUrl = tmdbImageUrl(raw.backdrop_path, 'w1280');
@@ -171,11 +188,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
       }
     }
 
-    const crewBase = raw.credits?.crew ?? [];
+    const crewBase: any[] = raw.credits?.crew ?? [];
     const cast =
       raw.credits?.cast
         ?.slice(0, 10)
-        .map((c) => ({ ...c, profile_path: tmdbImageUrl(c.profile_path) })) ?? [];
+        .map((c: any) => ({ ...c, profile_path: tmdbImageUrl(c.profile_path) })) ?? [];
 
     const content = {
       tmdbId: raw.id,
@@ -231,12 +248,8 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
     let omdbRatings: { Source: string; Value: string }[] = [];
     let malScore: number | null = null;
 
-    // OMDB — TTL based on release year: <1yr = 7 days, >1yr = 30 days
-    const ONE_WEEK_MS  = 7  * 24 * 60 * 60 * 1000;
-    const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
-    const contentYear = content.year ?? storedContent?.year ?? null;
-    const omdbTtl = contentYear && (new Date().getFullYear() - contentYear) > 1
-      ? ONE_MONTH_MS : ONE_WEEK_MS;
+    // OMDB — reuse same TTL computed above
+    const omdbTtl = cacheTtl;
 
     const omdbEnrichment = storedContent?.enrichments?.find((e) => e.source === 'omdb');
     const omdbFresh = omdbEnrichment &&
