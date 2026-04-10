@@ -11,7 +11,7 @@ const updateSchema = z.object({
   username: z
     .string()
     .min(1)
-    .max(30)
+    .max(20)
     .regex(/^[a-zA-Z0-9._-]+$/, 'Username can only contain letters, numbers, periods, underscores, and hyphens')
     .optional(),
   avatarColor: z.string().regex(/^#[0-9a-fA-F]{6}$/).optional(),
