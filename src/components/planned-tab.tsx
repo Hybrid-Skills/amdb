@@ -57,7 +57,7 @@ export function PlannedTab({ profileId, onSelect }: PlannedTabProps) {
       if (f.genres.length > 0) params.set('genres', f.genres.join(','));
       if (f.watchStatus.length > 0) params.set('watchStatuses', f.watchStatus.join(','));
       
-      const res = await fetch(`/api/watchlist?${params}`);
+      const res = await fetch(`/api/watchlist?${params}`, { cache: 'no-store' });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error);
       setItems(data.items ?? []);

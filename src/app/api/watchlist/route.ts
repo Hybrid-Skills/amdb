@@ -106,7 +106,7 @@ export async function GET(req: Request) {
   const normalised = items.map((i) => ({ ...i, createdAt: i.addedAt }));
 
   return NextResponse.json({ items: normalised, total, page, totalPages: Math.ceil(total / limit) }, {
-    headers: { 'Cache-Control': 'private, max-age=30' },
+    headers: { 'Cache-Control': 'no-store' },
   });
 }
 

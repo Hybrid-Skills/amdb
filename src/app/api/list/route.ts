@@ -160,7 +160,7 @@ export async function GET(req: Request) {
     { items: formatted, total, page, totalPages: Math.ceil(total / limit) },
     {
       headers: {
-        'Cache-Control': 'private, max-age=30',
+        'Cache-Control': 'no-store',
       },
     },
   );
