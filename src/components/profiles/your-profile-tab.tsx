@@ -185,7 +185,7 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
           {/* Letter option */}
           <button
             onClick={() => handleEmojiSelect(null)}
-            className={`w-full aspect-square rounded-xl flex items-center justify-center text-base font-black text-white transition-all hover:bg-white/10 ${!profile.avatarEmoji ? 'bg-white/15 ring-2 ring-white/40' : ''}`}
+            className={`w-full aspect-square rounded-xl flex items-center justify-center text-2xl font-black text-white transition-all hover:bg-white/10 ${!profile.avatarEmoji ? 'bg-white/15 ring-2 ring-white/40' : ''}`}
             style={{ backgroundColor: profile.avatarEmoji ? undefined : profile.avatarColor }}
           >
             {profile.name.charAt(0).toUpperCase()}
@@ -199,7 +199,7 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
                 <button
                   onClick={() => !locked && handleEmojiSelect(emoji)}
                   title={locked ? `Unlock "${award?.name ?? awardId}" to use this` : emoji}
-                  className={`relative w-full aspect-square rounded-xl flex items-center justify-center text-2xl transition-all
+                  className={`relative w-full aspect-square rounded-xl flex items-center justify-center text-3xl transition-all
                     ${locked ? 'cursor-not-allowed' : 'hover:bg-white/10 cursor-pointer'}
                     ${profile.avatarEmoji === emoji ? 'bg-white/15 ring-2 ring-white/40' : ''}
                   `}
