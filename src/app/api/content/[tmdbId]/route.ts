@@ -231,11 +231,19 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
     let omdbRatings: { Source: string; Value: string }[] = [];
     let malScore: number | null = null;
 
-    // OMDB — prefer stored enrichment, fall back to live fetch
+    // OMDB — TTL based on release year: <1yr = 7 days, >1yr = 30 days
+    const ONE_WEEK_MS  = 7  * 24 * 60 * 60 * 1000;
+    const ONE_MONTH_MS = 30 * 24 * 60 * 60 * 1000;
+    const contentYear = content.year ?? storedContent?.year ?? null;
+    const omdbTtl = contentYear && (new Date().getFullYear() - contentYear) > 1
+      ? ONE_MONTH_MS : ONE_WEEK_MS;
+
     const omdbEnrichment = storedContent?.enrichments?.find((e) => e.source === 'omdb');
-    if (omdbEnrichment) {
-      const omdbData = omdbEnrichment.data as Record<string, any>;
-      omdbRatings = omdbData.Ratings ?? [];
+    const omdbFresh = omdbEnrichment &&
+      (Date.now() - new Date(omdbEnrichment.fetchedAt).getTime() < omdbTtl);
+
+    if (omdbFresh && omdbEnrichment) {
+      omdbRatings = (omdbEnrichment.data as Record<string, any>).Ratings ?? [];
     } else if (content.imdbId && process.env.OMDB_API_KEY) {
       try {
         const omdbRes = await fetch(
@@ -245,11 +253,10 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
           const omdbData = await omdbRes.json();
           if (omdbData.Ratings) {
             omdbRatings = omdbData.Ratings;
-            // Persist to DB if we have a record to attach it to
             if (storedContent?.id) {
               await prisma.contentEnrichment.upsert({
                 where: { contentId_source: { contentId: storedContent.id, source: 'omdb' } },
-                update: { data: omdbData },
+                update: { data: omdbData, fetchedAt: new Date() },
                 create: { contentId: storedContent.id, source: 'omdb', data: omdbData },
               }).catch(e => console.error('Failed to persist OMDB data in API:', e));
             }
@@ -257,6 +264,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
         }
       } catch (e) {
         console.error('OMDB fetch error in detail API:', e);
+        if (omdbEnrichment) omdbRatings = (omdbEnrichment.data as Record<string, any>).Ratings ?? [];
       }
     }
 
