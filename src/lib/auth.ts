@@ -65,6 +65,7 @@ export const authOptions: NextAuthOptions = {
             while (isTaken && attempts < 5) {
               const existing = await prisma.user.findFirst({
                 where: { username: { equals: finalUsername, mode: 'insensitive' } },
+                select: { id: true },
               });
               if (!existing) {
                 isTaken = false;

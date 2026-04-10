@@ -53,6 +53,7 @@ export async function PATCH(req: Request) {
         username: { equals: parsed.data.username, mode: 'insensitive' },
         NOT: { id: session.user.id },
       },
+      select: { id: true },
     });
     if (existing) return NextResponse.json({ error: 'Username already taken' }, { status: 409 });
   }
