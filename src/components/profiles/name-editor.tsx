@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Pencil, Check, X } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 
 interface NameEditorProps {
   name: string;
@@ -9,6 +10,7 @@ interface NameEditorProps {
 }
 
 export function NameEditor({ name, onUpdate }: NameEditorProps) {
+  const { update: updateSession } = useSession();
   const [editing, setEditing] = React.useState(false);
   const [value, setValue] = React.useState(name);
   const [saving, setSaving] = React.useState(false);
@@ -31,6 +33,7 @@ export function NameEditor({ name, onUpdate }: NameEditorProps) {
         body: JSON.stringify({ username: trimmed }),
       });
       if (!res.ok) throw new Error();
+      await updateSession();
     } catch {
       onUpdate(name); // revert
     } finally {

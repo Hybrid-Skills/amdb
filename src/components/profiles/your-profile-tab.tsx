@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 import { Check, ChevronDown, Lock } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import { AVATAR_EMOJIS, type Tier } from '@/lib/gamification';
 import { AWARDS } from '@/lib/awards';
 
@@ -25,6 +26,7 @@ interface YourProfileTabProps {
 }
 
 export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }: YourProfileTabProps) {
+  const { update: updateSession } = useSession();
   const [name, setName] = React.useState(profile.name);
   const [nameSaving, setNameSaving] = React.useState(false);
   const [nameSaved, setNameSaved] = React.useState(false);
@@ -57,6 +59,7 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: trimmed }),
       });
+      await updateSession();
       setNameSaved(true);
       setTimeout(() => setNameSaved(false), 2000);
     } catch {
@@ -74,7 +77,8 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ avatarColor: color }),
-    }).catch(() => onUpdate({ avatarColor: profile.avatarColor }));
+    }).then(() => updateSession())
+      .catch(() => onUpdate({ avatarColor: profile.avatarColor }));
   }
 
   async function handleEmojiSelect(emoji: string | null) {
@@ -83,7 +87,8 @@ export function YourProfileTab({ profile, userTier, unlockedAwardIds, onUpdate }
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ avatarEmoji: emoji }),
-    }).catch(() => onUpdate({ avatarEmoji: profile.avatarEmoji }));
+    }).then(() => updateSession())
+      .catch(() => onUpdate({ avatarEmoji: profile.avatarEmoji }));
   }
 
   // Sort emojis: currently selected first, then rest in original order
