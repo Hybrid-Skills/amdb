@@ -381,7 +381,7 @@ export function MovieCard({
                       >
                         {referrer.avatarEmoji ?? (referrer.name ?? referrer.username ?? '?')[0].toUpperCase()}
                       </span>
-                      <span>by {referrer.name ?? referrer.username}</span>
+                      <span>{referrer.name ?? referrer.username} recommended</span>
                     </div>
                   ) : (
                     /* Self-discovered tag */
