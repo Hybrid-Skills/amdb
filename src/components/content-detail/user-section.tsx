@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Star, Bookmark, BookmarkCheck, Pencil, Share2 } from 'lucide-react';
+import { Star, Bookmark, BookmarkCheck, Pencil, Share2, Check } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { ContentDetail } from '@/lib/content-detail';
@@ -33,7 +33,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 export function UserContentSection({ data }: UserContentSectionProps) {
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const [userState, setUserState] = React.useState<UserState>('loading');
   const [userContent, setUserContent] = React.useState<UserContent>({
     entryId: null,
@@ -47,6 +47,7 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   const [planLoading, setPlanLoading] = React.useState(false);
   const [pendingRating, setPendingRating] = React.useState<number | null>(null);
   const [activeRating, setActiveRating] = React.useState<number | null>(null);
+  const [shared, setShared] = React.useState(false);
 
   // status drives the check — authenticated = session.user.id available
   React.useEffect(() => {
@@ -153,7 +154,9 @@ export function UserContentSection({ data }: UserContentSectionProps) {
       'N/A';
     const typeLabel =
       data.contentType === 'MOVIE' ? 'movie' : data.contentType === 'TV_SHOW' ? 'TV show' : 'anime';
-    const url = window.location.href;
+    const baseUrl = window.location.href.split('?')[0];
+    const ref = session?.user?.username;
+    const url = ref ? `${baseUrl}?ref=${ref}` : baseUrl;
     const title = data.title;
 
     let text = '';
@@ -178,7 +181,8 @@ export function UserContentSection({ data }: UserContentSectionProps) {
     } else {
       try {
         await navigator.clipboard.writeText(`${text} ${url}`);
-        alert('Link copied to clipboard!');
+        setShared(true);
+        setTimeout(() => setShared(false), 2000);
       } catch (err) {
         console.error('Clipboard failed:', err);
       }
@@ -322,6 +326,13 @@ export function UserContentSection({ data }: UserContentSectionProps) {
                     <Bookmark className="w-4 h-4" />
                     {planLoading ? 'Saving…' : 'Plan to Watch'}
                   </button>
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 font-bold text-sm hover:bg-white/10 hover:text-white transition-all active:scale-95"
+                  >
+                    {shared ? <Check className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
+                    {shared ? 'Copied!' : 'Share'}
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -353,6 +364,13 @@ export function UserContentSection({ data }: UserContentSectionProps) {
                     <span className="group-hover:hidden">Planned</span>
                     <span className="hidden group-hover:inline">Remove</span>
                   </button>
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 font-bold text-sm hover:bg-white/10 hover:text-white transition-all active:scale-95"
+                  >
+                    {shared ? <Check className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
+                    {shared ? 'Copied!' : 'Share'}
+                  </button>
                 </div>
               </motion.div>
             )}
@@ -368,6 +386,15 @@ export function UserContentSection({ data }: UserContentSectionProps) {
                 <p className="text-white/60 text-sm italic leading-relaxed max-w-lg">
                   {userContent.notes || 'No review notes left'}
                 </p>
+                <div className="hidden md:flex">
+                  <button
+                    onClick={handleShare}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 font-bold text-sm hover:bg-white/10 hover:text-white transition-all active:scale-95"
+                  >
+                    {shared ? <Check className="w-4 h-4 text-green-400" /> : <Share2 className="w-4 h-4" />}
+                    {shared ? 'Copied!' : 'Share with friends'}
+                  </button>
+                </div>
               </motion.div>
             )}
           </AnimatePresence>
