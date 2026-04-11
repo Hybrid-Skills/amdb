@@ -429,9 +429,9 @@ export function MovieCard({
                         e.stopPropagation();
                         onDelete?.();
                       }}
-                      className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-emerald-500/10 hover:bg-red-500/15 text-emerald-400 hover:text-red-400 transition-all border-r border-border min-w-0 group/planned"
+                      className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all border-r border-border min-w-0"
                     >
-                      <BookmarkCheck className="w-3.5 h-3.5" />
+                      <BookmarkCheck className="w-3.5 h-3.5 fill-current" />
                       <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">
                         Planned
                       </span>
