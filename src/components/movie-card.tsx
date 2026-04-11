@@ -397,7 +397,7 @@ export function MovieCard({
             )}
 
             {/* Description: recommendation reason or overview */}
-            {recommendationReason ? (
+            {recommendationReason && isHorizontal ? (
               <div className={cn('text-[12px] text-muted-foreground/90 leading-snug', isHorizontal ? 'line-clamp-5' : 'line-clamp-2')}>
                 <span className="italic">&ldquo;{recommendationReason}&rdquo;</span>
                 {isHorizontal && (
