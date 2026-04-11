@@ -72,7 +72,6 @@ export interface MovieCardProps {
   isSecondaryLoading?: boolean;
   onViewDetails?: () => void;
   isEnriching?: boolean;
-  compact?: boolean;
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -209,7 +208,6 @@ export function MovieCard({
   recommendationLabel,
   onViewDetails,
   isEnriching = false,
-  compact = false,
 }: MovieCardProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
@@ -249,11 +247,7 @@ export function MovieCard({
         <div
           className={cn(
             'relative overflow-hidden shrink-0',
-            isHorizontal
-              ? compact
-                ? 'w-[72px] sm:w-[100px] aspect-[2/3]'
-                : 'w-[120px] sm:w-[150px] aspect-[2/3]'
-              : 'aspect-[2/3] w-full',
+            isHorizontal ? 'w-[120px] sm:w-[150px] aspect-[2/3]' : 'aspect-[2/3] w-full',
           )}
         >
           {isEnriching ? (
@@ -476,6 +470,17 @@ export function MovieCard({
                 className="p-1 hover:bg-black/10 rounded-md transition-colors"
               >
                 <Pencil className="w-4 h-4 opacity-40 group-hover/cta:opacity-100 transition-opacity shrink-0" />
+              </button>
+            </div>
+          ) : variant === 'PLANNED' ? (
+            /* Vertical Planned CTA */
+            <div className="flex items-stretch border-t border-border shrink-0 min-h-[34px] rounded-b-xl overflow-hidden">
+              <button
+                onClick={(e) => { e.stopPropagation(); onSecondaryAction?.(); }}
+                className="flex-1 flex items-center justify-center gap-1.5 px-2 py-1.5 bg-secondary/40 hover:bg-secondary/60 text-white/60 hover:text-white transition-all text-xs font-bold uppercase tracking-tight"
+              >
+                <Star className="w-3 h-3" />
+                Rate
               </button>
             </div>
           ) : null}

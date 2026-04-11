@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Bookmark, LayoutList, Columns2 } from 'lucide-react';
+import { Bookmark, LayoutGrid, LayoutList } from 'lucide-react';
 import { Button } from './ui/button';
 import { MovieCard } from './movie-card';
 import type { SearchResult } from './add-to-list-modal';
@@ -11,7 +11,9 @@ import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-
 import { AddTitleFAB } from './add-title-fab';
 import { cn } from '@/lib/utils';
 
-type ViewPref = 'single' | 'double';
+// 'grid'  → vertical poster cards (compact, no overview)
+// 'list'  → horizontal cards with overview on the right
+type ViewPref = 'grid' | 'list';
 const VIEW_PREF_KEY = 'planned-view-pref';
 
 interface WatchlistEntry {
@@ -100,11 +102,11 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
   const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
   const [confirmState, setConfirmState] = React.useState<ConfirmState | null>(null);
 
-  // View preference — persisted in localStorage
-  const [viewPref, setViewPref] = React.useState<ViewPref>('double');
+  // 'grid' = vertical poster cards, 'list' = horizontal cards with overview
+  const [viewPref, setViewPref] = React.useState<ViewPref>('list');
   React.useEffect(() => {
     const saved = localStorage.getItem(VIEW_PREF_KEY) as ViewPref | null;
-    if (saved === 'single' || saved === 'double') setViewPref(saved);
+    if (saved === 'grid' || saved === 'list') setViewPref(saved);
   }, []);
   function setView(v: ViewPref) {
     setViewPref(v);
@@ -181,11 +183,25 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
     filters.maxRating < 10 ||
     filters.watchStatus.length > 0;
 
-  const Skeleton = (
-    <div className={cn('grid gap-4 sm:gap-6', viewPref === 'double' ? 'grid-cols-2' : 'grid-cols-1')}>
+  const GridSkeleton = (
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+      {Array.from({ length: 12 }).map((_, i) => (
+        <div key={i} className="rounded-xl bg-muted animate-pulse overflow-hidden">
+          <div className="aspect-[2/3] w-full" />
+          <div className="p-2 space-y-2">
+            <div className="h-3 bg-muted-foreground/20 rounded w-3/4" />
+            <div className="h-2.5 bg-muted-foreground/10 rounded w-1/2" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
+  const ListSkeleton = (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="flex w-full animate-pulse overflow-hidden rounded-xl border border-border bg-card h-[180px] md:h-[200px]">
-          <div className="w-[80px] sm:w-[120px] shrink-0 bg-muted" />
+          <div className="w-[120px] sm:w-[150px] shrink-0 bg-muted" />
           <div className="flex flex-col flex-1 p-4 gap-3">
             <div className="h-4 w-3/4 rounded bg-muted" />
             <div className="space-y-2 flex-1">
@@ -209,32 +225,36 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
         <div className="flex-1 min-w-0">
           <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
         </div>
-        <div className="hidden sm:flex items-center gap-1 p-1 bg-muted rounded-lg shrink-0 mt-0.5">
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg shrink-0 mt-0.5">
           <button
-            onClick={() => setView('single')}
-            title="Single column"
+            onClick={() => setView('grid')}
+            title="Poster grid"
             className={cn(
               'p-1.5 rounded-md transition-colors',
-              viewPref === 'single' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+              viewPref === 'grid'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <LayoutGrid className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setView('list')}
+            title="Cards with overview"
+            className={cn(
+              'p-1.5 rounded-md transition-colors',
+              viewPref === 'list'
+                ? 'bg-background text-foreground shadow-sm'
+                : 'text-muted-foreground hover:text-foreground',
             )}
           >
             <LayoutList className="w-4 h-4" />
-          </button>
-          <button
-            onClick={() => setView('double')}
-            title="Two columns"
-            className={cn(
-              'p-1.5 rounded-md transition-colors',
-              viewPref === 'double' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-            )}
-          >
-            <Columns2 className="w-4 h-4" />
           </button>
         </div>
       </div>
 
       {loading && page === 1 ? (
-        Skeleton
+        viewPref === 'grid' ? GridSkeleton : ListSkeleton
       ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center select-none text-muted-foreground">
           <Bookmark className="w-14 h-14 mb-4 opacity-20" />
@@ -247,15 +267,11 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
               : 'Bookmark titles from Recommendations or add items using "Plan to Watch" when searching.'}
           </p>
         </div>
-      ) : (
+      ) : viewPref === 'grid' ? (
+        /* ── Vertical poster grid ── */
         <>
           <AnimatePresence mode="popLayout">
-            <div
-              className={cn(
-                'grid gap-4 sm:gap-6',
-                viewPref === 'double' ? 'grid-cols-2' : 'grid-cols-1',
-              )}
-            >
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
               {items.map((entry) => {
                 const item = entry.content;
                 return (
@@ -270,10 +286,8 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
                       ageCertification={item.ageCertification}
                       runtimeMins={item.runtimeMins}
                       episodeRuntime={item.episodeRuntime}
-                      overview={item.overview}
                       variant="PLANNED"
-                      layout="horizontal"
-                      compact={viewPref === 'double'}
+                      layout="vertical"
                       onDelete={() => handleRemoveClick(entry)}
                       onSecondaryAction={() =>
                         onSelect({
@@ -294,18 +308,61 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
               })}
             </div>
           </AnimatePresence>
-
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-3 pt-8">
-              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => goToPage(page - 1)}>
-                Prev
-              </Button>
-              <span className="text-sm text-muted-foreground">
-                {page} / {totalPages}
-              </span>
-              <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => goToPage(page + 1)}>
-                Next
-              </Button>
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => goToPage(page - 1)}>Prev</Button>
+              <span className="text-sm text-muted-foreground">{page} / {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => goToPage(page + 1)}>Next</Button>
+            </div>
+          )}
+        </>
+      ) : (
+        /* ── Horizontal cards with overview ── */
+        <>
+          <AnimatePresence mode="popLayout">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+              {items.map((entry) => {
+                const item = entry.content;
+                return (
+                  <div key={entry.id}>
+                    <MovieCard
+                      id={item.id}
+                      title={item.title}
+                      year={item.year}
+                      posterUrl={item.posterUrl}
+                      contentType={item.contentType as ContentType}
+                      tmdbRating={item.tmdbRating != null ? Number(item.tmdbRating) : null}
+                      ageCertification={item.ageCertification}
+                      runtimeMins={item.runtimeMins}
+                      episodeRuntime={item.episodeRuntime}
+                      overview={item.overview}
+                      variant="PLANNED"
+                      layout="horizontal"
+                      onDelete={() => handleRemoveClick(entry)}
+                      onSecondaryAction={() =>
+                        onSelect({
+                          id: item.id,
+                          tmdbId: item.tmdbId ?? undefined,
+                          malId: item.malId ?? undefined,
+                          title: item.title,
+                          year: item.year,
+                          posterUrl: item.posterUrl,
+                          tmdbRating: item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                          overview: item.overview,
+                          contentType: item.contentType as ContentType,
+                        })
+                      }
+                    />
+                  </div>
+                );
+              })}
+            </div>
+          </AnimatePresence>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-3 pt-8">
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => goToPage(page - 1)}>Prev</Button>
+              <span className="text-sm text-muted-foreground">{page} / {totalPages}</span>
+              <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => goToPage(page + 1)}>Next</Button>
             </div>
           )}
         </>
