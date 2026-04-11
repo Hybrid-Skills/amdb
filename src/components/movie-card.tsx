@@ -72,6 +72,7 @@ export interface MovieCardProps {
   isSecondaryLoading?: boolean;
   onViewDetails?: () => void;
   isEnriching?: boolean;
+  compact?: boolean;
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -208,6 +209,7 @@ export function MovieCard({
   recommendationLabel,
   onViewDetails,
   isEnriching = false,
+  compact = false,
 }: MovieCardProps) {
   const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
@@ -247,7 +249,11 @@ export function MovieCard({
         <div
           className={cn(
             'relative overflow-hidden shrink-0',
-            isHorizontal ? 'w-[120px] sm:w-[150px] aspect-[2/3]' : 'aspect-[2/3] w-full',
+            isHorizontal
+              ? compact
+                ? 'w-[72px] sm:w-[100px] aspect-[2/3]'
+                : 'w-[120px] sm:w-[150px] aspect-[2/3]'
+              : 'aspect-[2/3] w-full',
           )}
         >
           {isEnriching ? (

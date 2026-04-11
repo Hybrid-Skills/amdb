@@ -182,10 +182,10 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
     filters.watchStatus.length > 0;
 
   const Skeleton = (
-    <div className={cn('grid gap-4 sm:gap-6', viewPref === 'double' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1')}>
+    <div className={cn('grid gap-4 sm:gap-6', viewPref === 'double' ? 'grid-cols-2' : 'grid-cols-1')}>
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="flex w-full animate-pulse overflow-hidden rounded-xl border border-border bg-card h-[180px] md:h-[200px]">
-          <div className="w-[120px] sm:w-[150px] shrink-0 bg-muted" />
+          <div className="w-[80px] sm:w-[120px] shrink-0 bg-muted" />
           <div className="flex flex-col flex-1 p-4 gap-3">
             <div className="h-4 w-3/4 rounded bg-muted" />
             <div className="space-y-2 flex-1">
@@ -209,7 +209,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
         <div className="flex-1 min-w-0">
           <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
         </div>
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg shrink-0 mt-0.5">
+        <div className="hidden sm:flex items-center gap-1 p-1 bg-muted rounded-lg shrink-0 mt-0.5">
           <button
             onClick={() => setView('single')}
             title="Single column"
@@ -253,7 +253,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
             <div
               className={cn(
                 'grid gap-4 sm:gap-6',
-                viewPref === 'double' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1',
+                viewPref === 'double' ? 'grid-cols-2' : 'grid-cols-1',
               )}
             >
               {items.map((entry) => {
@@ -273,6 +273,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
                       overview={item.overview}
                       variant="PLANNED"
                       layout="horizontal"
+                      compact={viewPref === 'double'}
                       onDelete={() => handleRemoveClick(entry)}
                       onSecondaryAction={() =>
                         onSelect({
