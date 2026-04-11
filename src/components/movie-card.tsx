@@ -11,6 +11,7 @@ import {
   Pencil,
   Trash2,
   Bookmark,
+  BookmarkCheck,
   CheckCircle2,
   Loader2,
   Award,
@@ -56,6 +57,7 @@ export interface MovieCardProps {
   imdbRating?: string | null;
   tmdbId?: number;
   malId?: number;
+  overview?: string | null;
   recommendationReason?: string | null;
   recommendationLabel?: string | null;
 
@@ -201,6 +203,7 @@ export function MovieCard({
   onDelete,
   onSecondaryAction,
   isSecondaryLoading,
+  overview,
   recommendationReason,
   recommendationLabel,
   onViewDetails,
@@ -265,8 +268,8 @@ export function MovieCard({
             </div>
           )}
 
-          {/* Delete Action (Pinned to poster Banner) */}
-          {onDelete && (
+          {/* Delete Action (Pinned to poster) — hidden for horizontal PLANNED (handled by action bar) */}
+          {onDelete && !(isHorizontal && variant === 'PLANNED') && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
@@ -354,15 +357,16 @@ export function MovieCard({
               </div>
             )}
 
-            {/* Recommendation Reason */}
-            {recommendationReason && (
+            {/* Description: recommendation reason or overview */}
+            {(recommendationReason || overview) && (
               <p
                 className={cn(
-                  'text-[12px] text-muted-foreground/90 italic leading-snug',
+                  'text-[12px] text-muted-foreground/90 leading-snug',
                   isHorizontal ? 'line-clamp-5' : 'line-clamp-2',
+                  recommendationReason && 'italic',
                 )}
               >
-                {recommendationReason}
+                {recommendationReason ?? overview}
               </p>
             )}
           </div>
@@ -378,35 +382,69 @@ export function MovieCard({
               </div>
             ) : (
               <div className="flex items-stretch border-t border-border shrink-0 min-h-[36px]">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onSecondaryAction?.();
-                  }}
-                  disabled={isSecondaryLoading}
-                  className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all border-r border-border min-w-0"
-                >
-                  {isSecondaryLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Bookmark className="w-3.5 h-3.5" />
-                  )}
-                  <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">
-                    Plan
-                  </span>
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onViewDetails?.();
-                  }}
-                  className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all min-w-0"
-                >
-                  <Star className="w-3.5 h-3.5" />
-                  <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">
-                    Rate
-                  </span>
-                </button>
+                {variant === 'PLANNED' ? (
+                  <>
+                    {/* Left: Planned → triggers removal confirmation */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDelete?.();
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-emerald-500/10 hover:bg-red-500/15 text-emerald-400 hover:text-red-400 transition-all border-r border-border min-w-0 group/planned"
+                    >
+                      <BookmarkCheck className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">
+                        Planned
+                      </span>
+                    </button>
+                    {/* Right: Rate → opens add-to-list modal */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSecondaryAction?.();
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all min-w-0"
+                    >
+                      <Star className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">
+                        Rate
+                      </span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    {/* RECOMMENDED: Plan + Rate */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSecondaryAction?.();
+                      }}
+                      disabled={isSecondaryLoading}
+                      className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all border-r border-border min-w-0"
+                    >
+                      {isSecondaryLoading ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Bookmark className="w-3.5 h-3.5" />
+                      )}
+                      <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">
+                        Plan
+                      </span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onViewDetails?.();
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white/8 hover:bg-white/15 text-white/60 hover:text-white transition-all min-w-0"
+                    >
+                      <Star className="w-3.5 h-3.5" />
+                      <span className="text-xs font-semibold uppercase tracking-tight whitespace-nowrap">
+                        Rate
+                      </span>
+                    </button>
+                  </>
+                )}
               </div>
             )
           ) : variant === 'WATCHED' ? (

@@ -1,14 +1,18 @@
 'use client';
 
 import * as React from 'react';
-import { AnimatePresence } from 'framer-motion';
-import { Bookmark } from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { Bookmark, LayoutList, Columns2 } from 'lucide-react';
 import { Button } from './ui/button';
 import { MovieCard } from './movie-card';
 import type { SearchResult } from './add-to-list-modal';
 import type { ContentType } from '@prisma/client';
 import { ListFilterBar, DEFAULT_FILTERS, type ListFilters } from './list-filter-bar';
 import { AddTitleFAB } from './add-title-fab';
+import { cn } from '@/lib/utils';
+
+type ViewPref = 'single' | 'double';
+const VIEW_PREF_KEY = 'planned-view-pref';
 
 interface WatchlistEntry {
   id: string;
@@ -26,13 +30,64 @@ interface WatchlistEntry {
     ageCertification: string | null;
     runtimeMins: number | null;
     episodeRuntime: number | null;
+    overview: string | null;
   };
+}
+
+interface ConfirmState {
+  entryId: string;
+  title: string;
 }
 
 interface PlannedTabProps {
   onSelect: (item: SearchResult) => void;
   initialPage?: number;
   onPageChange?: (p: number) => void;
+}
+
+function ConfirmRemoveModal({
+  title,
+  onConfirm,
+  onCancel,
+}: {
+  title: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      onClick={onCancel}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        transition={{ duration: 0.15 }}
+        className="bg-card border border-border rounded-2xl p-6 mx-4 max-w-sm w-full shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="font-bold text-base mb-1">Remove from Planned?</p>
+        <p className="text-sm text-muted-foreground mb-5 line-clamp-2">
+          &ldquo;{title}&rdquo; will be removed from your planned list.
+        </p>
+        <div className="flex gap-3">
+          <button
+            onClick={onCancel}
+            className="flex-1 py-2.5 rounded-xl border border-border text-sm font-semibold hover:bg-white/5 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={onConfirm}
+            className="flex-1 py-2.5 rounded-xl bg-red-500/15 text-red-400 border border-red-500/20 text-sm font-semibold hover:bg-red-500/25 transition-colors"
+          >
+            Remove
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
 }
 
 export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedTabProps) {
@@ -43,6 +98,18 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
   const [total, setTotal] = React.useState(0);
   const [removing, setRemoving] = React.useState<Set<string>>(new Set());
   const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
+  const [confirmState, setConfirmState] = React.useState<ConfirmState | null>(null);
+
+  // View preference — persisted in localStorage
+  const [viewPref, setViewPref] = React.useState<ViewPref>('double');
+  React.useEffect(() => {
+    const saved = localStorage.getItem(VIEW_PREF_KEY) as ViewPref | null;
+    if (saved === 'single' || saved === 'double') setViewPref(saved);
+  }, []);
+  function setView(v: ViewPref) {
+    setViewPref(v);
+    localStorage.setItem(VIEW_PREF_KEY, v);
+  }
 
   async function fetchWatchlist(p: number, f: ListFilters, force = false) {
     setLoading(true);
@@ -83,9 +150,14 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
     fetchWatchlist(p, filters);
   }
 
-  async function handleRemove(entryId: string) {
-    if (!confirm('Remove this title from your planned list?')) return;
+  function handleRemoveClick(entry: WatchlistEntry) {
+    setConfirmState({ entryId: entry.id, title: entry.content.title });
+  }
 
+  async function confirmRemove() {
+    if (!confirmState) return;
+    const { entryId } = confirmState;
+    setConfirmState(null);
     setRemoving((prev) => new Set([...prev, entryId]));
     try {
       const res = await fetch(`/api/watchlist/${entryId}`, { method: 'DELETE' });
@@ -109,32 +181,61 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
     filters.maxRating < 10 ||
     filters.watchStatus.length > 0;
 
-  if (loading && page === 1) {
-    return (
-      <div className="space-y-4">
-        <AddTitleFAB onSelect={onSelect} />
-        <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div key={i} className="rounded-xl bg-muted animate-pulse overflow-hidden">
-              <div className="aspect-[2/3] w-full" />
-              <div className="p-3 space-y-2">
-                <div className="h-3 bg-muted-foreground/20 rounded w-3/4" />
-                <div className="h-2.5 bg-muted-foreground/10 rounded w-1/2" />
-              </div>
+  const Skeleton = (
+    <div className={cn('grid gap-4 sm:gap-6', viewPref === 'double' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1')}>
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="flex w-full animate-pulse overflow-hidden rounded-xl border border-border bg-card h-[180px] md:h-[200px]">
+          <div className="w-[120px] sm:w-[150px] shrink-0 bg-muted" />
+          <div className="flex flex-col flex-1 p-4 gap-3">
+            <div className="h-4 w-3/4 rounded bg-muted" />
+            <div className="space-y-2 flex-1">
+              <div className="h-3 w-full rounded bg-muted" />
+              <div className="h-3 w-5/6 rounded bg-muted" />
+              <div className="h-3 w-4/6 rounded bg-muted" />
             </div>
-          ))}
+            <div className="h-9 rounded bg-muted" />
+          </div>
         </div>
-      </div>
-    );
-  }
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <AddTitleFAB onSelect={onSelect} />
-      <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
 
-      {items.length === 0 ? (
+      {/* Filter bar + view toggle */}
+      <div className="flex items-start gap-2">
+        <div className="flex-1 min-w-0">
+          <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
+        </div>
+        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg shrink-0 mt-0.5">
+          <button
+            onClick={() => setView('single')}
+            title="Single column"
+            className={cn(
+              'p-1.5 rounded-md transition-colors',
+              viewPref === 'single' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <LayoutList className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setView('double')}
+            title="Two columns"
+            className={cn(
+              'p-1.5 rounded-md transition-colors',
+              viewPref === 'double' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <Columns2 className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+
+      {loading && page === 1 ? (
+        Skeleton
+      ) : items.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 text-center select-none text-muted-foreground">
           <Bookmark className="w-14 h-14 mb-4 opacity-20" />
           <p className="text-lg font-bold text-white mb-1">
@@ -142,44 +243,52 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
           </p>
           <p className="text-sm opacity-60 max-w-xs">
             {isFiltered
-              ? 'Please try removing some filters to see more results.'
-              : 'Bookmark titles from Recommendations or add more items using "Plan to Watch" when adding from search.'}
+              ? 'Try removing some filters to see more results.'
+              : 'Bookmark titles from Recommendations or add items using "Plan to Watch" when searching.'}
           </p>
         </div>
       ) : (
         <>
-          <AnimatePresence>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          <AnimatePresence mode="popLayout">
+            <div
+              className={cn(
+                'grid gap-4 sm:gap-6',
+                viewPref === 'double' ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1',
+              )}
+            >
               {items.map((entry) => {
                 const item = entry.content;
                 return (
-                  <MovieCard
-                    key={entry.id}
-                    id={item.id}
-                    title={item.title}
-                    year={item.year}
-                    posterUrl={item.posterUrl}
-                    contentType={item.contentType as ContentType}
-                    tmdbRating={item.tmdbRating != null ? Number(item.tmdbRating) : null}
-                    ageCertification={item.ageCertification}
-                    runtimeMins={item.runtimeMins}
-                    episodeRuntime={item.episodeRuntime}
-                    variant="PLANNED"
-                    onDelete={() => handleRemove(entry.id)}
-                    onSecondaryAction={() =>
-                      onSelect({
-                        id: item.id,
-                        tmdbId: item.tmdbId ?? undefined,
-                        malId: item.malId ?? undefined,
-                        title: item.title,
-                        year: item.year,
-                        posterUrl: item.posterUrl,
-                        tmdbRating: item.tmdbRating != null ? Number(item.tmdbRating) : null,
-                        overview: null,
-                        contentType: item.contentType as ContentType,
-                      })
-                    }
-                  />
+                  <div key={entry.id}>
+                    <MovieCard
+                      id={item.id}
+                      title={item.title}
+                      year={item.year}
+                      posterUrl={item.posterUrl}
+                      contentType={item.contentType as ContentType}
+                      tmdbRating={item.tmdbRating != null ? Number(item.tmdbRating) : null}
+                      ageCertification={item.ageCertification}
+                      runtimeMins={item.runtimeMins}
+                      episodeRuntime={item.episodeRuntime}
+                      overview={item.overview}
+                      variant="PLANNED"
+                      layout="horizontal"
+                      onDelete={() => handleRemoveClick(entry)}
+                      onSecondaryAction={() =>
+                        onSelect({
+                          id: item.id,
+                          tmdbId: item.tmdbId ?? undefined,
+                          malId: item.malId ?? undefined,
+                          title: item.title,
+                          year: item.year,
+                          posterUrl: item.posterUrl,
+                          tmdbRating: item.tmdbRating != null ? Number(item.tmdbRating) : null,
+                          overview: item.overview,
+                          contentType: item.contentType as ContentType,
+                        })
+                      }
+                    />
+                  </div>
                 );
               })}
             </div>
@@ -187,29 +296,30 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
 
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-3 pt-8">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === 1}
-                onClick={() => goToPage(page - 1)}
-              >
+              <Button variant="outline" size="sm" disabled={page === 1} onClick={() => goToPage(page - 1)}>
                 Prev
               </Button>
               <span className="text-sm text-muted-foreground">
                 {page} / {totalPages}
               </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page === totalPages}
-                onClick={() => goToPage(page + 1)}
-              >
+              <Button variant="outline" size="sm" disabled={page === totalPages} onClick={() => goToPage(page + 1)}>
                 Next
               </Button>
             </div>
           )}
         </>
       )}
+
+      {/* Confirmation modal */}
+      <AnimatePresence>
+        {confirmState && (
+          <ConfirmRemoveModal
+            title={confirmState.title}
+            onConfirm={confirmRemove}
+            onCancel={() => setConfirmState(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
