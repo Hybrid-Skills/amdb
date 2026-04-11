@@ -76,6 +76,18 @@ export async function GET(req: Request) {
         listStatus: true,
         addedAt: true,
         watchStatus: true,
+        recommendationLabel: true,
+        recommendationReason: true,
+        referredByUserId: true,
+        referredBy: {
+          select: {
+            id: true,
+            name: true,
+            username: true,
+            avatarColor: true,
+            avatarEmoji: true,
+          },
+        },
         content: {
           select: {
             id: true,

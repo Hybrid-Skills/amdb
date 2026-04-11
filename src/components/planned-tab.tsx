@@ -20,6 +20,15 @@ interface WatchlistEntry {
   id: string;
   contentType: string;
   createdAt: string;
+  recommendationLabel: string | null;
+  recommendationReason: string | null;
+  referredBy: {
+    id: string;
+    name: string | null;
+    username: string | null;
+    avatarColor: string;
+    avatarEmoji: string | null;
+  } | null;
   content: {
     id: string;
     title: string;
@@ -312,6 +321,9 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
                           contentType: item.contentType as ContentType,
                         })
                       }
+                      recommendationLabel={entry.recommendationLabel}
+                      recommendationReason={entry.recommendationReason}
+                      referrer={entry.referredBy}
                     />
                   </div>
                 );
@@ -345,7 +357,10 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
                       ageCertification={item.ageCertification}
                       runtimeMins={item.runtimeMins}
                       episodeRuntime={item.episodeRuntime}
-                      overview={item.overview}
+                      overview={entry.recommendationLabel ? undefined : item.overview}
+                      recommendationReason={entry.recommendationReason}
+                      recommendationLabel={entry.recommendationLabel}
+                      referrer={entry.referredBy}
                       variant="PLANNED"
                       layout="horizontal"
                       onDelete={() => handleRemoveClick(entry)}

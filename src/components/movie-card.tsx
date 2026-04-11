@@ -60,6 +60,12 @@ export interface MovieCardProps {
   overview?: string | null;
   recommendationReason?: string | null;
   recommendationLabel?: string | null;
+  referrer?: {
+    name: string | null;
+    username: string | null;
+    avatarColor: string;
+    avatarEmoji: string | null;
+  } | null;
 
   // Tab variants
   variant?: 'WATCHED' | 'PLANNED' | 'RECOMMENDED';
@@ -206,6 +212,7 @@ export function MovieCard({
   overview,
   recommendationReason,
   recommendationLabel,
+  referrer,
   onViewDetails,
   isEnriching = false,
 }: MovieCardProps) {
@@ -337,10 +344,11 @@ export function MovieCard({
               </p>
             </div>
 
-            {/* Correct Metadata Row Position (Between Title and Reason) */}
+            {/* Metadata Row: recommendation label / referrer tag */}
             {isHorizontal && (
               <div className="flex items-center gap-2.5 my-2 flex-nowrap overflow-hidden">
-                {recommendationLabel && LABEL_CONFIG[recommendationLabel] && (
+                {recommendationLabel && LABEL_CONFIG[recommendationLabel] ? (
+                  /* AMDB recommendation tag */
                   <div
                     className={cn(
                       'inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-tight shadow-sm whitespace-nowrap shrink-0',
@@ -352,8 +360,25 @@ export function MovieCard({
                     {LABEL_CONFIG[recommendationLabel].icon}
                     {LABEL_CONFIG[recommendationLabel].label}
                   </div>
-                )}
-                {/* Runtime removed from here - now on poster */}
+                ) : variant === 'PLANNED' ? (
+                  referrer ? (
+                    /* Friend referral tag */
+                    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded border border-white/10 bg-white/5 text-[10px] font-bold tracking-tight whitespace-nowrap shrink-0 text-white/60">
+                      <span
+                        className="w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-black shrink-0 leading-none"
+                        style={{ backgroundColor: referrer.avatarColor }}
+                      >
+                        {referrer.avatarEmoji ?? (referrer.name ?? referrer.username ?? '?')[0].toUpperCase()}
+                      </span>
+                      <span>by {referrer.name ?? referrer.username}</span>
+                    </div>
+                  ) : (
+                    /* Self-discovered tag */
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-white/8 bg-white/4 text-[10px] font-bold tracking-tight whitespace-nowrap shrink-0 text-white/35">
+                      Self-discovered
+                    </div>
+                  )
+                ) : null}
               </div>
             )}
 
