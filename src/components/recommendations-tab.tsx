@@ -65,6 +65,7 @@ interface HistoryEntry {
     ageCertification: string | null;
     runtimeMins: number | null;
     episodeRuntime: number | null;
+    seasons: number | null;
   };
 }
 
@@ -540,6 +541,7 @@ export function RecommendationsTab({
                       ageCertification={item.ageCertification}
                       runtimeMins={item.runtimeMins}
                       episodeRuntime={item.episodeRuntime}
+                      seasons={item.seasons}
                       variant="RECOMMENDED"
                       layout="horizontal"
                       onDelete={() => handleDelete(entry)}

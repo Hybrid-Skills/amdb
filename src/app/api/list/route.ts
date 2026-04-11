@@ -126,6 +126,7 @@ export async function GET(req: Request) {
             adult: true,
             episodeRuntime: true,
             runtimeMins: true,
+            seasons: true,
             ageCertification: true,
             tmdbId: true,
             malId: true,
