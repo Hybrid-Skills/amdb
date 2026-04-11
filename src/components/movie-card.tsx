@@ -343,7 +343,7 @@ export function MovieCard({
               <p
                 className={cn(
                   'font-extrabold leading-tight line-clamp-2',
-                  isHorizontal ? 'text-[15px] sm:text-base' : 'text-[13px]',
+                  isHorizontal ? 'text-[13px] sm:text-[15px]' : 'text-[13px]',
                 )}
               >
                 {title}
