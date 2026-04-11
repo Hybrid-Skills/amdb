@@ -102,6 +102,7 @@ export async function GET(req: Request) {
             runtimeMins: true,
             episodeRuntime: true,
             overview: true,
+            shortDescription: true,
           },
         },
       },

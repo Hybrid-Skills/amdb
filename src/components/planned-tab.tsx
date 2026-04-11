@@ -42,6 +42,7 @@ interface WatchlistEntry {
     runtimeMins: number | null;
     episodeRuntime: number | null;
     overview: string | null;
+    shortDescription: string | null;
   };
 }
 
@@ -357,7 +358,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
                       ageCertification={item.ageCertification}
                       runtimeMins={item.runtimeMins}
                       episodeRuntime={item.episodeRuntime}
-                      overview={entry.recommendationLabel ? undefined : item.overview}
+                      overview={entry.recommendationLabel ? undefined : (item.shortDescription ?? item.overview)}
                       recommendationReason={entry.recommendationReason}
                       recommendationLabel={entry.recommendationLabel}
                       referrer={entry.referredBy}

@@ -247,6 +247,7 @@ export function MovieCard({
         className={cn(
           'relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group flex',
           isHorizontal ? 'flex-row' : 'flex-col',
+          isHorizontal && variant === 'PLANNED' && recommendationLabel && 'border-l-[3px] border-l-primary',
         )}
         onClick={handleCardClick}
       >
@@ -348,18 +349,24 @@ export function MovieCard({
             {isHorizontal && (
               <div className="flex items-center gap-2.5 my-2 flex-nowrap overflow-hidden">
                 {recommendationLabel && LABEL_CONFIG[recommendationLabel] ? (
-                  /* AMDB recommendation tag */
-                  <div
-                    className={cn(
-                      'inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-tight shadow-sm whitespace-nowrap shrink-0',
-                      LABEL_CONFIG[recommendationLabel].bg,
-                      LABEL_CONFIG[recommendationLabel].color,
-                      LABEL_CONFIG[recommendationLabel].border,
-                    )}
-                  >
-                    {LABEL_CONFIG[recommendationLabel].icon}
-                    {LABEL_CONFIG[recommendationLabel].label}
-                  </div>
+                  /* AMDB recommendation: source pill + specific label */
+                  <>
+                    <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-primary/40 bg-primary/15 text-[10px] font-black uppercase tracking-tight text-primary whitespace-nowrap shrink-0">
+                      <Clapperboard className="w-3 h-3" />
+                      AMDB
+                    </div>
+                    <div
+                      className={cn(
+                        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded border text-[10px] font-bold uppercase tracking-tight shadow-sm whitespace-nowrap shrink-0',
+                        LABEL_CONFIG[recommendationLabel].bg,
+                        LABEL_CONFIG[recommendationLabel].color,
+                        LABEL_CONFIG[recommendationLabel].border,
+                      )}
+                    >
+                      {LABEL_CONFIG[recommendationLabel].icon}
+                      {LABEL_CONFIG[recommendationLabel].label}
+                    </div>
+                  </>
                 ) : variant === 'PLANNED' ? (
                   referrer ? (
                     /* Friend referral tag */
@@ -391,7 +398,7 @@ export function MovieCard({
                   recommendationReason && 'italic',
                 )}
               >
-                {recommendationReason ?? overview}
+                {recommendationReason ? `"${recommendationReason}"` : overview}
               </p>
             )}
           </div>
