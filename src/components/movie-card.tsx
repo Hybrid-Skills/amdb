@@ -248,11 +248,6 @@ export function MovieCard({
           'relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group flex',
           isHorizontal ? 'flex-row' : 'flex-col',
         )}
-        style={
-          isHorizontal && variant === 'PLANNED' && recommendationLabel
-            ? { backgroundImage: 'radial-gradient(ellipse at 100% 100%, hsl(var(--primary) / 0.13) 0%, transparent 65%)' }
-            : undefined
-        }
         onClick={handleCardClick}
       >
         {/* ── Poster/Banner Section ── */}
@@ -330,7 +325,14 @@ export function MovieCard({
         </div>
 
         {/* ── Info/Content Section ── */}
-        <div className="flex flex-col flex-1 min-h-0 bg-card overflow-hidden">
+        <div
+          className="flex flex-col flex-1 min-h-0 bg-card overflow-hidden"
+          style={
+            isHorizontal && variant === 'PLANNED' && recommendationLabel
+              ? { backgroundImage: 'radial-gradient(ellipse at 100% 100%, hsl(var(--primary) / 0.18) 0%, transparent 70%)' }
+              : undefined
+          }
+        >
           <div className={cn('flex-1 min-w-0', isHorizontal ? 'p-3 sm:p-4' : 'p-2')}>
             <div
               className={cn(
