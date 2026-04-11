@@ -1,6 +1,7 @@
 import { tmdb, tmdbImageUrl } from './tmdb';
 import { getJikanDetails } from './jikan';
 import { prisma } from './prisma';
+import { extractAllCertifications } from './certifications';
 
 export interface ContentDetail {
   id: string; // Internal AMDB ID (CUID)
@@ -23,6 +24,7 @@ export interface ContentDetail {
   popularity: number | null;
   adult: boolean;
   ageCertification: string | null;
+  contentRatings: Record<string, string>;
 
   // Financials (movies)
   budget: number | null;
@@ -163,6 +165,7 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
 
   const crewBase: any[] = raw.credits?.crew ?? [];
   const castBase: any[] = raw.credits?.cast ?? [];
+  const contentRatingsMovie = extractAllCertifications(raw, 'MOVIE');
   const usEntry = raw.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US');
   const ageCertification =
     usEntry?.release_dates?.find((d: any) => d.certification)?.certification ?? null;
@@ -249,6 +252,7 @@ export async function fetchMovieDetail(id: string): Promise<ContentDetail> {
     popularity: raw.popularity ?? null,
     adult: raw.adult ?? false,
     ageCertification,
+    contentRatings: contentRatingsMovie,
     budget: raw.budget ?? null,
     revenue: raw.revenue ?? null,
     runtimeMins: raw.runtime ?? null,
@@ -367,6 +371,7 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
 
   const crewBase: any[] = raw.credits?.crew ?? [];
   const castBase: any[] = raw.credits?.cast ?? [];
+  const contentRatingsTV = extractAllCertifications(raw, 'TV_SHOW');
   const usRating = raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
   const ageCertification = usRating?.rating ?? null;
 
@@ -441,6 +446,7 @@ export async function fetchTvDetail(id: string): Promise<ContentDetail> {
     popularity: raw.popularity ?? null,
     adult: raw.adult ?? false,
     ageCertification,
+    contentRatings: contentRatingsAnime,
     budget: null,
     revenue: null,
     runtimeMins: null,
@@ -555,6 +561,7 @@ export async function fetchAnimeDetail(id: string): Promise<ContentDetail> {
 
   const crewBase: any[] = raw.credits?.crew ?? [];
   const castBase: any[] = raw.credits?.cast ?? [];
+  const contentRatingsAnime = extractAllCertifications(raw, 'ANIME');
   const usRating = raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
   const ageCertification = usRating?.rating ?? null;
   const watchProviderRaw =
@@ -738,6 +745,7 @@ export async function fetchAnimeByMalId(malId: number, amdbId: string): Promise<
     popularity: raw.members ?? null,
     adult: raw.rating?.includes('Rx') || raw.rating?.includes('R+') || false,
     ageCertification: raw.rating ?? null,
+    contentRatings: {},
     budget: null,
     revenue: null,
     runtimeMins: null,

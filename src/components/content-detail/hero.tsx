@@ -1,3 +1,5 @@
+'use client';
+
 import * as React from 'react';
 import Image from 'next/image';
 import TmdbImage from '../ui/tmdb-image';
@@ -6,12 +8,18 @@ import { Home, Clock } from 'lucide-react';
 import type { ContentDetail } from '@/lib/content-detail';
 import { WatchProviders } from '../ui/watch-providers';
 import { ProfileDropdown } from '../profile-dropdown';
+import { useLocale } from '@/hooks/useLocale';
+import { getDisplayCertification } from '@/lib/certifications';
 
 interface HeroProps {
   data: ContentDetail;
 }
 
 export function DetailHero({ data }: HeroProps) {
+  const locale = useLocale();
+  const certDisplay =
+    getDisplayCertification(data.contentRatings as Record<string, string>, locale) ??
+    data.ageCertification;
   let airedText = '';
   if (data.firstAirDate) {
     const first = new Date(data.firstAirDate).getFullYear();
@@ -65,9 +73,9 @@ export function DetailHero({ data }: HeroProps) {
         )}
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap gap-2 mb-1">
-            {data.ageCertification && (
+            {certDisplay && (
               <span className="px-2 py-0.5 text-xs font-bold border border-red-500 text-red-400 rounded-md">
-                {data.ageCertification}
+                {certDisplay}
               </span>
             )}
             <span className="px-2 py-0.5 text-xs font-semibold border border-white/20 text-white/60 rounded-md uppercase tracking-wider">

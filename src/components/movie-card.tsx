@@ -31,6 +31,8 @@ import { Badge } from './ui/badge';
 import { buildContentUrl } from '@/lib/slug';
 import TmdbImage from './ui/tmdb-image';
 import type { ContentType } from '@prisma/client';
+import { useLocale } from '@/hooks/useLocale';
+import { getDisplayCertification } from '@/lib/certifications';
 
 export interface MovieCardProps {
   id: string;
@@ -47,6 +49,7 @@ export interface MovieCardProps {
   notes?: string | null;
   adult?: boolean | null;
   ageCertification?: string | null;
+  contentRatings?: Record<string, string> | null;
   revenue?: number | null;
   languages?: unknown;
   seasons?: number | null;
@@ -202,6 +205,7 @@ export function MovieCard({
   notes,
   adult,
   ageCertification,
+  contentRatings,
   episodeRuntime,
   runtimeMins,
   seasons,
@@ -221,10 +225,11 @@ export function MovieCard({
   const router = useRouter();
   const [isHovered, setIsHovered] = React.useState(false);
 
+  const locale = useLocale();
   const runtime = episodeRuntime ?? runtimeMins;
   const runtimeLabel = runtime ? `${runtime}m${contentType !== 'MOVIE' ? '/ep' : ''}` : null;
   const seasonsLabel = seasons && contentType !== 'MOVIE' ? `${seasons} ${seasons === 1 ? 'Season' : 'Seasons'}` : null;
-  const certLabel = ageCertification ?? (adult ? '18+' : null);
+  const certLabel = getDisplayCertification(contentRatings, locale) ?? ageCertification ?? (adult ? '18+' : null);
 
   const handleCardClick = () => {
     // Persist scroll into the current history entry so back nav restores it
