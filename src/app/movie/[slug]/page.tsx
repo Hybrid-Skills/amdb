@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: `${data.title}${yearSuffix} Streaming on, Ratings, Similar movies, Cast, Plot | AMDB`,
       description: `View ${data.title}${yearSuffix} ratings from all major review platforms. Featuring ${leadActor} and directed by ${director}. Explore box office revenue, budget, runtime and personalized recommendations.`,
       alternates: {
-        canonical: `/movie/${slug}`,
+        canonical: pageUrl,
       },
       openGraph: {
         title: `${data.title}${yearSuffix}: Ratings, reviews and see where to stream`,
