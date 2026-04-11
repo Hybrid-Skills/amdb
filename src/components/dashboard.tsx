@@ -173,7 +173,17 @@ export function Dashboard(_: DashboardProps) {
   }, [debouncedFilters]);
 
   function handleFiltersChange(f: ListFilters) {
+    // Bypass debounce for discrete button changes (content type, sort field/order)
+    // so a single click responds immediately instead of waiting 500ms.
+    const isInstant =
+      f.contentType !== filters.contentType ||
+      f.sortBy !== filters.sortBy ||
+      f.sortOrder !== filters.sortOrder;
+
     setFilters(f);
+    if (isInstant) {
+      setDebouncedFilters(f);
+    }
   }
 
   async function handleDelete(id: string) {

@@ -12,6 +12,7 @@ import { getShortDescription } from '@/lib/utils/text';
 import { z } from 'zod';
 import type { ContentType, Prisma, WatchStatus } from '@prisma/client';
 import { buildGenreNames } from '@/lib/genres';
+import { generateShortId } from '@/lib/id';
 
 type WatchStatusValue = WatchStatus;
 

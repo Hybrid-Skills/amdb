@@ -276,11 +276,15 @@ export function AddToListModal({
         if (endDate) body.endDate = endDate.toISOString();
         if (episodeCount) body.episodeCount = Number(episodeCount);
       }
-      await fetch('/api/list', {
+      const res = await fetch('/api/list', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? `Server error ${res.status}`);
+      }
       onSuccess?.();
       onClose();
     } catch (err) {
