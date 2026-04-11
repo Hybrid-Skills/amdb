@@ -156,6 +156,16 @@ export function Dashboard(_: DashboardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.user?.id]);
 
+  // If the user switches to the watched tab but the list was never fetched
+  // (e.g. page loaded on planned/recommendations tab), fetch it now.
+  React.useEffect(() => {
+    if (activeTab !== 'watched' || !session?.user?.id) return;
+    if (listItems.length === 0 && !listLoading) {
+      fetchList(1, filters);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab]);
+
   // Debounce filter changes — 500ms
   React.useEffect(() => {
     const t = setTimeout(() => setDebouncedFilters(filters), 500);
