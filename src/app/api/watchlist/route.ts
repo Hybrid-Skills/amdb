@@ -101,7 +101,6 @@ export async function GET(req: Request) {
             ageCertification: true,
             runtimeMins: true,
             episodeRuntime: true,
-            overview: true,
             shortDescription: true,
           },
         },
