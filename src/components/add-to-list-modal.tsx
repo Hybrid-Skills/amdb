@@ -499,15 +499,25 @@ export function AddToListModal({
               </Select>
             </div>
             <div>
-              <p className="text-sm font-medium mb-2 text-white/80">Episodes watched</p>
-              <input
-                type="number"
-                min={0}
-                value={episodeCount}
-                onChange={(e) => setEpisodeCount(e.target.value)}
-                placeholder="e.g. 12"
-                className="flex h-9 w-full rounded-md border border-white/10 bg-black/50 px-3 py-1 text-base md:text-sm shadow-sm placeholder:text-white/30 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-primary"
-              />
+              <p className="text-sm font-medium mb-2 text-white/80">Seasons completed</p>
+              <Select
+                value={episodeCount || ''}
+                onValueChange={setEpisodeCount}
+              >
+                <SelectTrigger className="bg-black/50 border-white/10 text-base md:text-sm">
+                  <SelectValue placeholder="Select" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-950 border-zinc-900 text-white">
+                  {Array.from(
+                    { length: displayItem.number_of_seasons ?? 20 },
+                    (_, i) => i + 1,
+                  ).map((n) => (
+                    <SelectItem key={n} value={String(n)}>
+                      {n} {n === 1 ? 'Season' : 'Seasons'}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </>
