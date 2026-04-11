@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { parseSlug } from '@/lib/slug';
+import { parseSlug, siteUrl } from '@/lib/slug';
 import { fetchMovieDetail } from '@/lib/content-detail';
 import { ContentDetailPage } from '@/components/content-detail-page';
 import type { Metadata } from 'next';
@@ -13,7 +13,7 @@ interface Props {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
   const { id } = parseSlug(slug);
-  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const baseUrl = siteUrl;
   // v2 metadata force revalidation
 
   try {

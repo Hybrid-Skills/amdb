@@ -1,3 +1,10 @@
+// Canonical site URL — prefer NEXT_PUBLIC_SITE_URL (set to prod domain in Vercel),
+// fall back to NEXTAUTH_URL, then localhost for local dev.
+export const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXTAUTH_URL ||
+  'http://localhost:3000';
+
 // Shared slug utility used by all content type routes
 // Slug format: /[content-type]/[title-slug]-[id]
 // Example: /anime/one-piece-3d6gt, /movie/inception-5e9k2
