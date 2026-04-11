@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { Home, Share2 } from 'lucide-react';
+import { Home, Share2, Check } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ProfileOverviewCard } from './profile-overview-card';
@@ -48,6 +48,23 @@ export function ProfilePageShell({
   const { update: updateSession } = useSession();
   const [activeTab, setActiveTab] = React.useState<Tab>('list');
   const [currentUser, setCurrentUser] = React.useState(profileUser);
+  const [shared, setShared] = React.useState(false);
+
+  async function handleShare() {
+    const url = window.location.href;
+    const shareData = {
+      title: `${currentUser.name} on AMDB`,
+      text: `Check out ${currentUser.name}'s movie and TV ratings on AMDB`,
+      url,
+    };
+    if (navigator.share) {
+      try { await navigator.share(shareData); } catch { /* user cancelled */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      setShared(true);
+      setTimeout(() => setShared(false), 2000);
+    }
+  }
 
   const [ratedItems, setRatedItems] = React.useState(initialRatedItems);
   const [hasMore, setHasMore] = React.useState(initialHasMore);
@@ -123,8 +140,12 @@ export function ProfilePageShell({
               {currentUser.name}
             </h1>
           </div>
-          <button className="p-2 text-white/40 hover:text-white transition-colors">
-            <Share2 className="w-5 h-5" />
+          <button
+            onClick={handleShare}
+            className="p-2 text-white/40 hover:text-white transition-colors"
+            aria-label="Share profile"
+          >
+            {shared ? <Check className="w-5 h-5 text-green-400" /> : <Share2 className="w-5 h-5" />}
           </button>
         </div>
       </header>
