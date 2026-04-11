@@ -317,7 +317,7 @@ export function MovieCard({
                 {runtimeLabel}
               </Badge>
             )}
-            {seasonsLabel && (
+            {seasonsLabel && variant !== 'WATCHED' && (
               <Badge
                 variant="secondary"
                 className="h-4 text-[9px] px-1 bg-black/60 text-white/90 font-medium rounded-sm border border-white/20 whitespace-nowrap"
