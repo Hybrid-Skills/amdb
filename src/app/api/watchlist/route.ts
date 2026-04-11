@@ -115,9 +115,19 @@ export async function POST(req: Request) {
   if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
   const userId = session.user.id;
-  const { contentId, contentType } = await req.json();
+  const { contentId, contentType, refUsername } = await req.json();
   if (!contentId || !contentType) {
     return NextResponse.json({ error: 'contentId, contentType required' }, { status: 400 });
+  }
+
+  // Resolve referral: look up by username, avoid self-referral
+  let referredByUserId: string | undefined;
+  if (refUsername && typeof refUsername === 'string') {
+    const refUser = await prisma.user.findFirst({
+      where: { username: { equals: refUsername, mode: 'insensitive' } },
+      select: { id: true },
+    });
+    if (refUser && refUser.id !== userId) referredByUserId = refUser.id;
   }
 
   const content = await prisma.content.findUnique({
@@ -144,14 +154,18 @@ export async function POST(req: Request) {
     // RECOMMENDED → promote to PLANNED
     const updated = await prisma.userContent.update({
       where: { id: existing.id },
-      data: { listStatus: 'PLANNED', updatedAt: new Date() },
+      data: {
+        listStatus: 'PLANNED',
+        updatedAt: new Date(),
+        ...(referredByUserId ? { referredByUserId } : {}),
+      },
     });
     return NextResponse.json({ id: updated.id });
   }
 
   // No entry yet — create PLANNED
   const entry = await prisma.userContent.create({
-    data: { userId, contentId, listStatus: 'PLANNED' },
+    data: { userId, contentId, listStatus: 'PLANNED', ...(referredByUserId ? { referredByUserId } : {}) },
   });
   revalidateTag(`user-stats-${userId}`);
   return NextResponse.json({ id: entry.id });

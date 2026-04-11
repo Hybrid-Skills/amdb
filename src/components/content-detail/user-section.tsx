@@ -49,6 +49,12 @@ export function UserContentSection({ data }: UserContentSectionProps) {
   const [activeRating, setActiveRating] = React.useState<number | null>(null);
   const [shared, setShared] = React.useState(false);
 
+  // Capture ?ref=username from URL into sessionStorage on page load
+  React.useEffect(() => {
+    const ref = new URLSearchParams(window.location.search).get('ref');
+    if (ref) sessionStorage.setItem('amdb_ref', ref);
+  }, []);
+
   // status drives the check — authenticated = session.user.id available
   React.useEffect(() => {
     if (status === 'unauthenticated') {
@@ -108,10 +114,11 @@ export function UserContentSection({ data }: UserContentSectionProps) {
         if (!ensureRes.ok) return;
         const { amdbId: contentId } = await ensureRes.json();
 
+        const refUsername = sessionStorage.getItem('amdb_ref') ?? undefined;
         const res = await fetch('/api/watchlist', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contentId, contentType: data.contentType }),
+          body: JSON.stringify({ contentId, contentType: data.contentType, refUsername }),
         });
         if (res.ok) {
           const result = await res.json();

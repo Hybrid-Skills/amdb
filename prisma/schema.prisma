@@ -46,9 +46,10 @@ model User {
   username      String?       @unique
   avatarColor   String        @default("#6366f1")
   avatarEmoji   String?
-  accounts      Account[]
-  sessions      Session[]
-  userContent   UserContent[]
+  accounts         Account[]
+  sessions         Session[]
+  userContent      UserContent[]
+  referredContent  UserContent[] @relation("ReferredContent")
 }
 
 model VerificationToken {
@@ -131,8 +132,10 @@ model UserContent {
   episodeCount         Int?
   addedAt              DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
+  referredByUserId     String?
   content              Content              @relation(fields: [contentId], references: [id], onDelete: Cascade)
   user                 User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  referredBy           User?                @relation("ReferredContent", fields: [referredByUserId], references: [id], onDelete: SetNull)
 
   @@unique([userId, contentId])
   @@index([userId, listStatus, addedAt(sort: Desc)])
