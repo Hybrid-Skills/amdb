@@ -22,6 +22,7 @@ import {
   Waves,
   Cpu,
   Clapperboard,
+  Sparkles,
   Zap,
   Search,
 } from 'lucide-react';
@@ -358,8 +359,8 @@ export function MovieCard({
                   /* AMDB recommendation: source pill + specific label */
                   <>
                     <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-primary/40 bg-primary/15 text-[10px] font-black uppercase tracking-tight text-primary whitespace-nowrap shrink-0">
-                      <Clapperboard className="w-3 h-3" />
-                      AMDB
+                      <Sparkles className="w-3 h-3" />
+                      AMDB AI
                     </div>
                     <div
                       className={cn(
@@ -396,17 +397,18 @@ export function MovieCard({
             )}
 
             {/* Description: recommendation reason or overview */}
-            {(recommendationReason || overview) && (
-              <p
-                className={cn(
-                  'text-[12px] text-muted-foreground/90 leading-snug',
-                  isHorizontal ? 'line-clamp-5' : 'line-clamp-2',
-                  recommendationReason && 'italic',
+            {recommendationReason ? (
+              <div className={cn('text-[12px] text-muted-foreground/90 leading-snug', isHorizontal ? 'line-clamp-5' : 'line-clamp-2')}>
+                <span className="italic">&ldquo;{recommendationReason}&rdquo;</span>
+                {isHorizontal && (
+                  <span className="not-italic text-primary/70 font-semibold whitespace-nowrap"> ~ AMDB AI</span>
                 )}
-              >
-                {recommendationReason ? `"${recommendationReason}"` : overview}
+              </div>
+            ) : overview ? (
+              <p className={cn('text-[12px] text-muted-foreground/90 leading-snug', isHorizontal ? 'line-clamp-5' : 'line-clamp-2')}>
+                {overview}
               </p>
-            )}
+            ) : null}
           </div>
 
           {/* Bottom Action Area (Always flush) */}
