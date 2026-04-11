@@ -222,6 +222,7 @@ export function MovieCard({
 
   const runtime = episodeRuntime ?? runtimeMins;
   const runtimeLabel = runtime ? `${runtime}m${contentType !== 'MOVIE' ? '/ep' : ''}` : null;
+  const seasonsLabel = seasons && contentType !== 'MOVIE' ? `${seasons} ${seasons === 1 ? 'Season' : 'Seasons'}` : null;
   const certLabel = ageCertification ?? (adult ? '18+' : null);
 
   const handleCardClick = () => {
@@ -313,6 +314,14 @@ export function MovieCard({
               >
                 <Clock className="w-2.5 h-2.5 mr-0.5 inline-block" />
                 {runtimeLabel}
+              </Badge>
+            )}
+            {seasonsLabel && (
+              <Badge
+                variant="secondary"
+                className="h-4 text-[9px] px-1 bg-black/60 text-white/90 font-medium rounded-sm border border-white/20 whitespace-nowrap"
+              >
+                {seasonsLabel}
               </Badge>
             )}
           </div>

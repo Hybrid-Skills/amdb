@@ -106,6 +106,16 @@ export function DetailHero({ data }: HeroProps) {
                 {data.contentType !== 'MOVIE' ? '/ep' : ''}
               </span>
             )}
+            {data.contentType !== 'MOVIE' && data.numberOfSeasons && (
+              <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/50 text-[11px] font-bold whitespace-nowrap shadow-sm">
+                {data.numberOfSeasons} {data.numberOfSeasons === 1 ? 'Season' : 'Seasons'}
+              </span>
+            )}
+            {data.contentType !== 'MOVIE' && data.numberOfEpisodes && (
+              <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/50 text-[11px] font-bold whitespace-nowrap shadow-sm">
+                {data.numberOfEpisodes} Episodes
+              </span>
+            )}
             {data.genres.map((g) => (
               <span
                 key={g.id}

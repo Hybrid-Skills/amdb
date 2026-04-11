@@ -41,6 +41,7 @@ interface WatchlistEntry {
     ageCertification: string | null;
     runtimeMins: number | null;
     episodeRuntime: number | null;
+    seasons: number | null;
     shortDescription: string | null;
   };
 }
@@ -306,6 +307,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
                       ageCertification={item.ageCertification}
                       runtimeMins={item.runtimeMins}
                       episodeRuntime={item.episodeRuntime}
+                      seasons={item.seasons}
                       variant="PLANNED"
                       layout="vertical"
                       onDelete={() => handleRemoveClick(entry)}
@@ -358,6 +360,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
                       ageCertification={item.ageCertification}
                       runtimeMins={item.runtimeMins}
                       episodeRuntime={item.episodeRuntime}
+                      seasons={item.seasons}
                       overview={entry.recommendationLabel ? undefined : item.shortDescription}
                       recommendationReason={entry.recommendationReason}
                       recommendationLabel={entry.recommendationLabel}
