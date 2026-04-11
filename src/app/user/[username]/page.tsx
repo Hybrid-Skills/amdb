@@ -1,15 +1,53 @@
-import { redirect, notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getProfileStats } from '@/lib/stats';
 import { ProfilePageShell } from '@/components/profiles/profile-page-shell';
 import { buildContentUrl } from '@/lib/slug';
+import type { Metadata } from 'next';
 
 export const dynamic = 'force-dynamic';
 
 interface Props {
   params: { username: string };
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { username } = await params;
+  const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+
+  const user = await prisma.user.findFirst({
+    where: { username: { equals: username, mode: 'insensitive' } },
+    select: { name: true, username: true },
+  });
+
+  if (!user) return { title: 'Profile not found — AMDB' };
+
+  const displayName = user.name ?? user.username ?? username;
+  const pageUrl = `${baseUrl}/user/${user.username ?? username}`;
+  const title = `${displayName} (@${user.username ?? username}) — AMDB`;
+  const description = `See ${displayName}'s movie, TV and anime ratings and reviews on AMDB.`;
+
+  return {
+    title,
+    description,
+    alternates: {
+      canonical: pageUrl,
+    },
+    openGraph: {
+      title,
+      description,
+      url: pageUrl,
+      type: 'profile',
+      username: user.username ?? username,
+    },
+    twitter: {
+      card: 'summary',
+      title,
+      description,
+    },
+  };
 }
 
 export default async function UserProfilePage({ params }: Props) {
