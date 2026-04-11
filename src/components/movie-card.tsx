@@ -247,8 +247,12 @@ export function MovieCard({
         className={cn(
           'relative bg-card rounded-xl overflow-hidden border border-border shadow-sm h-full cursor-pointer group flex',
           isHorizontal ? 'flex-row' : 'flex-col',
-          isHorizontal && variant === 'PLANNED' && recommendationLabel && 'border-l-[3px] border-l-primary',
         )}
+        style={
+          isHorizontal && variant === 'PLANNED' && recommendationLabel
+            ? { backgroundImage: 'radial-gradient(ellipse at 100% 100%, hsl(var(--primary) / 0.13) 0%, transparent 65%)' }
+            : undefined
+        }
         onClick={handleCardClick}
       >
         {/* ── Poster/Banner Section ── */}
