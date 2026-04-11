@@ -198,7 +198,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
   );
 
   const ListSkeleton = (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6">
       {Array.from({ length: 6 }).map((_, i) => (
         <div key={i} className="flex w-full animate-pulse overflow-hidden rounded-xl border border-border bg-card h-[180px] md:h-[200px]">
           <div className="w-[120px] sm:w-[150px] shrink-0 bg-muted" />
@@ -320,11 +320,11 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
         /* ── Horizontal cards with overview ── */
         <>
           <AnimatePresence mode="popLayout">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6">
               {items.map((entry) => {
                 const item = entry.content;
                 return (
-                  <div key={entry.id}>
+                  <div key={entry.id} className="md:col-span-2">
                     <MovieCard
                       id={item.id}
                       title={item.title}
