@@ -199,7 +199,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
           <div className="aspect-[2/3] w-full bg-muted" />
           <div className="p-2 space-y-1.5 flex-1">
             <div className="h-3 bg-muted rounded w-3/4" />
-            <div className="h-2.5 bg-muted/60 rounded w-1/2" />
+            <div className="h-2.5 bg-muted/40 rounded w-1/3" />
           </div>
           {/* Rate bar */}
           <div className="h-[34px] border-t border-border bg-muted/30" />
@@ -215,8 +215,9 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
           <div className="flex w-full animate-pulse overflow-hidden rounded-xl border border-border bg-card h-[180px] md:h-[225px]">
             <div className="w-[120px] sm:w-[150px] aspect-[2/3] bg-muted shrink-0" />
             <div className="flex flex-col flex-1 min-h-0">
-              <div className="flex-1 p-3 md:p-4 space-y-4">
+              <div className="flex-1 p-3 md:p-4 space-y-3">
                 <div className="h-4 w-3/4 rounded bg-muted" />
+                <div className="h-3.5 w-1/3 rounded bg-muted/50" />
                 <div className="space-y-2">
                   <div className="h-3 w-full rounded bg-muted" />
                   <div className="h-3 w-5/6 rounded bg-muted" />
@@ -225,7 +226,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
               </div>
               {/* Planned + Rate action bar */}
               <div className="flex items-stretch border-t border-border shrink-0 h-[36px]">
-                <div className="flex-1 border-r border-border bg-emerald-500/5" />
+                <div className="flex-1 border-r border-border bg-muted/10" />
                 <div className="flex-1 bg-muted/10" />
               </div>
             </div>
