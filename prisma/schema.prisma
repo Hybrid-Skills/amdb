@@ -91,6 +91,7 @@ model Content {
   revenue          Float?
   seasons          Int?
   ageCertification String?
+  contentRatings   Json                @default("{}")
   omdbRatings      Json                @default("[]")
   enrichments      ContentEnrichment[]
   userContent      UserContent[]

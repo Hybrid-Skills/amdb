@@ -9,6 +9,7 @@ import { z } from 'zod';
 import type { ContentType, Prisma } from '@prisma/client';
 import { buildGenreNames } from '@/lib/genres';
 import { generateShortId } from '@/lib/id';
+import { extractAllCertifications, getDisplayCertification } from '@/lib/certifications';
 
 const ensureSchema = z
   .object({
@@ -89,15 +90,10 @@ export async function POST(req: Request) {
         genreNames: buildGenreNames(raw.genres),
       };
 
-      // Handle age certification
-      if (contentType === 'MOVIE') {
-        const usEntry = raw.release_dates?.results?.find((r: any) => r.iso_3166_1 === 'US');
-        contentData.ageCertification =
-          usEntry?.release_dates?.find((d: any) => d.certification)?.certification ?? null;
-      } else {
-        const usRating = raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US');
-        contentData.ageCertification = usRating?.rating ?? null;
-      }
+      // Handle age certification — store all countries, display IN → US fallback
+      const allRatings = extractAllCertifications(raw, contentType as 'MOVIE' | 'TV_SHOW' | 'ANIME');
+      contentData.contentRatings = allRatings;
+      contentData.ageCertification = getDisplayCertification(allRatings);
     } else if (malId && contentType === 'ANIME') {
       // Fetch exclusively from Jikan (MAL-only title)
       const raw = await getJikanDetails(malId);

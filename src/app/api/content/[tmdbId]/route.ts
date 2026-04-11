@@ -8,6 +8,7 @@ import { tmdb, tmdbImageUrl } from '@/lib/tmdb';
 import { prisma } from '@/lib/prisma';
 import { getJikanDetails } from '@/lib/jikan';
 import { buildGenreNames } from '@/lib/genres';
+import { extractAllCertifications, getDisplayCertification } from '@/lib/certifications';
 import type { ContentType } from '@prisma/client';
 
 export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: string }> }) {
@@ -169,20 +170,13 @@ export async function GET(req: Request, { params }: { params: Promise<{ tmdbId: 
         (raw.spoken_languages?.length ?? 0) > 0
       )
         patch.languages = raw.spoken_languages;
-      if (!storedContent.ageCertification) {
-        const cert =
-          type === 'TV_SHOW' || type === 'ANIME'
-            ? (raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'IN')?.rating ??
-              raw.content_ratings?.results?.find((r: any) => r.iso_3166_1 === 'US')?.rating ??
-              null)
-            : (raw.release_dates?.results
-                ?.find((r: any) => r.iso_3166_1 === 'IN')
-                ?.release_dates?.find((d: any) => d.certification)?.certification ??
-              raw.release_dates?.results
-                ?.find((r: any) => r.iso_3166_1 === 'US')
-                ?.release_dates?.find((d: any) => d.certification)?.certification ??
-              null);
-        if (cert) patch.ageCertification = cert;
+      {
+        const allRatings = extractAllCertifications(raw, type as 'MOVIE' | 'TV_SHOW' | 'ANIME');
+        if (Object.keys(allRatings).length > 0) patch.contentRatings = allRatings;
+        if (!storedContent.ageCertification) {
+          const cert = getDisplayCertification(allRatings);
+          if (cert) patch.ageCertification = cert;
+        }
       }
       if (Object.keys(patch).length > 0) {
         await prisma.content.update({ where: { id: storedContent.id }, data: patch });
