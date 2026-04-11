@@ -4,6 +4,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { getProfileStats } from '@/lib/stats';
 import { ProfilePageShell } from '@/components/profiles/profile-page-shell';
+import { buildContentUrl } from '@/lib/slug';
 
 export const dynamic = 'force-dynamic';
 
@@ -51,6 +52,7 @@ export default async function UserProfilePage({ params }: Props) {
             id: true,
             title: true,
             year: true,
+            contentType: true,
           },
         },
       },
@@ -88,6 +90,7 @@ export default async function UserProfilePage({ params }: Props) {
         title: item.content.title,
         year: item.content.year,
         rating: item.userRating!,
+        url: buildContentUrl(item.content.contentType, item.content.title, item.content.id),
       }))}
       initialHasMore={totalRatedCount > 12}
     />
