@@ -235,12 +235,12 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
         <div className="flex-1 min-w-0">
           <ListFilterBar filters={filters} onChange={setFilters} total={total} hideUserRating />
         </div>
-        <div className="flex items-center gap-1 p-1 bg-muted rounded-lg shrink-0 mt-0.5">
+        <div className="flex items-center gap-0.5 p-0.5 h-8 bg-muted rounded-lg shrink-0">
           <button
             onClick={() => setView('grid')}
             title="Poster grid"
             className={cn(
-              'p-1.5 rounded-md transition-colors',
+              'p-1 rounded-md transition-colors',
               viewPref === 'grid'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',
@@ -252,7 +252,7 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
             onClick={() => setView('list')}
             title="Cards with overview"
             className={cn(
-              'p-1.5 rounded-md transition-colors',
+              'p-1 rounded-md transition-colors',
               viewPref === 'list'
                 ? 'bg-background text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground',
