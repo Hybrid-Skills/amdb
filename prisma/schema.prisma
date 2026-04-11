@@ -129,7 +129,7 @@ model UserContent {
   watchStatus          WatchStatus?
   startDate            DateTime?            @db.Date
   endDate              DateTime?            @db.Date
-  episodeCount         Int?
+  seasonsCompleted     Int?
   addedAt              DateTime             @default(now())
   updatedAt            DateTime             @updatedAt
   referredByUserId     String?

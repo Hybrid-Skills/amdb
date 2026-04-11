@@ -136,7 +136,7 @@ export function AddToListModal({
   const [watchStatus, setWatchStatus] = React.useState<string>(initialWatchStatus ?? 'COMPLETED');
   const [startDate, setStartDate] = React.useState<Date | null>(null);
   const [endDate, setEndDate] = React.useState<Date | null>(null);
-  const [episodeCount, setEpisodeCount] = React.useState<string>('');
+  const [seasonsCompleted, setEpisodeCount] = React.useState<string>('');
   const [submitting, setSubmitting] = React.useState(false);
   const [planningToWatch, setPlanningToWatch] = React.useState(false);
   const [activeRatingLabel, setActiveRatingLabel] = React.useState<string | null>(null);
@@ -274,7 +274,7 @@ export function AddToListModal({
         body.watchStatus = watchStatus;
         if (startDate) body.startDate = startDate.toISOString();
         if (endDate) body.endDate = endDate.toISOString();
-        if (episodeCount) body.episodeCount = Number(episodeCount);
+        if (seasonsCompleted) body.seasonsCompleted = Number(seasonsCompleted);
       }
       const res = await fetch('/api/list', {
         method: 'POST',
@@ -501,7 +501,7 @@ export function AddToListModal({
             <div>
               <p className="text-sm font-medium mb-2 text-white/80">Seasons completed</p>
               <Select
-                value={episodeCount || ''}
+                value={seasonsCompleted || ''}
                 onValueChange={setEpisodeCount}
               >
                 <SelectTrigger className="bg-black/50 border-white/10 text-base md:text-sm">

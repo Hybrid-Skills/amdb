@@ -49,7 +49,7 @@ async function computeProfileStats(userId: string): Promise<ProfileStats> {
         COALESCE(SUM(
           CASE
             WHEN c."contentType" = 'MOVIE' THEN COALESCE(c."runtimeMins", 0)
-            ELSE COALESCE(uc."episodeCount", c."episodes", 0)
+            ELSE COALESCE(uc."seasonsCompleted", c."episodes", 0)
                  * COALESCE(c."episodeRuntime", 0)
           END
         ), 0)::int AS "totalMins",

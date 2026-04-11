@@ -12,7 +12,7 @@ const updateSchema = z.object({
   watchStatus: z.enum(['WATCHING', 'PLAN_TO_WATCH', 'COMPLETED', 'DROPPED']).nullish(),
   startDate: z.string().datetime().nullish(),
   endDate: z.string().datetime().nullish(),
-  episodeCount: z.number().int().min(0).nullish(),
+  seasonsCompleted: z.number().int().min(0).nullish(),
 });
 
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {

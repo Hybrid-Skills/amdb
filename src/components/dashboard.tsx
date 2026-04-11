@@ -26,7 +26,7 @@ interface ListItem {
   watchedDate: string | null;
   startDate: string | null;
   endDate: string | null;
-  episodeCount: number | null;
+  seasonsCompleted: number | null;
   content: {
     id: string;
     title: string;

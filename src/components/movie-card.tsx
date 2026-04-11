@@ -204,6 +204,7 @@ export function MovieCard({
   ageCertification,
   episodeRuntime,
   runtimeMins,
+  seasons,
   variant = 'WATCHED',
   layout = 'vertical',
   onEdit,

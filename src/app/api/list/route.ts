@@ -30,7 +30,7 @@ const addSchema = z.object({
   watchStatus: z.enum(['WATCHING', 'PLAN_TO_WATCH', 'COMPLETED', 'DROPPED']).optional(),
   startDate: z.string().datetime().optional(),
   endDate: z.string().datetime().optional(),
-  episodeCount: z.number().int().min(0).optional(),
+  seasonsCompleted: z.number().int().min(0).optional(),
 });
 
 export async function GET(req: Request) {
@@ -185,7 +185,7 @@ export async function POST(req: Request) {
     watchStatus,
     startDate,
     endDate,
-    episodeCount,
+    seasonsCompleted,
   } = parsed.data;
 
   let content = await prisma.content.findFirst({
@@ -316,7 +316,7 @@ export async function POST(req: Request) {
         watchStatus: watchStatus ?? 'COMPLETED',
         startDate: startDate ? new Date(startDate) : null,
         endDate: endDate ? new Date(endDate) : null,
-        episodeCount: episodeCount ?? null,
+        seasonsCompleted: seasonsCompleted ?? null,
         watchedDate: null,
       }
     : {
@@ -324,7 +324,7 @@ export async function POST(req: Request) {
         watchStatus: null,
         startDate: null,
         endDate: null,
-        episodeCount: null,
+        seasonsCompleted: null,
       };
 
   const userContent = await prisma.userContent.upsert({
