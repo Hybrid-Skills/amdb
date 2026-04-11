@@ -366,8 +366,14 @@ export function MovieCard({
             {!isHorizontal && variant === 'PLANNED' && (
               <div className="mt-1 mb-0.5">
                 {recommendationLabel && LABEL_CONFIG[recommendationLabel] ? (
-                  <div className="inline-flex items-center justify-center w-4 h-4 rounded border border-primary/60 bg-primary/30 text-primary">
-                    <Sparkles className="w-2.5 h-2.5" />
+                  <div className={cn(
+                    'inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[9px] font-bold uppercase tracking-tight whitespace-nowrap',
+                    LABEL_CONFIG[recommendationLabel].bg,
+                    LABEL_CONFIG[recommendationLabel].color,
+                    LABEL_CONFIG[recommendationLabel].border,
+                  )}>
+                    <Sparkles className="w-2.5 h-2.5 shrink-0" />
+                    {LABEL_CONFIG[recommendationLabel].label}
                   </div>
                 ) : referrer ? (
                   <div className="inline-flex items-center gap-1 text-[10px] text-white/50 font-semibold">
@@ -380,7 +386,7 @@ export function MovieCard({
                     <span className="truncate">{referrer.name ?? referrer.username}</span>
                   </div>
                 ) : (
-                  <span className="text-[10px] text-white/25 font-semibold">Self</span>
+                  <span className="text-[10px] text-white/25 font-semibold">Self-discovered</span>
                 )}
               </div>
             )}
