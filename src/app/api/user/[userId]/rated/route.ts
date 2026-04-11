@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { buildContentUrl } from '@/lib/slug';
 
 export async function GET(
   request: Request,
@@ -23,6 +24,7 @@ export async function GET(
             id: true,
             title: true,
             year: true,
+            contentType: true,
           },
         },
       },
@@ -49,6 +51,7 @@ export async function GET(
         title: item.content.title,
         year: item.content.year,
         rating: item.userRating!,
+        url: buildContentUrl(item.content.contentType, item.content.title, item.content.id),
       })),
       hasMore,
     });

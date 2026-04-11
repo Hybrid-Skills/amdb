@@ -9,6 +9,7 @@ interface RatedItem {
   title: string;
   year: number | null;
   rating: number;
+  url: string;
 }
 
 interface RatedListTabProps {
