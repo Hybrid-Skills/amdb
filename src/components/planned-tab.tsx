@@ -186,12 +186,14 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
   const GridSkeleton = (
     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
       {Array.from({ length: 12 }).map((_, i) => (
-        <div key={i} className="rounded-xl bg-muted animate-pulse overflow-hidden">
-          <div className="aspect-[2/3] w-full" />
-          <div className="p-2 space-y-2">
-            <div className="h-3 bg-muted-foreground/20 rounded w-3/4" />
-            <div className="h-2.5 bg-muted-foreground/10 rounded w-1/2" />
+        <div key={i} className="rounded-xl bg-card border border-border animate-pulse overflow-hidden flex flex-col">
+          <div className="aspect-[2/3] w-full bg-muted" />
+          <div className="p-2 space-y-1.5 flex-1">
+            <div className="h-3 bg-muted rounded w-3/4" />
+            <div className="h-2.5 bg-muted/60 rounded w-1/2" />
           </div>
+          {/* Rate bar */}
+          <div className="h-[34px] border-t border-border bg-muted/30" />
         </div>
       ))}
     </div>
@@ -200,16 +202,24 @@ export function PlannedTab({ onSelect, initialPage = 1, onPageChange }: PlannedT
   const ListSkeleton = (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 sm:gap-6">
       {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="flex w-full animate-pulse overflow-hidden rounded-xl border border-border bg-card h-[180px] md:h-[200px]">
-          <div className="w-[120px] sm:w-[150px] shrink-0 bg-muted" />
-          <div className="flex flex-col flex-1 p-4 gap-3">
-            <div className="h-4 w-3/4 rounded bg-muted" />
-            <div className="space-y-2 flex-1">
-              <div className="h-3 w-full rounded bg-muted" />
-              <div className="h-3 w-5/6 rounded bg-muted" />
-              <div className="h-3 w-4/6 rounded bg-muted" />
+        <div key={i} className="md:col-span-2">
+          <div className="flex w-full animate-pulse overflow-hidden rounded-xl border border-border bg-card h-[180px] md:h-[225px]">
+            <div className="w-[120px] sm:w-[150px] aspect-[2/3] bg-muted shrink-0" />
+            <div className="flex flex-col flex-1 min-h-0">
+              <div className="flex-1 p-3 md:p-4 space-y-4">
+                <div className="h-4 w-3/4 rounded bg-muted" />
+                <div className="space-y-2">
+                  <div className="h-3 w-full rounded bg-muted" />
+                  <div className="h-3 w-5/6 rounded bg-muted" />
+                  <div className="h-3 w-4/6 rounded bg-muted" />
+                </div>
+              </div>
+              {/* Planned + Rate action bar */}
+              <div className="flex items-stretch border-t border-border shrink-0 h-[36px]">
+                <div className="flex-1 border-r border-border bg-emerald-500/5" />
+                <div className="flex-1 bg-muted/10" />
+              </div>
             </div>
-            <div className="h-9 rounded bg-muted" />
           </div>
         </div>
       ))}
