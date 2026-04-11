@@ -59,7 +59,7 @@ export function RatedListTab({
               <tr key={item.id} className="group hover:bg-white/[0.02] transition-colors">
                 <td className="px-4 sm:px-6 py-4">
                   <Link
-                    href={`/content/${item.id}`}
+                    href={item.url}
                     className="flex flex-col gap-0.5 group-hover:translate-x-1 transition-transform"
                   >
                     <div className="flex items-center gap-2 flex-wrap">
