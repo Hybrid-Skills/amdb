@@ -89,7 +89,6 @@ export function Dashboard(_: DashboardProps) {
   const [totalPages, setTotalPages] = React.useState(0);
   const [total, setTotal] = React.useState(0);
   const [filters, setFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
-  const [debouncedFilters, setDebouncedFilters] = React.useState<ListFilters>(DEFAULT_FILTERS);
 
   async function fetchList(p: number, f: ListFilters, force = false) {
     setListLoading(true);
@@ -166,34 +165,36 @@ export function Dashboard(_: DashboardProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
-  // Debounce filter changes — 500ms
+  // Re-fetch on filter change — instant for discrete fields, 500ms debounce for sliders
+  const filtersMountedRef = React.useRef(false);
+  const prevFiltersRef = React.useRef(filters);
   React.useEffect(() => {
-    const t = setTimeout(() => setDebouncedFilters(filters), 500);
+    if (!filtersMountedRef.current) {
+      filtersMountedRef.current = true;
+      return; // skip initial mount run — initial fetch is handled by hasFetched effect
+    }
+    if (!session?.user?.id) return;
+
+    const prev = prevFiltersRef.current;
+    prevFiltersRef.current = filters;
+
+    const isInstant =
+      filters.contentType !== prev.contentType ||
+      filters.sortBy !== prev.sortBy ||
+      filters.sortOrder !== prev.sortOrder;
+
+    if (isInstant) {
+      fetchList(1, filters);
+      return;
+    }
+
+    const t = setTimeout(() => fetchList(1, filters), 500);
     return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters]);
 
-  // Fetch list on debounced filter change (skip first run)
-  const filterChangeCount = React.useRef(0);
-  React.useEffect(() => {
-    if (!session?.user?.id) return;
-    filterChangeCount.current += 1;
-    if (filterChangeCount.current <= 1) return; // skip initial
-    fetchList(1, debouncedFilters);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedFilters]);
-
   function handleFiltersChange(f: ListFilters) {
-    // Bypass debounce for discrete button changes (content type, sort field/order)
-    // so a single click responds immediately instead of waiting 500ms.
-    const isInstant =
-      f.contentType !== filters.contentType ||
-      f.sortBy !== filters.sortBy ||
-      f.sortOrder !== filters.sortOrder;
-
     setFilters(f);
-    if (isInstant) {
-      setDebouncedFilters(f);
-    }
   }
 
   async function handleDelete(id: string) {
@@ -437,7 +438,7 @@ export function Dashboard(_: DashboardProps) {
                         variant="outline"
                         size="sm"
                         disabled={page === 1}
-                        onClick={() => fetchList(page - 1, debouncedFilters)}
+                        onClick={() => fetchList(page - 1, filters)}
                       >
                         Previous
                       </Button>
@@ -448,7 +449,7 @@ export function Dashboard(_: DashboardProps) {
                         variant="outline"
                         size="sm"
                         disabled={page === totalPages}
-                        onClick={() => fetchList(page + 1, debouncedFilters)}
+                        onClick={() => fetchList(page + 1, filters)}
                       >
                         Next
                       </Button>
